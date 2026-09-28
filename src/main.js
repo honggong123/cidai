@@ -10,6 +10,8 @@ import { clamp, damp, ease, Timeline } from './anim.js';
 import * as TX from './textures.js';
 import { TapeAudio } from './audio.js';
 import { readTags, looksLikeAudio } from './tags.js';
+import { SIDES, loadSide as ensureSide, sideOf, trackAt } from './playlist.js';
+import { createViz } from './viz.js';
 
 const $ = (s) => document.querySelector(s);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -128,28 +130,60 @@ function setRoll(el, text) {
 const THEMES = {
   noir: {
     env: 'noir', dust: 0.40, hal: 0.072, ao: 1.0,
-    grade: { bloom: 0.32, ca: 0.85, grain: 0.050, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26 },
+    grade: {
+      bloom: 0.32, ca: 0.85, grain: 0.050, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26,
+      halTint: [1.0, 0.60, 0.32],          // the warm bleed the page shipped with
+    },
     bg: {
       stops: [[0, '#12151a'], [0.44, '#1e232a'], [0.64, '#0d1014'], [1, '#040507']],
       spot: { u: 0.849, v: 0.48, r: 0.40, color: 'rgba(140,162,200,0.75)' },
     },
     floor2: 0x101317, floorMix: 0.60, shadowOp: 0.44,
     pool: 0xff8a3c, poolOp: 0.09,
+    glare: { tint: [1.0, 0.72, 0.44], strength: 0.20, stride: 0.010, threshold: 0.58 },
   },
   studio: {
     env: 'studio', dust: 0.16, hal: 0.020, ao: 0.92,
-    grade: { bloom: 0.32, ca: 0.85, grain: 0.050, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26 },
+    grade: {
+      bloom: 0.32, ca: 0.85, grain: 0.050, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26,
+      halTint: [1.0, 0.60, 0.32],
+    },
     bg: {
       stops: [[0, '#9aa0a8'], [0.46, '#c2c7ce'], [0.78, '#d8dade'], [1, '#e9ebee']],
       spot: { u: 0.849, v: 0.48, r: 0.44, color: 'rgba(255,255,255,0.50)' },
     },
     floor2: 0x9ba1a9, floorMix: 0.38, shadowOp: 0.26,
     pool: 0xffffff, poolOp: 0.04,
+    // the room the page opens in, so this is the one glare nobody should be
+    // able to notice: a hint of a streak on the speculars and nothing else
+    glare: { tint: [0.86, 0.93, 1.0], strength: 0.08, stride: 0.008, threshold: 0.66 },
+  },
+  /* Deep water. Everything here is downstream of one fact — light that has come
+     down through a column of water has lost its red end — so the room is not a
+     daylight scene with a blue filter over it: the halation is cold, the
+     saturation is pulled down, the defocus is wider (there is more between the
+     lens and the subject down here), and the glare is the longest and bluest of
+     the three, because a streak is what a bright surface looks like from below. */
+  abyss: {
+    env: 'abyss', dust: 0.26, hal: 0.038, ao: 1.05,
+    grade: {
+      bloom: 0.44, ca: 0.75, grain: 0.055, vig: 0.92, sat: 0.92, edge: 1.05, focus: 0.24,
+      halTint: [0.42, 0.72, 1.0],
+    },
+    bg: {
+      stops: [[0, '#0a1c2a'], [0.46, '#12303f'], [0.74, '#0a1f2c'], [1, '#02080e']],
+      spot: { u: 0.849, v: 0.48, r: 0.42, color: 'rgba(120,196,235,0.62)' },
+    },
+    floor2: 0x0a1c28, floorMix: 0.52, shadowOp: 0.38,
+    pool: 0x5fc8e8, poolOp: 0.11,
+    glare: { tint: [0.42, 0.80, 1.0], strength: 0.34, stride: 0.013, threshold: 0.55 },
   },
 };
 for (const T of Object.values(THEMES)) {
   T.cFloor2 = new THREE.Color(T.floor2);
   T.cPool = new THREE.Color(T.pool);
+  T.cHalTint = new THREE.Vector3(...T.grade.halTint);
+  T.cGlare = new THREE.Vector3(...T.glare.tint);
 }
 let themeName = 'studio';
 
@@ -161,7 +195,15 @@ try {
   document.body.innerHTML = '<p style="color:#eee;font:14px/1.6 system-ui;padding:3rem">当前浏览器无法初始化 WebGL，请使用 Chrome / Edge 打开。</p>';
   throw err;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+/* The render scale. A 2× display is four times the pixels of a 1× one, and this
+   scene charges for that four times over: a 4×-MSAA half-float target, a
+   96-sample AO at the same size, five bloom mips and a 27-tap grade. 1.5× is
+   where a picture this soft — bloom, grain, chromatic aberration and a real
+   defocus — stops looking different from 2×, and only the canvas scales: the
+   interface is DOM and stays crisp at any device ratio. `性能模式` in the
+   settings sheet drops it to 1.1×. */
+const DPR_CAP = 1.5;
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, DPR_CAP));
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.toneMapping = THREE.NeutralToneMapping ?? THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1;
@@ -296,7 +338,7 @@ function driftDust(dt, t) {
 }
 
 /* ============================== model =================================== */
-let cas = null, envs = null, rig = null, composer = null, grade = null, bloom = null;
+let cas = null, envs = null, rig = null, composer = null, grade = null, bloom = null, glarePass = null;
 let probe = null, rigPanels = null, probeDirty = false, probeBound = false;
 
 /* Handling the model is a detour, not a destination: five seconds after the last
@@ -350,17 +392,36 @@ const audio = new TapeAudio();
    O) hands it another one. The three lines the README used to ask for by hand —
    title, artist, album — come off the file's own ID3 tags instead, and the label
    on the cassette is rewritten to match (see applyTrack). */
+/* The record this page shipped with is a commercial release and cannot travel
+   with the repository, so these are placeholders: boot() overwrites them with
+   the demo tape's own first side before anything reads them (see playlist.js).
+   `minutes` is what the label prints and belongs to whichever side is loaded. */
 const TRACK_DEFAULT = {
   title: 'Sacred Play Secret Place',
   artist: 'Matryoshka',
   album: 'Laideronnette',
   src: 'assets/sacred-play-secret-place.mp3',
   file: null,
+  minutes: '05',
 };
 const TRACK = { ...TRACK_DEFAULT };
 /* the blob URL of the track the user added, so the next one can let it go */
 let objUrl = null;
+/* ...and the ones the demo tape made for itself. These are never revoked: a
+   side costs half a second to render, a blob URL is how it gets back into the
+   audio element, and side B is only rendered the first time it is asked for —
+   so dropping one on a swap would mean paying for it again on the next flip. */
+const DEMO_URLS = new Set();
+const releaseUrl = (u) => { if (u && !DEMO_URLS.has(u)) URL.revokeObjectURL(u); };
 const audioEl = $('#tape-audio');
+/* The four bars beside the track name, and with them the one envelope the whole
+   picture follows — the bars, the dust's drift and the bloom all read it, so
+   they can never disagree about where the beat is (see viz.js). */
+const viz = createViz([...document.querySelectorAll('#now .eq i')]);
+/* How hard the bloom is pushed this frame. 1 is the room's own value: the music
+   rides on top of it rather than replacing it, and applyTheme() damps toward the
+   product, so the two never fight over the same number. */
+let bloomGain = 1;
 let mode = 'idle';          // idle | play | rew
 let muted = false;
 /* The music's own level, and the only thing the wheel over the speaker changes.
@@ -393,7 +454,7 @@ const audioOk = () => audioEl.readyState >= 2 && isFinite(audioEl.duration) && a
    browser hands over several hundred milliseconds *before* the print does.
    ======================================================================== */
 const SWAP_DUR = 1.2;
-const swap = { state: 'idle', p: 0, press: 0, neu: null, old: null, dur: 0, play: false, meta: null };
+const swap = { state: 'idle', p: 0, press: 0, neu: null, old: null, dur: 0, play: false, seek: null, meta: null };
 /* Every load carries a ticket. A load spends a few hundred milliseconds waiting
    on the media element, and REINITIALIZE can land inside that window — without
    this the load would come back from the await and print itself over the reset
@@ -462,10 +523,15 @@ async function applyTrack({ title, artist, album, src, file }) {
   audioEl.src = src;
   audioEl.load();
   audioEl.currentTime = 0;
+  /* A file the visitor brought was not synthesised here, so the picture has to
+     listen to it — which needs a MediaElementSource, which file:// refuses. One
+     attempt, and its failure is the keyframe animation (see viz.js). A side of
+     the demo tape needs none of this: its bands were computed when it was. */
+  if (!sideOf(src)) viz.listen(audioEl, audio);
   cas.setProgress(0);                         // and it sits at the head again
   document.body.classList.remove('no-audio');
   audioFailed = false;
-  if (stale && stale !== src) URL.revokeObjectURL(stale);
+  if (stale && stale !== src) releaseUrl(stale);
 
   swap.meta = { title, artist, album, src, file };
   swap.state = 'arming';
@@ -522,6 +588,17 @@ function settleSwap() {
   }
   setNowChip();
   flashAdd(null);
+  // a track picked out of the programme lands on its own head once the print has
+  // committed — the same "wait for the tape, not the tape bed" rule the play
+  // flag follows. seekTo() is the one path a position is ever set through, so
+  // the rail and the counter come along without being told separately.
+  if (swap.seek != null) { const f = swap.seek; swap.seek = null; seekTo(f); }
+  // ...and the chip is re-read against where the tape actually ended up. The
+  // loop may have already written it while this load was still arming (the
+  // element carries the new src from the first await, the label only from
+  // here), so the cache is dropped rather than trusted.
+  shownTrack = null;
+  syncNowTrack();
   // a play pressed while the head was moving waits for the tape, not the tape bed
   if (swap.play) { swap.play = false; togglePlay(true); }
 }
@@ -544,7 +621,7 @@ function cancelSwap() {
     button *is* the reset, and a reset that eases into place is not a reset. */
 function reinitTrack() {
   if (swap.state !== 'idle') cancelSwap();
-  if (objUrl) { URL.revokeObjectURL(objUrl); objUrl = null; }
+  if (objUrl) { releaseUrl(objUrl); objUrl = null; }
   const T = TRACK_DEFAULT;
   currentName = T.src;
   audioEl.pause();
@@ -554,7 +631,7 @@ function reinitTrack() {
   cas.setProgress(0);
   audioFailed = false;
   Object.assign(TRACK, T);
-  const staged = cas.setLabel({ title: T.title, artist: T.artist, album: T.album, minutes: '05' });
+  const staged = cas.setLabel({ title: T.title, artist: T.artist, album: T.album, minutes: T.minutes });
   for (const e of ghosts) {
     const i = staged.old.indexOf(e.m.map);
     if (i >= 0) e.m.map = staged.neu[i];
@@ -562,9 +639,47 @@ function reinitTrack() {
   cas.commitLabel();
   for (const t of staged.old) t.dispose();
   cas.warmLabel(false);
-  swapText(brandCode, 'C—05');
+  swapText(brandCode, 'C—' + T.minutes);
   setNowChip();
   swap.dur = 0;
+}
+
+/* ---------- the demo tape's two sides -------------------------------------
+   A side is one continuous piece of audio and a track is a region of it, so
+   loading a side is applyTrack() with the side's own blob URL and nothing else:
+   the duration, the rail, the counter, the label bake and the chip all follow a
+   side for free, because they already follow a track.
+
+   ensureSide() renders on demand — side A during boot, side B the first time it
+   is asked for — and hands the same blob URL back every time after that, which
+   is why the whitelist above exists. */
+
+/** put side `i` in the shell, rewound to its head */
+async function playSide(i) {
+  const s = await ensureSide(i);
+  if (!s) return;
+  applyTrack({ title: s.label.title, artist: s.label.artist, album: s.label.album, src: s.url, file: null });
+}
+
+/** F is 翻面: the shell turns over *and* the tape changes with it — the one
+    thing a real cassette cannot do and a rendered one can. setFlip() itself is
+    left alone: the ?f=1 deep link and 重置 both call it, and neither wants a
+    load. A face is the front, B face is the back. */
+function flipSide() {
+  setFlip(!flipped);
+  playSide(flipped ? 1 : 0);
+}
+
+/** a track out of the programme: its side first, then its own head */
+async function playTrack(si, ti) {
+  const s = SIDES[si];
+  if (!s) return;
+  const k = s.tracks[ti];
+  await ensureSide(si);
+  // applyTrack runs synchronously as far as its first await, so `swap` is
+  // already armed here and the position can be handed over before the sweep
+  applyTrack({ title: s.label.title, artist: s.label.artist, album: s.label.album, src: s.url, file: null });
+  swap.seek = k.start / s.dur;
 }
 
 /* deep-linkable state:  ?v=front&x=1&f=1&t=studio&p=1&ui=0&intro=0 */
@@ -617,11 +732,11 @@ function applyQuery(camera = true) {
  *  the dossier's file numbers — they name the part, and stay with it. Only the
  *  rows move. */
 const ANNOS = [
-  { key: 'glass', side: 'left', n: '02', t: '观察窗', s: 'PC GLASS · TRANSMISSION 1.0' },
-  { key: 'shell', side: 'left', n: '01', t: '烟灰上壳', s: 'POLYCARBONATE · 1.1 mm' },
-  { key: 'hub', side: 'left', n: '05', t: '轮毂与带盘', s: 'POM · 6-SPLINE · ⌀12' },
+  { key: 'glass', side: 'left', n: '02', t: '观察窗', s: 'PC 玻璃 · 透射 1.0' },
+  { key: 'shell', side: 'left', n: '01', t: '烟灰上壳', s: '聚碳酸酯 · 1.1 mm' },
+  { key: 'hub', side: 'left', n: '05', t: '轮毂与带盘', s: 'POM · 六齿 · ⌀12' },
   { key: 'tape', side: 'left', n: '04', t: '磁带', s: 'γ-Fe₂O₃ · 3.81 mm' },
-  { key: 'screw', side: 'left', n: '03', t: '自攻螺钉', s: 'STEEL · M2 × 5 · ×5' },
+  { key: 'screw', side: 'left', n: '03', t: '自攻螺钉', s: '钢 · M2 × 5 · ×5' },
 ];
 const ui = document.querySelector('.ui');
 const lines = $('#lines');
@@ -739,6 +854,14 @@ function setTheme(name, first = false) {
   render();                               // the illumination column marks the live one
   scene.environment = envs[THEMES[name].env];
   setBackdrop(name, first);
+  /* A deep link opens *in* a room; it does not walk into it. `first` already
+     means "laid, not walked" for the IBL and the backdrop, and every other
+     ?-flag lands settled for the same reason (`?x=1`, `?f=1`: the URL exists to
+     be screenshotted, and anything that eases gets caught mid-move). The rig,
+     the exposure and the grade were the one part of a theme that still eased in
+     from whatever room the page happened to boot in — so `?t=noir` opened as a
+     studio and spent the next second and a half becoming a darkroom. */
+  if (first && rig && composer) applyTheme(0, true);
   if (rigPanels) {
     scene.remove(rigPanels);
     rigPanels.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } });
@@ -816,6 +939,9 @@ function applyTheme(dt, instant = false) {
   shadowCatcher.material.opacity = to(shadowCatcher.material.opacity, T.shadowOp);
   grade.uniforms.uHal.value = to(grade.uniforms.uHal.value, T.hal);
   const G = T.grade ?? {};
+  // the bleed's colour walks with the room, because a warm halo on a cold
+  // highlight is what makes a "cold" theme look like a filter
+  if (T.cHalTint) grade.uniforms.uHalTint.value.lerp(T.cHalTint, k);
   grade.uniforms.uGrain.value = to(grade.uniforms.uGrain.value, G.grain ?? 0.05);
   grade.uniforms.uCA.value = to(grade.uniforms.uCA.value, G.ca ?? 0.85);
   // the vignette is the one grade value a setting owns: the dial scales whatever
@@ -829,7 +955,16 @@ function applyTheme(dt, instant = false) {
   // same numbers today
   grade.uniforms.uEdge.value = to(grade.uniforms.uEdge.value, G.edge ?? 1);
   grade.uniforms.uFocus.value = to(grade.uniforms.uFocus.value, G.focus ?? 0.26);
-  if (bloom) bloom.strength = to(bloom.strength, G.bloom ?? 0.32);
+  if (bloom) bloom.strength = to(bloom.strength, (G.bloom ?? 0.32) * bloomGain);
+  /* the glare is a lens, so it belongs to the room like the lamps do: each has
+     its own colour, its own reach and its own threshold. Switching rooms walks
+     all three rather than cutting them. */
+  if (glarePass && T.glare) {
+    glarePass.uniforms.uTint.value.lerp(T.cGlare, k);
+    glarePass.uniforms.uStrength.value = to(glarePass.uniforms.uStrength.value, T.glare.strength);
+    glarePass.uniforms.uStride.value = to(glarePass.uniforms.uStride.value, T.glare.stride);
+    glarePass.uniforms.uThreshold.value = to(glarePass.uniforms.uThreshold.value, T.glare.threshold);
+  }
   if (composer?.ao) composer.ao.strength = to(composer.ao.strength, T.ao ?? 1);
   poolMat.color.lerp(T.cPool, k);
   poolMat.opacity = to(poolMat.opacity, T.poolOp);
@@ -981,7 +1116,7 @@ const nextFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeou
 function showError(msg) {
   console.error(msg);
   if (loaderLbl.parentElement) {
-    setRoll(loaderPct, 'ERR');
+    setRoll(loaderPct, '错误');
     riseText(loaderLbl, String(msg).slice(0, 160));
     loaderLbl.style.color = '#e0684a';
   }
@@ -998,8 +1133,27 @@ async function step(label, pct, fn) {
 }
 
 async function boot() {
+  /* The tape's own pressing, rendered before there is a machine to put it in.
+     Side A is the one that has to exist; side B waits until it is asked for
+     (see flipSide). Half a second of arithmetic — but it is the only step here
+     that is pure CPU, so it goes first, while the loader is already up and the
+     bar has somewhere to go. */
+  await step('正在合成演示音频', 8, async () => {
+    const side = await ensureSide(0);
+    DEMO_URLS.add(side.url);
+    Object.assign(TRACK_DEFAULT, side.label, { src: side.url, minutes: tapeMinutes(side.dur) });
+    Object.assign(TRACK, TRACK_DEFAULT);
+    currentName = side.url;
+    // the element used to be given its src by the markup, which pointed at a
+    // file the repository does not ship. Now the tape is handed to it here, and
+    // setDur() in the next step is what turns the media's own length into the
+    // counter's total.
+    audioEl.src = TRACK.src;
+    audioEl.load();
+    swapText(brandCode, 'C—' + TRACK.minutes);
+  });
   await step('正在建立几何体', 12, () => {
-    cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: '05' });
+    cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: TRACK.minutes });
     scene.add(cas.root);
     rig = createRig(scene);
     // the shell only breathes slowly, so the shadow map does not need a full
@@ -1043,7 +1197,7 @@ async function boot() {
   });
   await step('正在编译着色器', 88, () => {
     composer = createComposer(renderer, scene, camera);
-    grade = composer.grade; bloom = composer.bloom;
+    grade = composer.grade; bloom = composer.bloom; glarePass = composer.glare;
     setTheme(themeName, true);
     applyTheme(0, true);          // land the whole preset before the first frame
   });
@@ -1178,62 +1332,62 @@ let exploded = false, flipped = false, autoRotate = false;
    off the model. */
 const RECORDS = [
   {
-    no: '00', cn: '整机', en: 'MAGNETIC TAPE · TYPE II',
+    no: '00', cn: '整机', en: '磁性录音带 · II 型',
     note: '聚碳酸酯外壳，γ-Fe₂O₃ 磁层，3.81 mm 带基。工程与手感之间，一段沉默的机械。',
     spec: [['外壳', '聚碳酸酯 · 烟灰'], ['磁层', 'γ-Fe₂O₃ · 12 µm'], ['带基', 'PET · 3.81 mm'],
       ['屏蔽', '冷轧钢 · 0.8 mm'], ['轮毂', 'POM · 六齿']],
     act: '读取整机', key: null,
-    view: { theta: 0.62, phi: 1.03, radius: 33 }, viewName: '等轴机位', viewEn: 'ISOMETRIC',
+    view: { theta: 0.62, phi: 1.03, radius: 33 }, viewName: '等轴机位', viewEn: '等角投影',
   },
   {
-    no: '01', cn: '烟灰上壳', en: 'POLYCARBONATE SHELL',
+    no: '01', cn: '烟灰上壳', en: '聚碳酸酯外壳',
     note: '注塑上壳，细纹面半哑清漆。观察窗、标签与全部印刷都落在这一层。',
-    spec: [['材料', '聚碳酸酯 · 烟灰'], ['壁厚', '1.1 mm'], ['表面', '细纹 · 半哑'], ['印刷', 'SIDE A · 丝印']],
+    spec: [['材料', '聚碳酸酯 · 烟灰'], ['壁厚', '1.1 mm'], ['表面', '细纹 · 半哑'], ['印刷', 'A 面 · 丝印']],
     act: '读取上壳', key: 'shell',
-    view: { theta: 0.78, phi: 0.98, radius: 33 }, viewName: '专用机位', viewEn: 'SHELL LIFT',
+    view: { theta: 0.78, phi: 0.98, radius: 33 }, viewName: '专用机位', viewEn: '上壳抬升',
   },
   {
-    no: '02', cn: '观察窗', en: 'SMOKED WINDOW',
+    no: '02', cn: '观察窗', en: '烟灰玻璃',
     note: '烟灰 PC 玻璃，双面清漆。透光压到三成，走带清晰而不抢外壳的形。',
     spec: [['材料', 'PC 玻璃 · 烟灰'], ['透射', '0.30'], ['厚度', '0.03'], ['工艺', '双面清漆']],
     act: '读取观察窗', key: 'glass',
-    view: { theta: 0.60, phi: 0.86, radius: 33 }, viewName: '专用机位', viewEn: 'WINDOW LIFT',
+    view: { theta: 0.60, phi: 0.86, radius: 33 }, viewName: '专用机位', viewEn: '玻璃抬升',
   },
   {
-    no: '03', cn: '自攻螺钉', en: 'SELF-TAPPING SCREW',
+    no: '03', cn: '自攻螺钉', en: '十字自攻螺钉',
     note: '五颗 M2 自攻螺钉，两前两后一颗中置，直接拧入聚碳酸酯柱。',
     spec: [['规格', 'M2 × 5'], ['数量', '5 枚'], ['材料', '冷轧钢 · 镀镍'], ['分布', '四角 + 中置']],
     act: '读取螺钉', key: 'screw',
-    view: { theta: 0.45, phi: 0.80, radius: 33 }, viewName: '专用机位', viewEn: 'POD PLAN',
+    view: { theta: 0.45, phi: 0.80, radius: 33 }, viewName: '专用机位', viewEn: '螺钉平面',
   },
   {
-    no: '04', cn: '磁带', en: 'MAGNETIC TAPE',
+    no: '04', cn: '磁带', en: '磁性带基',
     note: 'γ-Fe₂O₃ 磁层涂在 3.81 mm 带基上，以 4.76 cm/s 走过磁头。',
     spec: [['磁层', 'γ-Fe₂O₃'], ['带宽', '3.81 mm'], ['带速', '4.76 cm/s'], ['带基', 'PET · 12 µm']],
     act: '读取磁带', key: 'tape',
-    view: { theta: 1.00, phi: 0.98, radius: 33 }, viewName: '专用机位', viewEn: 'RIBBON PATH',
+    view: { theta: 1.00, phi: 0.98, radius: 33 }, viewName: '专用机位', viewEn: '带路走线',
   },
   {
-    no: '05', cn: '轮毂与带盘', en: 'HUB & PACK',
+    no: '05', cn: '轮毂与带盘', en: '六齿轮毂 · 双带盘',
     note: '六齿 POM 轮毂带动带盘，半径按带面积守恒实时变化。',
     spec: [['轮毂', 'POM · 六齿'], ['轴径', '⌀12'], ['满盘半径', '⌀40.4'], ['驱动', '恒线速']],
     act: '读取轮毂', key: 'hub',
-    view: { theta: 0.88, phi: 0.76, radius: 33 }, viewName: '专用机位', viewEn: 'HUB MACRO',
+    view: { theta: 0.88, phi: 0.76, radius: 33 }, viewName: '专用机位', viewEn: '轮毂微距',
   },
 ];
 
 /* the camera's four filed vantages, independent of whatever record is open */
 const VANTAGES = [
-  { k: 'iso', cn: '等轴机位', en: 'ISOMETRIC', v: { theta: 0.62, phi: 1.03, radius: 33 } },
-  { k: 'front', cn: '正视机位', en: 'ELEVATION', v: { theta: 0.06, phi: 1.30, radius: 31 } },
-  { k: 'top', cn: '俯视机位', en: 'PLAN', v: { theta: 0.34, phi: 0.30, radius: 34 } },
-  { k: 'detail', cn: '细节特写', en: 'MACRO', v: { theta: 0.95, phi: 1.14, radius: 21 } },
+  { k: 'iso', cn: '等轴机位', en: '等角投影', v: { theta: 0.62, phi: 1.03, radius: 33 } },
+  { k: 'front', cn: '正视机位', en: '正立面', v: { theta: 0.06, phi: 1.30, radius: 31 } },
+  { k: 'top', cn: '俯视机位', en: '平面', v: { theta: 0.34, phi: 0.30, radius: 34 } },
+  { k: 'detail', cn: '细节特写', en: '微距', v: { theta: 0.95, phi: 1.14, radius: 21 } },
 ];
 
 let ri = 0, vi = 0;               // record, vantage; vi < 0 means a record's own framing
 let savedVi = 0;                  // the vantage an exploded pull-back stepped away from
 const cur = () => RECORDS[ri];
-const MACRO = VANTAGES.findIndex((v) => v.en === 'MACRO');
+const MACRO = VANTAGES.findIndex((v) => v.k === 'detail');
 
 const D = {
   colCn: $('#col-cn'), colCn2: $('#col-cn-2'), colEn: $('#col-en'),
@@ -1921,10 +2075,82 @@ function buildIndex() {
     return d;
   }));
   syncIndexSel();
+  buildTracks();               // the programme is filed under the same cover
 }
 function syncIndexSel() {
   if (!indexOpen) return;
   indexCols.querySelectorAll('.icol').forEach((c, x) => c.classList.toggle('on', x === ri));
+}
+
+/* ---------- the programme, filed in the same overlay ----------------------
+   A cassette's own label *is* a track list, so this is a second rack in 目录
+   rather than a panel of its own: no new button, no new key, no new overlay —
+   the same cards the index already draws, one per track. */
+const trackCols = $('#track-cols'), trackSub = $('#track-sub');
+let shownTrack = null;                 // the track the chip is currently reading
+
+const mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+function buildTracks() {
+  const cards = [];
+  for (let si = 0; si < SIDES.length; si++) {
+    const s = SIDES[si];
+    for (let ti = 0; ti < s.tracks.length; ti++) {
+      const k = s.tracks[ti];
+      const d = document.createElement('div');
+      d.className = 'icol';
+      d.dataset.track = `${s.id}${ti}`;
+      d.style.setProperty('--i', cards.length);       // the same cascade the records get
+      const h = document.createElement('button');
+      h.className = 'icol-h';
+      h.innerHTML = `<span>${k.no} ${k.title}</span><em>${mmss(k.len)}</em>`;
+      h.addEventListener('click', () => { closeIndex(); playTrack(si, ti); });
+      d.appendChild(h);
+      const ul = document.createElement('ul');
+      ul.className = 'spec';
+      ul.replaceChildren(...[
+        ['所在面', `${s.cn} · ${s.label.title}`],
+        ['起始', mmss(k.start)],
+        ['时长', mmss(k.len)],
+      ].map(([a, b]) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${a}</span><b>${b}</b>`;
+        return li;
+      }));
+      d.appendChild(ul);
+      cards.push(d);
+    }
+  }
+  trackCols.replaceChildren(...cards);
+  trackSub.textContent = `${SIDES.length} 面 · ${cards.length} 首`;
+  syncTrackSel();
+}
+
+/** which card is lit: the side the audio element is holding, and the track the
+    tape is standing on inside it */
+function syncTrackSel() {
+  const side = sideOf(audioEl.currentSrc || audioEl.src);
+  const cur = side && shownTrack ? `${side.id}${side.tracks.indexOf(shownTrack)}` : null;
+  trackCols.querySelectorAll('.icol').forEach((c) => c.classList.toggle('on', c.dataset.track === cur));
+}
+
+/* The chip follows the tape's own position rather than whatever was last
+   loaded: a side is one continuous piece of audio, so "which track is playing"
+   is a question only currentTime can answer. It writes DOM only — TRACK belongs
+   to settleSwap, and two writers for one value is how the label ends up
+   disagreeing with the chip. */
+function syncNowTrack() {
+  const side = sideOf(audioEl.currentSrc || audioEl.src);
+  const k = side ? trackAt(side, audioEl.currentTime) : null;
+  if (k === shownTrack) return;
+  shownTrack = k;
+  if (!k) return;
+  swapText($('#now-title'), k.title);
+  // the side's own label, not TRACK's: applyTrack() arms the element long before
+  // settleSwap() commits the new TRACK, and this runs on the loop's clock in
+  // between — reading TRACK here would print the side being left behind
+  swapText($('#now-sub'), [side.label.artist, side.label.album].filter(Boolean).join(' · '));
+  syncTrackSel();
 }
 function openIndex() {
   indexOpen = true;
@@ -1963,7 +2189,7 @@ const PREF_KEY = 'ohmtape.prefs';
    an older generation is not read back — once — while every other switch is still
    whatever the visitor left it at. */
 const PREF_V = 2;
-const prefs = { intro: true, loop: true, hiss: true, keys: true, mirror: true, vig: 0.5 };
+const prefs = { intro: true, loop: true, hiss: true, keys: true, mirror: true, fast: false, viz: true, glare: true, vig: 0.5 };
 try {
   const saved = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
   const stale = saved.v !== PREF_V;
@@ -1976,23 +2202,47 @@ try {
 const savePrefs = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify({ v: PREF_V, ...prefs })); } catch { /* nothing to do */ } };
 
 const SETTINGS = [
-  { k: 'intro', cn: '开场动画', en: 'OPENING MOVE', note: '打开时那 3.4 秒的推轨与浮起，下次打开生效。' },
-  { k: 'loop', cn: '循环播放', en: 'AUTO REVERSE', note: '放完自动倒带重放；关掉则倒回开头停住。' },
-  { k: 'hiss', cn: '磁带底噪', en: 'TAPE BED', note: '走带时的嘶声与马达嗡声，不含换向声与旋钮声。' },
-  { k: 'keys', cn: '按键提示', en: 'KEY LEGEND', note: '底部那行快捷键说明。' },
-  { k: 'mirror', cn: '地面镜像', en: 'FLOOR MIRROR', note: '地面实时反射，关掉可省一整遍场景渲染。' },
-  { k: 'vig', cn: '暗角', en: 'VIGNETTE', dial: true, note: '画面四周压暗，像镜头前的遮光罩。滑条调的是强度，三套灯光各留自己的深浅。' },
+  { k: 'intro', cn: '开场动画', en: '入场推轨', note: '打开时那 3.4 秒的推轨与浮起，下次打开生效。' },
+  { k: 'loop', cn: '循环播放', en: '自动换向', note: '放完自动倒带重放；关掉则倒回开头停住。' },
+  { k: 'hiss', cn: '磁带底噪', en: '磁带底声', note: '走带时的嘶声与马达嗡声，不含换向声与旋钮声。' },
+  { k: 'keys', cn: '按键提示', en: '快捷键说明', note: '底部那行快捷键说明。' },
+  { k: 'mirror', cn: '地面镜像', en: '地面反射', note: '地面实时反射，关掉可省一整遍场景渲染。' },
+  { k: 'viz', cn: '音频联动', en: '声画同步', note: '走带时频谱柱、浮尘与辉光跟随音乐起伏。关掉画面回到匀速，柱条仍会自己动。' },
+  { k: 'glare', cn: '镜头眩光', en: '横向光条', note: '亮处被镜头拉成的那道横条，三套灯光各留自己的色与长短。关掉画面更干净。' },
+  { k: 'fast', cn: '性能模式', en: '降一档渲染', note: '渲染分辨率 1.5× → 1.1×，并关掉超采样与地面反射。帧率不够时打开，画面会软一点。' },
+  { k: 'vig', cn: '暗角', en: '四周压暗', dial: true, note: '画面四周压暗，像镜头前的遮光罩。滑条调的是强度，三套灯光各留自己的深浅。' },
 ];
 
 /** what a switch does. `intro` is read once by the boot flow and `loop` where the
     tape runs out, so neither has anything to do here — and `vig` needs nothing
     either: applyTheme() reads it every frame, so the vignette walks itself out
-    on the next one. */
+    on the next one. `viz` is the same story, read by vizOn() on the loop's
+    clock. `fast` changes what the GPU is asked for, so it re-runs the
+    resize — that is the one path that actually re-sizes the buffers — and then
+    settles the mirror, which it also takes away. */
 function applyPref(k) {
   if (k === 'hiss') audio.setLevel(bedLevel());
   else if (k === 'keys') document.body.classList.toggle('keys-off', !prefs.keys);
-  else if (k === 'mirror') floorBase.setEnabled(prefs.mirror && quality > 0.8);
+  else if (k === 'mirror') floorBase.setEnabled(mirrorOn());
+  else if (k === 'glare') { if (glarePass) glarePass.enabled = glareOn(); }
+  else if (k === 'fast') { onResize(); floorBase.setEnabled(mirrorOn()); if (glarePass) glarePass.enabled = glareOn(); }
 }
+/* the mirror is a whole extra scene render every frame, so it is the first thing
+   to go — and the first thing to come back, but only when nothing else is asking
+   for headroom: the render scale is at full and 性能模式 is off. */
+const mirrorOn = () => prefs.mirror && !prefs.fast && quality > 0.8;
+/* The picture's own switch. It is deliberately *not* tied to `quality`: what it
+   costs is four inline heights and a four-byte read, and pulling the beat out of
+   the frame is a much bigger change than the frame being soft. 性能模式 still
+   takes it away, because that switch means "stop adding things". */
+const vizOn = () => prefs.viz && !prefs.fast;
+/* The glare's own switch. Twelve texture taps across the whole frame is not
+   nothing, so 性能模式 takes it away with everything else — but `quality` does
+   not, because quality already scales the buffer this pass reads, which scales
+   the pass with it. Switching the pass off outright (rather than setting its
+   strength to zero) is what actually saves the taps: EffectComposer skips a
+   disabled pass entirely. */
+const glareOn = () => prefs.glare && !prefs.fast;
 function applyPrefs() { for (const k of Object.keys(prefs)) applyPref(k); }
 
 const settingsEl = $('#settings'), setList = $('#set-list'), settingsBtn = $('#btn-settings');
@@ -2170,7 +2420,7 @@ $('#btn-mute').addEventListener('wheel', (e) => {
 }, { passive: false });
 setVolume(volume, { flash: false });
 $('#btn-explode').addEventListener('click', () => { setExplode(!exploded); audio.tick(); render(); });
-$('#btn-flip').addEventListener('click', () => { setFlip(!flipped); audio.tick(); render(); });
+$('#btn-flip').addEventListener('click', () => { flipSide(); audio.tick(); render(); });
 $('#theme').addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (b) { setTheme(b.dataset.theme); audio.tick(); document.body.classList.add('moved'); }
@@ -2348,7 +2598,7 @@ addEventListener('keydown', (e) => {
   if (k === ' ') { e.preventDefault(); togglePlay(); render(); return; }
   const l = k.toLowerCase();
   if (l === 'e') setExplode(!exploded);
-  else if (l === 'f') setFlip(!flipped);
+  else if (l === 'f') flipSide();
   else if (l === 'a') setAuto(!autoRotate);
   else if (l === 'm') { setMute(!muted); showVolume(); }
   else if (l === 'i') toggleIndex();
@@ -2472,9 +2722,9 @@ function watchPerf(dt) {
   perfAcc += dt; perfN++;
   fps = fps ? fps * 0.94 + (1 / Math.max(dt, 1e-3)) * 0.06 : 1 / Math.max(dt, 1e-3);
   if (perfEl && (perfN & 3) === 0) {
-    perfEl.textContent = `${fps.toFixed(0)} fps · js ${jsMs.toFixed(2)} ms · dpr×${quality.toFixed(1)} · `
-      + `${floorBase ? (floorBase.mesh.visible ? 'mirror' : 'no-mirror') : ''} `
-      + `· off ${viewShift.toFixed(3)}→${viewShiftTarget.toFixed(3)}`;
+    perfEl.textContent = `${fps.toFixed(0)} 帧/秒 · JS ${jsMs.toFixed(2)} 毫秒 · 像素比×${quality.toFixed(1)} · `
+      + `${floorBase ? (floorBase.mesh.visible ? '镜像开' : '镜像关') : ''} `
+      + `· 位移 ${viewShift.toFixed(3)}→${viewShiftTarget.toFixed(3)}`;
   }
   if (perfAcc < 2.5) return;
   const avg = perfAcc / perfN;
@@ -2488,7 +2738,7 @@ function watchPerf(dt) {
       qualityCeil = Math.min(qualityCeil, quality);
       onResize();
     }
-    if (quality <= 0.8 || !prefs.mirror) floorBase.setEnabled(false);   // the mirror goes first
+    if (!mirrorOn()) floorBase.setEnabled(false);   // the mirror goes first
     perfSkip = 1;
   } else if (avg < 0.018 && quality < qualityCeil) {
     if (++goodWindows >= 2) {
@@ -2498,7 +2748,7 @@ function watchPerf(dt) {
       perfSkip = 1;
       // the mirror is a whole extra scene render every frame: only the full
       // rate can be asked to pay for it
-      if (quality >= 1) floorBase.setEnabled(prefs.mirror);
+      if (quality >= 1) floorBase.setEnabled(mirrorOn());
     }
   } else {
     goodWindows = 0;
@@ -2506,16 +2756,32 @@ function watchPerf(dt) {
 }
 function onResize() {
   const w = innerWidth, h = innerHeight;
-  const dpr = Math.min(devicePixelRatio || 1, 2) * quality;
+  const cap = prefs.fast ? 1.1 : DPR_CAP;
+  const dpr = Math.min(devicePixelRatio || 1, cap) * quality;
   camera.aspect = w / h;
   renderer.setPixelRatio(dpr);
   renderer.setSize(w, h, false);
   camera.updateProjectionMatrix();
-  // supersample when there is GPU headroom to spare (downsampled by the last pass)
+  /* Supersample only when the buffer is genuinely small. A 2× display already
+     has four times the pixels of a 1× one, and asking 1.25× on top of that put
+     an ordinary 1080p laptop panel at thirteen megapixels with 4× MSAA and a
+     96-sample AO over it. Three megapixels is the line: a 1× 1080p window
+     (2.1 Mpx) still gets its supersample, a 2× one (3.9 Mpx) does not. */
   const px = w * dpr * h * dpr;
-  const ss = px > 9.0e6 ? 1 : 1.25;
+  const ss = (prefs.fast || px > 3.0e6) ? 1 : 1.25;
   const bw = Math.round(w * dpr * ss), bh = Math.round(h * dpr * ss);
-  if (composer) composer.composer.setSize(bw, bh);
+  if (composer) {
+    /* EffectComposer.setSize() multiplies whatever it is handed by its own
+       `_pixelRatio`, and the ratio it captured at boot is the *device's*, not
+       the render scale. `bw`/`bh` below are already device pixels, so passing
+       them through scaled the whole chain a second time: on a 2× panel at 1080p
+       the 4×-MSAA beauty target, the 96-sample AO, the five bloom mips and the
+       grade were all running over thirteen megapixels — and that, not the
+       geometry, is where the frame rate went. Pin the ratio to 1 and `bw × bh`
+       is the real buffer, which is also what `uTexel` below assumes. */
+    composer.composer.setPixelRatio(1);
+    composer.composer.setSize(bw, bh);
+  }
   if (bloom) bloom.setSize(bw, bh);
   floorBase.setSize(w, h);
   if (grade) grade.uniforms.uTexel.value.set(1 / bw, 1 / bh);
@@ -2603,13 +2869,23 @@ function loop() {
     intro.spin -= dt;
   }
 
+  /* The picture follows the sound. One read a frame, before the dust moves, so
+     the drift and the bars are looking at the same beat — and it is taken even
+     when there is nothing to follow, because the envelope has to be allowed to
+     fall back to rest rather than freezing where it was. A rewind is excluded
+     the same way a stopped tape is: the bars are flat on purpose there. */
+  const lv = viz.update(dt, audioEl,
+    vizOn() && !reduce && mode !== 'rew' && audioOk() && !audioEl.paused && !audioEl.ended);
+  bloomGain = viz.beat;
+
   // idle life
   const bob = reduce ? 0 : Math.sin(t * 0.62) * 0.055 + Math.sin(t * 1.71) * 0.012;
   cas.root.position.y = intro.y + bob - swap.press;   // ...and pressed down under the write head
   cas.root.rotation.z = intro.tilt + (reduce ? 0 : Math.sin(t * 0.42) * 0.008);
   cas.root.rotation.x = reduce ? 0 : Math.sin(t * 0.33 + 1.2) * 0.006;
   if (!reduce) {
-    driftDust(dt, t);
+    // the same drift, with more of it while the low end is loud
+    driftDust(dt * (1 + 0.6 * lv[0]), t);
   }
 
   // the environment drifts almost imperceptibly, so highlights crawl across
@@ -2658,6 +2934,9 @@ function loop() {
     const d = new Date();
     const cs = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
     setRoll(clockEl, cs);
+    // which of the side's tracks the tape is on — same throttle as the counter,
+    // because it is the same question the counter is already asking
+    syncNowTrack();
     // tab title doubles as a transport read-out
     const audioLive = audioOk() && !audioEl.paused && !audioEl.ended;
     // writing document.title re-titles the native window every time; only do it

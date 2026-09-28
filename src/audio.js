@@ -1,6 +1,6 @@
 /** tape transport sound : hiss + motor hum + soft capstan whir */
 export class TapeAudio {
-  constructor() { this.ctx = null; this.on = false; this.level = 0.42; }
+  constructor() { this.ctx = null; this.on = false; this.level = 0.42; this.media = null; }
 
   /** master level — ducked while the music plays */
   setLevel(v) {
@@ -89,6 +89,35 @@ export class TapeAudio {
       a page error in the loader. */
   _resume() {
     try { this.ctx.resume?.().catch?.(() => {}); } catch { /* no context yet */ }
+  }
+
+  /** Route a media element through an analyser, so the picture can follow a
+      track this page did not synthesise. Returns the analyser, or null when the
+      browser refuses — which is the ordinary outcome under file://, where a
+      media element cannot be pulled into Web Audio at all.
+
+      The element keeps its own path to the speakers either way: the source node
+      is wired straight to the destination, *not* through `master`, because the
+      tape bed's gain has no business muting the visitor's music. Once this has
+      been called the element no longer reaches the speakers on its own, which
+      is why a context that has not been resumed is the one thing that could
+      silence it — so resume first.
+
+      Called at most once per element: a second MediaElementSource on the same
+      element is an error, and the page only ever has one. */
+  attachMedia(el) {
+    if (this.media) return this.media;
+    if (!this._ensure()) return null;
+    this._resume();
+    try {
+      const src = this.ctx.createMediaElementSource(el);
+      const an = this.ctx.createAnalyser();
+      an.fftSize = 512;                    // 256 bins across 0..nyquist
+      an.smoothingTimeConstant = 0.7;
+      src.connect(an).connect(this.ctx.destination);
+      this.media = an;
+    } catch { this.media = null; }         // file:// and cross-origin land here
+    return this.media;
   }
 
   start() {

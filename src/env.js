@@ -42,6 +42,26 @@ const PRESET = {
       { w: 22, h: 22, c: [0.10, 0.09, 0.08], p: [0, -9, 0] },        // bounce
     ],
   },
+  /* Underwater, and the one room where the *colour of the light* is the whole
+     story. Water takes the red end out first, so nothing that arrives at the
+     subject is neutral: every emitter here is blue-green by construction, and
+     the dome is a gradient of depth rather than a tint. The two thin panels are
+     shafts — a surface a long way up, seen through a column of water that is
+     itself lit, which is why they are strips and not squares. */
+  abyss: {
+    sigma: 0.032,
+    dome: [[0, '#123f52'], [0.38, '#0b2836'], [0.72, '#061723'], [1, '#020910']],
+    panels: [
+      { w: 26, h: 18, c: [1.35, 2.55, 3.10], p: [0, 14, 1] },        // the surface itself
+      { w: 1.0, h: 34, c: [1.25, 2.30, 2.85], p: [-4.6, 7, -11] },   // a shaft
+      { w: 0.9, h: 30, c: [0.70, 1.35, 1.80], p: [5.2, 7, -12] },    // ...and a dimmer one
+      { w: 15, h: 11, c: [0.42, 0.86, 1.16], p: [10, 1.4, 6] },      // cold fill
+      { w: 13, h: 13, c: [0.30, 0.60, 0.80], p: [-9, 2.4, 7] },      // ...from the other side
+      { w: 2.4, h: 2.4, c: [1.70, 2.90, 3.40], p: [-6.4, 10.5, 8] }, // a mote of surface light
+      { w: 1.6, h: 1.6, c: [0.60, 1.15, 1.55], p: [8.5, 5, -7] },    // cool kicker
+      { w: 20, h: 20, c: [0.06, 0.11, 0.15], p: [0, -9, 1] },        // the floor of it
+    ],
+  },
 };
 
 export function createEnvironments(renderer) {

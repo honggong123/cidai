@@ -112,7 +112,16 @@
 @property --sheet-a { syntax: '<percentage>'; inherits: true; initial-value: 78%; }
 
 /* ---------- the lamps-off variant ---------- */
-[data-theme="noir"] {
+/* `html[…]`, not `[…]`. The three buttons of the segmented control carry
+   `data-theme` themselves — that is how the click handler knows which room to
+   enter — so a bare attribute selector also matched the buttons, and each one
+   re-declared the whole token set on itself. The result was that a button was
+   always painted in the room it *names* rather than the room you are standing
+   in: in studio the 暗房 and 深海 labels resolved to noir's and abyss's near-white
+   ink and vanished into the pale plate, and in abyss 暗房 and 影棚 resolved to
+   studio's and noir's dark ink and sank into the blue. Only the live button
+   looked right, and only because `.on` paints it from the other two tokens. */
+html[data-theme="noir"] {
   --paper: #08090b;
   --ink: #f2efe9;
   --ink-dim: rgba(242, 239, 233, .74);
@@ -133,7 +142,7 @@
   --sheet-line: rgba(242, 239, 233, .11);
   --sheet-hi: rgba(255, 255, 255, .07);
 }
-[data-theme="studio"] {
+html[data-theme="studio"] {
   --paper: #e6e9ed;
   --ink: #14161a;
   --ink-dim: rgba(20, 22, 26, .72);
@@ -153,6 +162,34 @@
   --sheet-a: 78%;
   --sheet-line: rgba(20, 22, 26, .13);
   --sheet-hi: rgba(255, 255, 255, .55);
+}
+/* The dark room, in blue rather than in black. `--paper` is the plate's own
+   colour, so this is where the theme is decided: at #08090b (noir) the page is
+   a page in the dark, at #0a1620 it is a page under water. Everything else
+   follows — the ink has the same blue in it, and the accent is the light that
+   gets down here, which is why it is the one token that moves a long way from
+   both other rooms. The accent tab on the now-chip stays #d0783a in all three:
+   like the C—05 plate, it is the machine rather than the room. */
+html[data-theme="abyss"] {
+  --paper: #0a1620;
+  --ink: #e4f1f8;
+  --ink-dim: rgba(228, 241, 248, .74);
+  --ink-faint: rgba(228, 241, 248, .62);
+  --ink-ghost: rgba(228, 241, 248, .30);
+  --hair: rgba(228, 241, 248, .16);
+  --hair-soft: rgba(228, 241, 248, .08);
+  --accent: #5fb4dc;
+  --accent-soft: rgba(95, 180, 220, .16);
+  --accent-line: rgba(95, 180, 220, .55);
+  --chip-bg: rgba(6, 20, 30, .94);
+  --chip-ink: #e6f3fa;
+  --chip-hair: rgba(150, 215, 245, .22);
+  --shadow: rgba(0, 5, 10, .62);
+
+  --sheet-tint: #0d1f2b;
+  --sheet-a: 74%;
+  --sheet-line: rgba(228, 241, 248, .11);
+  --sheet-hi: rgba(180, 232, 255, .07);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -631,7 +668,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
 
 /* ============================ now playing ============================== */
 .now {
-  position: absolute; left: var(--pad); bottom: 9.375rem;
+  position: absolute; left: var(--pad); bottom: 8.625rem;
   display: inline-flex; align-items: center; gap: 0.75rem;
   padding: 0.5625rem 1rem 0.625rem 0.8125rem; border-radius: 3px;
   background: var(--chip-bg); color: var(--chip-ink);
@@ -660,6 +697,13 @@ body.playing .eq i:nth-child(4) { animation-delay: .54s; }
 body.rewinding .now b { opacity: .45; }
 body.rewinding .counter b { color: var(--accent); }
 body.rewinding .eq i { animation: none; height: 0.1875rem; }
+/* When the bars are driven from the audio (see viz.js) the keyframe loop is
+   taken away, and so is the height transition — the heights arrive every frame
+   and a transition would only lag them. Opacity keeps its own, because that is
+   the part still being told to change by a class. The class is only ever on
+   while there is something to follow, so a tape with no analysis keeps the
+   animation above and the bars still move on their own. */
+body.eq-live .eq i { animation: none; transition: opacity var(--t-med) var(--e-out); }
 body.no-audio .now { opacity: .72; }
 
 /* ============================ deck ====================================
@@ -675,6 +719,7 @@ body.no-audio .now { opacity: .72; }
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: end; gap: 1.375rem 2.5rem;
 }
+
 .sel { justify-self: start; }
 .deck-right { justify-self: end; }
 .sel-num { display: flex; align-items: baseline; gap: 0.5rem; margin-top: 0.5rem; }
@@ -731,21 +776,24 @@ body.no-audio .now { opacity: .72; }
 }
 
 .deck-right { display: flex; align-items: flex-end; min-width: 0; }
-/* the console. Two rows: what is doing, and where in the tape. The rail gets a
-   whole row to itself — a scrubber squeezed between two buttons is a slider,
-   and this is the one control that answers "how much is left". */
+/* The console. One row: play, the counter, the rail, then the switches — all of
+   them bare on the frame.
+   It used to be a boxed card, two rows deep: a hairline, a tint of the plate
+   above it, and a rail on a row of its own. The box was saying nothing the plate
+   had not already said, and whenever the band and the dossier met at the bottom
+   of a short window that rectangle painted a bright slab straight across the
+   panel's last rows — the console is printed on the frame, so it now reads as
+   part of it. The rail also moved up beside the counter, which is where a
+   transport puts it, and takes a row off the band's height with it. */
 .transport {
   display: grid; align-items: center;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  grid-template-areas: "play counter icons" "track track track";
-  gap: 0.625rem 0.875rem;
-  border: 1px solid var(--hair-soft); border-radius: var(--r);
-  padding: 0.5625rem 0.8125rem 0.75rem;
-  background: color-mix(in srgb, var(--sheet-tint) calc(var(--sheet-a) * .55), transparent);
-  /* no backdrop blur here on purpose: the plate above carries one, and a second
-     always-visible blur is a per-frame compositor pass over the whole canvas for
-     a difference the console's flat tint already makes. */
-  /* no colour transition here: the plate's tint, line, highlight and shadow are
+  grid-template-columns: auto auto minmax(6.5rem, 1fr) auto;
+  grid-template-areas: "play counter track icons";
+  gap: 0 0.875rem;
+  /* no backdrop blur and no tint here on purpose: the plate above carries both,
+     and a second always-visible layer is a per-frame compositor pass over the
+     whole canvas for a difference nothing on screen makes. */
+  /* no colour transition either: the plate's tint, line, highlight and shadow are
      all tokens, and the tokens themselves are what animates (see @property) —
      reading the same change twice would just double the easing */
 }
@@ -802,7 +850,12 @@ body.playing .tc-btn .ico-pause { opacity: 1; transform: none; }
 .counter i, .counter span { font-size: 0.6875rem; font-style: normal; color: var(--ink-faint); transition: color .45s var(--e-out); }
 .tc-ico {
   appearance: none; display: grid; place-items: center; width: 1.6875rem; height: 1.6875rem; padding: 0;
-  border: 1px solid var(--hair); border-radius: 50%; background: transparent; color: var(--ink-dim);
+  /* the ring is transparent at rest on purpose: the reference deck shows the
+     four glyphs bare, and a ring on all four at once reads as a row of buttons
+     sitting on the plate rather than as marks printed on it. The ring is still
+     there to be revealed — hover and the switched-on state bring it back — so
+     the hit area and the "which one is live" cue are both unchanged. */
+  border: 1px solid transparent; border-radius: 50%; background: transparent; color: var(--ink-dim);
   cursor: pointer; position: relative;
   transition: color var(--t-swift) var(--e-out), border-color var(--t-swift) var(--e-out),
               background var(--t-swift) var(--e-out), transform var(--t-press) var(--e-out);
@@ -1049,6 +1102,9 @@ body.keys-off .hud-c { max-height: 0; opacity: 0; pointer-events: none; }
 .set-dial input[type="range"]:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
 
 .index-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.375rem 2.625rem; margin-top: 1.75rem; }
+/* the track list is the second rack in the same overlay: the record's own
+   program, filed under the same rules as its parts */
+#track-top { margin-top: 2.25rem; }
 .icol {
   display: flex; flex-direction: column;
   animation: cascadeIn .55s var(--e-out) both; animation-delay: calc(var(--i, 0) * 45ms);
@@ -1224,16 +1280,22 @@ body.ready .dossier { opacity: 1; transform: none; }
 
 /* ---------- more contrast, on request ---------- */
 @media (prefers-contrast: more) {
-  :root, [data-theme="studio"] {
+  :root, html[data-theme="studio"] {
     --ink-faint: rgba(20, 22, 26, .82);
     --hair: rgba(20, 22, 26, .38);
     --hair-soft: rgba(20, 22, 26, .2);
     --sheet-a: 94%;
   }
-  [data-theme="noir"] {
+  html[data-theme="noir"] {
     --ink-faint: rgba(242, 239, 233, .82);
     --hair: rgba(242, 239, 233, .4);
     --hair-soft: rgba(242, 239, 233, .22);
+    --sheet-a: 94%;
+  }
+  html[data-theme="abyss"] {
+    --ink-faint: rgba(228, 241, 248, .82);
+    --hair: rgba(228, 241, 248, .40);
+    --hair-soft: rgba(228, 241, 248, .22);
     --sheet-a: 94%;
   }
   .frame { border-color: var(--hair); }

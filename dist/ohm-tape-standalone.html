@@ -1,3 +1,1530 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="studio">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OHM TAPE — 磁带</title>
+<style>
+/* ============================================================
+   OHM TAPE — archive terminal
+   ============================================================
+   The page is a records terminal: a masthead, a dossier on the
+   subject, and a deck of index controls along the bottom. It is
+   laid out like a printed archive slip — hairline rules, wide
+   tracked micro-labels, one very large numeral per block — and it
+   is wired to the 3D scene, not decoration over it. Every control
+   here maps to a "file" you can select and read.
+
+   Two ideas hold the whole sheet together:
+
+   1. THE RECORD IS A SHEET, THE SCENE IS NOT. Everything the page
+      says in words is printed on one translucent plate that hangs
+      over the right third. Before it, the type sat straight on the
+      lit background: legible only because the tape happened to
+      stay on the left, and grey-on-grey wherever the floor was
+      bright. The plate gives the record its own value, so contrast
+      no longer depends on where the camera is — and the tape can
+      pass behind it, which is what a document over a photograph
+      has always done.
+
+   2. ONE STATE LATTICE, EVERYWHERE. rest → hover → press → focus →
+      on. Hover is always the accent; press is always a 1px sink;
+      focus is always the same accent hairline, offset, never
+      colour alone. Nothing on this page is decoration.
+   ============================================================ */
+
+/* ============================ tokens =================================== */
+:root {
+  --sans: "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei UI", "PingFang SC", sans-serif;
+  /* an optical display cut for the few things set large. Segoe UI Variable
+     Display is a real optical size; where it is absent the stack falls back to
+     the text face, which at these weights still reads as a display. */
+  --disp: "Segoe UI Variable Display", "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei UI", sans-serif;
+  --mono: "Cascadia Mono", "JetBrains Mono", Consolas, "Microsoft YaHei UI", "PingFang SC", ui-monospace, monospace;
+
+  /* type scale — one step per job, nothing ad-hoc */
+  --fs-micro: 0.59375rem;        /* kbd chips, table slugs */
+  --fs-label: 0.65625rem;       /* tracked micro-labels */
+  --fs-ui: 0.71875rem;          /* buttons, hud */
+  --fs-body: 0.78125rem;        /* record prose, list rows */
+  --fs-cn: clamp(0.9375rem, 1.12vw, 1.125rem);
+  --fs-h: clamp(1.1875rem, 1.72vw, 1.875rem);   /* the file number */
+  --fs-num: clamp(1.875rem, 3.7vw, 3.5rem);  /* ARCHIVE / SELECT */
+
+  /* tracking — wide for small caps, negative for display. Optical, not fixed */
+  --tr-micro: .22em;
+  --tr-label: .18em;
+  --tr-ui: .16em;
+  --tr-body: .04em;
+
+  /* motion — four speeds and three curves is the whole vocabulary */
+  --t-press: .12s;
+  --t-fast: .22s;
+  --t-swift: .34s;
+  --t-med: .5s;
+  --t-slow: .68s;
+  --e-out: cubic-bezier(.16, 1, .3, 1);
+  --e-inout: cubic-bezier(.4, 0, .2, 1);
+  --e-spring: cubic-bezier(.22, 1.25, .36, 1);
+
+  /* geometry */
+  --pad: clamp(1.375rem, 3vw, 2.75rem);
+  --sheet-pad-x: 1.5rem;
+  --sheet-pad-t: 1.375rem;
+  --sheet-pad-b: 1.375rem;
+  --blur: 1.125rem;
+  --r: 0.125rem;
+  /* the widest the record plate is ever allowed to get. Past this it stops
+     growing and the room between the subject and the plate does the widening
+     instead — a 1100px-wide slip of paper reads as an empty slab, not a record
+     (it is a rem length, so the cap itself grows with the root size). */
+  --plate-max: 47rem;
+
+  /* the plate's own line and edge highlight, overridden per theme */
+  --sheet-tint: #eef0f3;
+  --sheet-a: 78%;
+  --sheet-line: rgba(20, 22, 26, .13);
+  --sheet-hi: rgba(255, 255, 255, .55);
+  --sh-sheet: 0 1.625rem 4rem -2.375rem var(--shadow), 0 0.1875rem 0.875rem -0.5rem var(--shadow);
+}
+
+/* ---------- the lamps, and how they go out ----------
+   A theme is eighteen custom properties, and CSS cannot transition an
+   unregistered custom property — so before this, swapping `data-theme` changed
+   every token in a single frame. The body cross-faded over 0.9s while the plate,
+   the console, the two overlays and every hairline they carry snapped to the new
+   room. Registering each one gives it a type and an initial value, which makes it
+   animatable, so the transition can live on the root and *everything* that reads
+   a token follows — including values that cannot be interpolated any other way:
+   gradient stops, color-mix() results, box-shadows, backdrop tints, the inset
+   highlight on the paper. One declaration instead of a per-element list that
+   would have to be kept in sync with every rule added later. */
+@property --paper { syntax: '<color>'; inherits: true; initial-value: #e6e9ed; }
+@property --ink { syntax: '<color>'; inherits: true; initial-value: #14161a; }
+@property --ink-dim { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .72); }
+@property --ink-faint { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .62); }
+@property --ink-ghost { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .32); }
+@property --hair { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .19); }
+@property --hair-soft { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .1); }
+@property --accent { syntax: '<color>'; inherits: true; initial-value: #8d4712; }
+@property --accent-soft { syntax: '<color>'; inherits: true; initial-value: rgba(141, 71, 18, .11); }
+@property --accent-line { syntax: '<color>'; inherits: true; initial-value: rgba(141, 71, 18, .5); }
+@property --chip-bg { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .93); }
+@property --chip-ink { syntax: '<color>'; inherits: true; initial-value: #f1f2f4; }
+@property --chip-hair { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .16); }
+@property --shadow { syntax: '<color>'; inherits: true; initial-value: rgba(36, 40, 48, .3); }
+@property --sheet-tint { syntax: '<color>'; inherits: true; initial-value: #eef0f3; }
+@property --sheet-line { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .13); }
+@property --sheet-hi { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .55); }
+@property --sheet-a { syntax: '<percentage>'; inherits: true; initial-value: 78%; }
+
+/* ---------- the lamps-off variant ---------- */
+/* `html[…]`, not `[…]`. The three buttons of the segmented control carry
+   `data-theme` themselves — that is how the click handler knows which room to
+   enter — so a bare attribute selector also matched the buttons, and each one
+   re-declared the whole token set on itself. The result was that a button was
+   always painted in the room it *names* rather than the room you are standing
+   in: in studio the 暗房 and 深海 labels resolved to noir's and abyss's near-white
+   ink and vanished into the pale plate, and in abyss 暗房 and 影棚 resolved to
+   studio's and noir's dark ink and sank into the blue. Only the live button
+   looked right, and only because `.on` paints it from the other two tokens. */
+html[data-theme="noir"] {
+  --paper: #08090b;
+  --ink: #f2efe9;
+  --ink-dim: rgba(242, 239, 233, .74);
+  --ink-faint: rgba(242, 239, 233, .62);
+  --ink-ghost: rgba(242, 239, 233, .30);
+  --hair: rgba(242, 239, 233, .17);
+  --hair-soft: rgba(242, 239, 233, .085);
+  --accent: #dd9152;
+  --accent-soft: rgba(221, 145, 82, .15);
+  --accent-line: rgba(221, 145, 82, .55);
+  --chip-bg: rgba(242, 239, 233, .95);
+  --chip-ink: #131110;
+  --chip-hair: rgba(0, 0, 0, .16);
+  --shadow: rgba(0, 0, 0, .55);
+
+  --sheet-tint: #101217;
+  --sheet-a: 74%;
+  --sheet-line: rgba(242, 239, 233, .11);
+  --sheet-hi: rgba(255, 255, 255, .07);
+}
+html[data-theme="studio"] {
+  --paper: #e6e9ed;
+  --ink: #14161a;
+  --ink-dim: rgba(20, 22, 26, .72);
+  --ink-faint: rgba(20, 22, 26, .62);
+  --ink-ghost: rgba(20, 22, 26, .32);
+  --hair: rgba(20, 22, 26, .19);
+  --hair-soft: rgba(20, 22, 26, .095);
+  --accent: #8d4712;
+  --accent-soft: rgba(141, 71, 18, .11);
+  --accent-line: rgba(141, 71, 18, .5);
+  --chip-bg: rgba(20, 22, 26, .93);
+  --chip-ink: #f1f2f4;
+  --chip-hair: rgba(255, 255, 255, .16);
+  --shadow: rgba(36, 40, 48, .3);
+
+  --sheet-tint: #eef0f3;
+  --sheet-a: 78%;
+  --sheet-line: rgba(20, 22, 26, .13);
+  --sheet-hi: rgba(255, 255, 255, .55);
+}
+/* The dark room, in blue rather than in black. `--paper` is the plate's own
+   colour, so this is where the theme is decided: at #08090b (noir) the page is
+   a page in the dark, at #0a1620 it is a page under water. Everything else
+   follows — the ink has the same blue in it, and the accent is the light that
+   gets down here, which is why it is the one token that moves a long way from
+   both other rooms. The accent tab on the now-chip stays #d0783a in all three:
+   like the C—05 plate, it is the machine rather than the room. */
+html[data-theme="abyss"] {
+  --paper: #0a1620;
+  --ink: #e4f1f8;
+  --ink-dim: rgba(228, 241, 248, .74);
+  --ink-faint: rgba(228, 241, 248, .62);
+  --ink-ghost: rgba(228, 241, 248, .30);
+  --hair: rgba(228, 241, 248, .16);
+  --hair-soft: rgba(228, 241, 248, .08);
+  --accent: #5fb4dc;
+  --accent-soft: rgba(95, 180, 220, .16);
+  --accent-line: rgba(95, 180, 220, .55);
+  --chip-bg: rgba(6, 20, 30, .94);
+  --chip-ink: #e6f3fa;
+  --chip-hair: rgba(150, 215, 245, .22);
+  --shadow: rgba(0, 5, 10, .62);
+
+  --sheet-tint: #0d1f2b;
+  --sheet-a: 74%;
+  --sheet-line: rgba(228, 241, 248, .11);
+  --sheet-hi: rgba(180, 232, 255, .07);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+/* THE ONE DIAL. Every length in this sheet is a multiple of the root size
+   (see tools/_px2rem.mjs), so the whole interface keeps its proportions instead
+   of being stretched over more canvas: at 1440 the root is 16px and nothing
+   differs from a hand-written px sheet, at 2560 it is 21px and the plate, the
+   type, the console and the hairlines all come up together. The clamp is
+   anchored at 1440 (1.1111vw = 16px exactly) and caps at 21px — 1.31× — which
+   is where a 1440-class composition reads at the same weight on a 2560 display.
+   Borders and outlines stay in px on purpose: a hairline is one device pixel at
+   every scale. */
+html {
+  font-size: clamp(16px, 1.1111vw, 21px);
+  /* the room changes on the tokens themselves (see @property above), on the same
+     0.9s clock the body already used, and on the same curve */
+  transition:
+    --paper .9s cubic-bezier(.16, 1, .3, 1), --ink .9s cubic-bezier(.16, 1, .3, 1),
+    --ink-dim .9s cubic-bezier(.16, 1, .3, 1), --ink-faint .9s cubic-bezier(.16, 1, .3, 1),
+    --ink-ghost .9s cubic-bezier(.16, 1, .3, 1),
+    --hair .9s cubic-bezier(.16, 1, .3, 1), --hair-soft .9s cubic-bezier(.16, 1, .3, 1),
+    --accent .9s cubic-bezier(.16, 1, .3, 1), --accent-soft .9s cubic-bezier(.16, 1, .3, 1),
+    --accent-line .9s cubic-bezier(.16, 1, .3, 1),
+    --chip-bg .9s cubic-bezier(.16, 1, .3, 1), --chip-ink .9s cubic-bezier(.16, 1, .3, 1),
+    --chip-hair .9s cubic-bezier(.16, 1, .3, 1), --shadow .9s cubic-bezier(.16, 1, .3, 1),
+    --sheet-tint .9s cubic-bezier(.16, 1, .3, 1), --sheet-line .9s cubic-bezier(.16, 1, .3, 1),
+    --sheet-hi .9s cubic-bezier(.16, 1, .3, 1), --sheet-a .9s cubic-bezier(.16, 1, .3, 1);
+}
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  /* deliberately NOT a font-size: several measures on this page are in `ch`
+     (the now-chip's cap, the record's note), and those resolve against the
+     inherited size. Setting it here silently reshortened both of them. */
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* the body's own colours are tokens, so the root's token transition is what
+     carries them; a second easing here would only make the room change mushy */
+}
+canvas#gl {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+}
+body.dragging canvas#gl { cursor: grabbing; }
+
+/* every numeral on this page is a read-out: it must not jitter sideways when
+   it goes 01 → 02 */
+b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabular-nums; }
+
+.ui { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+.ui > * { pointer-events: none; }
+.ui button, .ui .row, .ui input, .ui input[type="range"] { pointer-events: auto; }
+.micro { font-family: var(--mono); }
+
+/* one focus language for the whole terminal — a hairline, never a glow. The
+   offset is what keeps it legible over both the scene and the plate. */
+:where(.ui) :is(button, input, [tabindex]):focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--r);
+}
+:where(.ui) :is(button, input, [tabindex]):focus:not(:focus-visible) { outline: none; }
+/* the plate's own controls sit on a surface, so they get the tighter ring */
+.sheet :is(button):focus-visible { outline-offset: 2px; }
+
+/* ---------- hairline frame with registration marks ---------- */
+.frame {
+  position: absolute; inset: 1.125rem;
+  border: 1px solid var(--hair-soft);
+  /* `--hair-soft` is a token; it animates with the rest of the room */
+}
+.frame i { position: absolute; width: 0.5625rem; height: 0.5625rem; border: 1px solid var(--ink-faint); }
+.frame i:nth-child(1) { top: -0.0625rem; left: -0.0625rem; border-right: 0; border-bottom: 0; }
+.frame i:nth-child(2) { top: -0.0625rem; right: -0.0625rem; border-left: 0; border-bottom: 0; }
+.frame i:nth-child(3) { bottom: -0.0625rem; left: -0.0625rem; border-right: 0; border-top: 0; }
+.frame i:nth-child(4) { bottom: -0.0625rem; right: -0.0625rem; border-left: 0; border-top: 0; }
+
+/* ============================ masthead ================================= */
+.mast {
+  position: absolute; top: 2.5rem; left: var(--pad); right: var(--pad);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1.875rem;
+}
+.brand { text-transform: uppercase; }
+/* the logotype is three weights stacked: two heavy lines pinning a light one,
+   tight enough that they read as a single block rather than three paragraphs */
+.brand h1 {
+  font-family: var(--disp);
+  font-size: clamp(1.625rem, 3.05vw, 3.125rem); font-weight: 700;
+  letter-spacing: -.032em; line-height: .94;
+}
+.brand-mid {
+  font-size: clamp(0.625rem, .8vw, 0.84375rem); font-weight: 400;
+  letter-spacing: .014em; line-height: 1.2; margin-top: 0.25rem; color: var(--ink-dim);
+}
+.brand-end {
+  font-family: var(--disp);
+  font-size: clamp(1.3125rem, 2.4vw, 2.5rem); font-weight: 700;
+  letter-spacing: -.024em; line-height: 1; margin-top: 0.0625rem;
+}
+.mast-nav { display: flex; align-items: center; gap: 0.875rem; padding-top: 0.5rem; }
+.vr { width: 0.0625rem; height: 0.9375rem; background: var(--hair); flex: none; }
+
+/* the masthead buttons draw their rule in on hover — the same gesture as
+   「读取」and the reference rows, so the whole terminal hovers one way */
+.tb {
+  appearance: none; border: 0; background: none; color: var(--ink); cursor: pointer;
+  font: inherit; font-size: var(--fs-ui); font-weight: 500;
+  letter-spacing: var(--tr-ui); text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap;
+  position: relative; padding: 0.125rem 0;
+  transition: color var(--t-swift) var(--e-out), transform var(--t-press) var(--e-out);
+}
+.tb::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -0.1875rem; height: 0.0625rem;
+  background: currentColor; transform: scaleX(0); transform-origin: left;
+  transition: transform var(--t-med) var(--e-out);
+}
+.tb:hover { color: var(--accent); }
+.tb:hover::after { transform: scaleX(1); }
+.tb:active { transform: translateY(0.0625rem); }
+.tb svg { width: 0.875rem; height: 0.875rem; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; }
+/* the gear turns a quarter and swells. Linear on purpose: it is eight-toothed,
+   so nothing about it says "ease" — it says a shaft being engaged, and the page
+   already spins the 巡览 arrow on the same `linear`. It stays turned while the
+   panel is up, so the button reads as open rather than as hovered. */
+#btn-settings svg { transition: transform .55s linear; }
+#btn-settings:hover svg,
+#btn-settings.open svg { transform: rotate(90deg) scale(1.15); }
+#btn-settings.open { color: var(--accent); }
+#btn-settings.open::after { transform: scaleX(1); }
+
+/* the lights. Solid ink on the live one — at this size a border tint is not
+   enough to read across a bright room */
+.seg { display: flex; border: 1px solid var(--hair); border-radius: var(--r); }
+.seg button {
+  appearance: none; border: 0; background: none; color: var(--ink-dim); cursor: pointer;
+  font: inherit; font-size: 0.6875rem; letter-spacing: .14em; padding: 0.375rem 0.8125rem; white-space: nowrap;
+  transition: color var(--t-swift) var(--e-out), background var(--t-med) var(--e-out);
+}
+.seg button + button { border-left: 1px solid var(--hair); }
+.seg button:hover { color: var(--ink); background: var(--accent-soft); }
+.seg button:active { transform: translateY(0.0625rem); }
+.seg button.on { color: var(--paper); background: var(--ink); }
+.seg button.on:hover { background: var(--ink); }
+
+/* ============================ dossier ================================== */
+/* The subject sits in the left half and the record in the right; the two must
+   not overlap, because every value in this column is dark text and the tape is
+   not a pale enough thing to read it over — which is exactly what the plate
+   under the record is for. */
+/* The panel hangs from a line rather than from its own middle. It is centred on
+   `--panel-half` — half its height, measured once and on resize — instead of on
+   itself, because its length changes for reasons that have nothing to do with
+   where it sits: the wheel shortens it, and every record has a different sheet
+   (a spec row more or less, a note a line longer). Centred on itself, the file
+   number and everything above the sheet rose a little every time a shorter
+   record was picked up. Anchored at the top, a longer sheet just grows downward. */
+.dossier {
+  position: absolute; left: auto; right: var(--pad);
+  width: min(calc(45% - var(--pad)), var(--plate-max));
+  top: calc(50% - var(--panel-half, 13.125rem));
+  /* How much of its own length the panel is not using. It rests 20% short, and
+     the loop adds --give on top of that as the wheel brings the lens in (see
+     syncPanelGive in main.js) — a length rather than a position, which is why
+     the crumb and the body both read it, and why folding can still beat it
+     further down. */
+  --retract: calc(20% + var(--give, 0) * 1%);
+}
+
+/* the plate. It carries the margin, not the text: one element moves, so the
+   sheet, its rule and everything printed on it can never drift apart — which
+   is what a percentage margin on two children of different containing blocks
+   would have done. */
+.sheet {
+  position: relative;
+  margin-left: var(--retract);
+  padding: var(--sheet-pad-t) var(--sheet-pad-x) var(--sheet-pad-b);
+  background: color-mix(in srgb, var(--sheet-tint) var(--sheet-a), transparent);
+  backdrop-filter: blur(var(--blur)) saturate(1.06);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.06);
+  border: 1px solid var(--sheet-line);
+  border-radius: var(--r);
+  box-shadow: inset 0 0.0625rem 0 var(--sheet-hi), var(--sh-sheet);
+  transition:
+    margin-left .58s var(--e-spring) 0s;
+}
+/* the sheet's registration tick: a 0.0625rem accent rule at the top-left corner,
+   the way a drawing is cornered before it is filed */
+.sheet::before {
+  content: ''; position: absolute; top: -0.0625rem; left: -0.0625rem;
+  width: 1.375rem; height: 0.125rem; background: var(--accent); opacity: .85;
+}
+
+/* The crumb never wraps. Retracting the plate squeezes this line, and a wrap is a
+   height change in the middle of a move that is otherwise one gesture: the sheet
+   grew a line for the length of the fold and the breadcrumb jumped down with it.
+   So the parts give in order instead — the archive prefix retracts to nothing, on
+   the plate's own second-beat clock so it travels with the edge, and the record's
+   name ellipsizes if it still cannot fit. Nothing here changes the line's height,
+   so the top of the sheet holds still while the bottom walks. */
+.crumb {
+  font-size: 0.6875rem; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--ink-faint); display: flex; align-items: center; gap: 0.625rem;
+  flex-wrap: nowrap; overflow: hidden;
+}
+.crumb i { font-style: normal; opacity: .55; }
+.crumb-pre {
+  display: inline-flex; align-items: center; gap: 0.625rem; white-space: nowrap;
+  overflow: hidden; max-width: 22rem; opacity: 1;
+  transition: max-width .42s var(--e-out), opacity .28s var(--e-out);
+}
+/* folding waits for the plate's second beat (see .dossier.folded .sheet);
+   unfolding goes at once, which is the rule the body collapse already follows */
+.dossier.folded .crumb-pre { max-width: 0; opacity: 0; transition-delay: .36s, .36s; }
+.crumb-id {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--ink-dim);
+}
+/* the fold sits on the crumb line so it costs no vertical space of its own */
+.fold {
+  appearance: none; border: 0; background: none; cursor: pointer; margin-left: auto;
+  flex: none;   /* the affordance to unfold may never be the part that gives way */
+  font: inherit; font-size: 0.65625rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--ink-faint); padding: 0.1875rem 0 0.1875rem 0.75rem;
+  transition: color var(--t-swift) var(--e-out), transform var(--t-press) var(--e-out);
+}
+/* a drawn triangle rather than ▾ / ▸ : `content` cannot be transitioned, so the
+   two glyphs used to swap in a single frame. This one turns, and since the
+   button is saying which way the sheet is about to move, the turn *is* the
+   information. */
+.fold::before {
+  content: ''; display: inline-block; width: 0; height: 0;
+  border-left: 0.3125rem solid currentColor;
+  border-top: 0.25rem solid transparent; border-bottom: 0.25rem solid transparent;
+  margin-right: 0.5em; vertical-align: 0.0625em;
+  transform: rotate(90deg);
+  transition: transform var(--t-med) var(--e-out);
+}
+.dossier.folded .fold::before { transform: rotate(0deg); }
+.fold:hover { color: var(--accent); }
+.fold:active { transform: translateY(0.0625rem); }
+
+/* The record's own sheet swaps — its name, its note and its specs — so changing
+   record reads as a change rather than as text being overwritten in place. This
+   used to be on the whole body, which took the file number, the breadcrumb and
+   the reference list along with it: the list you had just clicked was pulsing
+   under the pointer, and the number is a cursor being written (see setFileNo in
+   main.js) rather than a block being replaced. Only the part being read swaps. */
+@keyframes dswap { from { opacity: 0; transform: translateY(0.4375rem); } to { opacity: 1; transform: none; } }
+.doc.swap { animation: dswap .44s var(--e-out) both; }
+@media (prefers-reduced-motion: reduce) { .doc.swap { animation: none; } }
+/* A record's sheet is 4 spec rows or 5, a note one line longer or shorter — the
+   box is held to the height it had and walked to the height it needs on the same
+   clock as that fade, so the growth is one motion rather than the button under it
+   being shoved down in a frame (see swapIn in main.js) */
+.doc.grow { overflow: hidden; transition: height .44s var(--e-out); }
+@media (prefers-reduced-motion: reduce) { .doc.grow { transition: none; } }
+
+/* Folding runs in two beats. The body collapses first; then the plate's left
+   edge retracts to the right. Unfolding plays the same two beats backwards.
+
+   The delays live on the *target* state, which is how a CSS transition says
+   "on the way in, wait; on the way out, go now". */
+.foldwrap {
+  max-height: 56.25rem; overflow: hidden;
+  transition: max-height .50s var(--e-out) .34s, opacity .38s var(--e-out) .34s;
+}
+.dossier.folded .foldwrap {
+  max-height: 0; opacity: 0;
+  transition: max-height .42s var(--e-out) 0s, opacity .30s var(--e-out) 0s;
+}
+
+/* The retract is one motion, not two. The plate's left edge is the line
+   everything in the panel sits against, so the whole body travels with it:
+   growing the left margin both draws the edge in and brings the text along,
+   staying put against the line's left end. */
+/* the macro vantage puts the lens in close enough that the tape reaches into
+   this column on its own. That vantage folds the panel outright (the fold is
+   what it wants, and it is declared below so it wins); this is the state the
+   panel falls back into when that fold is undone by hand — narrowed rather than
+   shortened, with the spec table still on screen. */
+.dossier.tight .sheet { margin-left: max(34%, var(--retract)); }
+/* a narrower panel means less room for two columns, so the left one gives up
+   its width rather than squeezing the reference list out of shape. The floor
+   on the second track is what makes the first one actually yield. */
+.dossier.tight .dossier-grid {
+  grid-template-columns: minmax(0, 14.5rem) minmax(8.75rem, 1fr);
+}
+.dossier.folded .sheet {
+  margin-left: 60%;   /* folded, the plate keeps 40% of its open length */
+  transition: margin-left .64s var(--e-spring) .40s;
+}
+
+.fileno {
+  font-family: var(--disp);
+  font-size: var(--fs-h); font-weight: 700; letter-spacing: -.014em;
+  margin-top: 1rem; padding-bottom: 1.375rem;
+  display: flex; align-items: baseline; gap: .5em; white-space: nowrap;
+  position: relative;
+}
+/* The rule under the file number is drawn rather than bordered, so it can be
+   drawn *again*: every record change re-rules the sheet from the left. It is the
+   one gesture that says a fresh slip has been laid on the plate rather than the
+   old one edited. The reference header's rule re-draws with it. */
+.fileno::after, .ref-h::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: var(--hair); transform-origin: 0 50%;
+}
+.ref-h::after { background: var(--hair-soft); }
+@keyframes redraw { from { transform: scaleX(0); } }
+.dossier.reprint .fileno::after,
+.dossier.reprint .ref-h::after { animation: redraw .62s var(--e-out) both; }
+.dossier.reprint .ref-h::after { animation-delay: .08s; }
+.fileno b { font-weight: 700; }
+/* The cursor does not blink. It is the pen that writes the file number (see
+   setFileNo), and a pen is either moving or standing on the line — a pen that
+   flickered would read as a decorative cursor instead of the thing doing the
+   work. It is also three times its old width: at 0.125rem it was a cursor, at 0.375rem it
+   is a nib, and it is what the mask's cut hides behind. */
+.caret {
+  display: inline-block; width: 0.375rem; height: .82em; background: var(--ink);
+  transform: translateY(.06em);
+}
+
+/* 16.5rem for the record unless that would eat into the room the reference rows
+   need — this panel is not always as long as it used to be, and the second track
+   is not the one that should pay for it. 184 = the column gap plus the 140 the
+   tight grid below settles on for those rows. */
+.dossier-grid {
+  display: grid;
+  grid-template-columns: minmax(0, min(16.5rem, calc(100% - 11.5rem))) minmax(0, 1fr);
+  gap: 1.375rem 2.5rem; margin-top: 1.375rem;
+  /* the record's name and REFERENCE AREA are two headers on one line, so they
+     sit on one baseline rather than on one top edge — which is what they did
+     when the two columns were sized by their own type */
+  align-items: baseline;
+}
+.doc-cn { font-size: var(--fs-cn); font-weight: 500; letter-spacing: .06em; text-wrap: balance; }
+.doc-en {
+  font-size: var(--fs-label); letter-spacing: .2em; text-transform: uppercase;
+  color: var(--ink-faint); margin-top: 0.5rem;
+}
+.doc-note {
+  font-size: 0.75rem; line-height: 1.85; color: var(--ink-dim); margin-top: 1rem;
+  max-width: 32ch; font-weight: 300; text-wrap: pretty;
+}
+/* the spec rows are the actual content of a record — the reason it is filed.
+   The dotted leader between a key and its value is the oldest archive
+   convention there is, and it does a real job here: at this size the eye
+   otherwise falls off the row between the label and its number. */
+.spec { list-style: none; margin-top: 1.125rem; border-top: 1px solid var(--hair-soft); }
+.spec li {
+  display: flex; align-items: baseline;
+  padding: 0.40625rem 0; border-bottom: 1px solid var(--hair-soft);
+  transition: padding-left var(--t-med) var(--e-out), border-color var(--t-swift) var(--e-out);
+}
+.spec li span { order: 1; font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em; color: var(--ink-faint); transition: color var(--t-swift) var(--e-out); }
+/* the value never breaks: these are readings, and "12 µm" split across two
+   lines is the one thing a spec table may not do. They are short enough that
+   nowrap costs nothing. */
+.spec li b { order: 3; font-weight: 400; font-family: var(--mono); font-size: 0.6875rem; color: var(--ink-dim); letter-spacing: .04em; white-space: nowrap; transition: color var(--t-swift) var(--e-out); }
+.spec li::after {
+  content: ''; order: 2; flex: 1 1 auto; min-width: 1rem; margin: 0 0.5rem;
+  border-bottom: 1px dotted var(--hair); transform: translateY(-.28em);
+}
+.spec li:hover { padding-left: 0.375rem; }
+.spec li:hover b { color: var(--ink); }
+.spec li:hover span { color: var(--accent); }
+/* The rows cascade. A record's spec table is rebuilt when you pick another one,
+   and arriving in order — rather than as one block — is what says the sheet was
+   re-printed rather than merely re-read. `--i` is the row's index, written when
+   the rows are built (render / buildIndex). */
+@keyframes cascadeIn { from { opacity: 0; transform: translateY(0.6rem); } }
+.spec li { animation: cascadeIn .5s var(--e-out) both; animation-delay: calc(var(--i, 0) * 34ms); }
+
+/* the primary action. It reads as a control first — a hairline box that fills,
+   sinks and locks — because "read this record" is the one thing this page
+   actually does, and it should not have to be found. */
+.access {
+  appearance: none; cursor: pointer; color: var(--ink);
+  display: inline-flex; align-items: center; gap: 0.8125rem; margin-top: 1.25rem;
+  font: inherit; font-size: 0.71875rem; font-weight: 500;
+  letter-spacing: var(--tr-label); text-transform: uppercase;
+  padding: 0.5625rem 0.9375rem; border: 1px solid var(--hair); background: transparent;
+  border-radius: var(--r); position: relative; overflow: hidden;
+  transition: color var(--t-swift) var(--e-out), border-color var(--t-swift) var(--e-out),
+              transform var(--t-press) var(--e-out);
+}
+.access::before {
+  content: ''; position: absolute; inset: 0; background: var(--accent-soft);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform var(--t-med) var(--e-out);
+}
+.access > * { position: relative; }
+.access svg {
+  width: 1.5rem; height: 0.8125rem; fill: none; stroke: currentColor;
+  stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform var(--t-med) var(--e-out);
+}
+.access:hover { color: var(--accent); border-color: var(--accent-line); }
+.access:hover::before { transform: scaleX(1); }
+.access:hover svg { transform: translateX(0.4375rem); }
+.access:active { transform: translateY(0.0625rem); }
+.access[disabled] { color: var(--ink-faint); cursor: default; border-color: var(--hair-soft); }
+.access[disabled] svg { opacity: .4; }
+.access[disabled]::before { transform: scaleX(0); }
+.access[disabled]:hover { transform: none; }
+.access[disabled]:hover svg { transform: none; }
+
+/* the record already on screen. The rule stays drawn and the label takes the
+   accent, so "which one am I looking at" is answerable without pressing it. */
+.access.done { color: var(--accent); border-color: var(--accent-line); }
+.access.done::before { transform: scaleX(1); }
+.access.done svg { transform: translateX(0.25rem); }
+
+/* the other files in this column — the reference area is the pick list */
+.ref { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.ref-h {
+  font-size: var(--fs-label); letter-spacing: var(--tr-micro); text-transform: uppercase;
+  color: var(--ink-faint); padding-bottom: 0.75rem; width: 100%;
+  position: relative; text-align: right;
+}
+/* `stretch`, not `flex-end`: a non-stretch align on this column collapses each
+   row to its own content width, so the rows are drawn right-aligned one by one
+   and the markers land wherever each name happens to end. The rows fill the
+   track and align their own contents instead — the right edge still comes from
+   the column's last track, so the block still hangs off the plate's right rule. */
+.ref-list { list-style: none; margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.125rem; align-items: stretch; width: 100%; }
+/* A reference row is a three-column table, not a right-aligned sentence: the
+   markers line up in one rail, the names start on one axis, the numbers end on
+   one axis. Right-aligned, the markers floated — a short name pushed its dot
+   inward, and the column of dots turned into a scatter, which is the one thing
+   an index is not allowed to be. */
+.row {
+  appearance: none; border: 0; background: none; cursor: pointer; color: var(--ink-dim);
+  font: inherit;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center; column-gap: 0.75rem;
+  width: 100%; padding: 0.375rem 0.5rem 0.375rem 0; position: relative;
+  transition: color var(--t-swift) var(--e-out), padding var(--t-med) var(--e-out),
+              transform var(--t-press) var(--e-out);
+}
+/* All three cells are pinned to row 1. The markup is number, name, marker — so
+   left to the auto-placement algorithm the number takes column 3 of row 1, the
+   name is behind the cursor and starts row 2, and the marker starts row 3: three
+   stacked rows per record instead of one table row. */
+.row .rn { grid-column: 3; grid-row: 1; text-align: right; font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em; color: var(--ink-faint); }
+/* the name is the one part of a reference row that can give: without this it
+   keeps its min-content width, and a short track makes it paint leftward over
+   the spec table instead of taking a second line */
+.row .rt {
+  grid-column: 2; grid-row: 1; text-align: left; min-width: 0;
+  font-size: var(--fs-body); letter-spacing: var(--tr-body);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.row .rd {
+  grid-column: 1; grid-row: 1; width: 0.3125rem; height: 0.3125rem; flex: none; border: 1px solid var(--ink-faint);
+  transition: background var(--t-swift) var(--e-out), border-color var(--t-swift) var(--e-out),
+              box-shadow var(--t-swift) var(--e-out);
+}
+.row:hover { color: var(--ink); padding-right: 0.875rem; }
+.row:hover .rn { color: var(--ink-dim); }
+.row:active { transform: translateX(0.0625rem); }
+.row.sel { color: var(--ink); padding-right: 0.875rem; }
+.row.sel .rd { border-color: var(--ink); border-radius: 50%; background: var(--ink); }
+.row.done .rd { background: var(--accent); border-color: var(--accent); }
+.row.sel.done .rd { background: var(--accent); box-shadow: 0 0 0 0.0625rem var(--sheet-tint), 0 0 0 0.125rem var(--accent); }
+.row.sel:focus-visible .rd { box-shadow: 0 0 0 0.0625rem var(--sheet-tint), 0 0 0 0.125rem var(--accent); }
+
+/* ============================ now playing ============================== */
+.now {
+  position: absolute; left: var(--pad); bottom: 8.625rem;
+  display: inline-flex; align-items: center; gap: 0.75rem;
+  padding: 0.5625rem 1rem 0.625rem 0.8125rem; border-radius: 3px;
+  background: var(--chip-bg); color: var(--chip-ink);
+  box-shadow: 0 1rem 2.375rem -1.375rem var(--shadow);
+  max-width: min(46ch, 40vw);
+  /* the chip's own colours are tokens (see @property); the reveal needs a delay,
+     so that is the only thing timed here */
+  transition: opacity .9s var(--e-out), transform .9s var(--e-out);
+}
+/* a 0.125rem accent tab rather than a border, so the chip keeps one clean edge */
+.now::before { content: ''; width: 0.125rem; align-self: stretch; background: #d0783a; flex: none; }
+.now b { font-size: 0.75rem; font-weight: 500; letter-spacing: .05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now em {
+  font-style: normal; font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em;
+  opacity: .58; white-space: nowrap; padding-left: 0.75rem; border-left: 1px solid var(--chip-hair);
+}
+.eq { display: flex; align-items: flex-end; gap: 0.125rem; height: 0.6875rem; }
+.eq i { width: 0.0625rem; height: 0.1875rem; background: currentColor; opacity: .45; transition: opacity var(--t-med) var(--e-out), height var(--t-med) var(--e-out); }
+body.playing .eq i { opacity: 1; animation: eq .9s ease-in-out infinite; }
+body.playing .eq i:nth-child(2) { animation-delay: .18s; }
+body.playing .eq i:nth-child(3) { animation-delay: .36s; }
+body.playing .eq i:nth-child(4) { animation-delay: .54s; }
+@keyframes eq { 0%, 100% { height: 0.1875rem; } 50% { height: 0.6875rem; } }
+/* the rewind's own colours arrive and leave rather than being switched on */
+.now b, .now em { transition: opacity var(--t-med) var(--e-out), color var(--t-med) var(--e-out); }
+body.rewinding .now b { opacity: .45; }
+body.rewinding .counter b { color: var(--accent); }
+body.rewinding .eq i { animation: none; height: 0.1875rem; }
+/* When the bars are driven from the audio (see viz.js) the keyframe loop is
+   taken away, and so is the height transition — the heights arrive every frame
+   and a transition would only lag them. Opacity keeps its own, because that is
+   the part still being told to change by a class. The class is only ever on
+   while there is something to follow, so a tape with no analysis keeps the
+   animation above and the bars still move on their own. */
+body.eq-live .eq i { animation: none; transition: opacity var(--t-med) var(--e-out); }
+body.no-audio .now { opacity: .72; }
+
+/* ============================ deck ====================================
+   Three tracks, and the two outer ones are equal: `1fr auto 1fr` is what puts
+   the pager on the frame's own centre line. It used to be absolutely centred in
+   the deck and had no idea the transport existed — at 1440 the vantage read-out
+   was printed straight under the play button. In a grid it cannot happen, and
+   equal outer tracks mean the middle lands on the middle however wide the
+   transport gets. */
+.deck {
+  position: absolute; left: var(--pad); right: var(--pad); bottom: 3.25rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end; gap: 1.375rem 2.5rem;
+}
+
+.sel { justify-self: start; }
+.deck-right { justify-self: end; }
+.sel-num { display: flex; align-items: baseline; gap: 0.5rem; margin-top: 0.5rem; }
+.sel-num b {
+  font-family: var(--disp);
+  font-size: var(--fs-num); font-weight: 300; letter-spacing: .01em; line-height: .88;
+}
+.sel-num i, .sel-num span { font-size: 0.9375rem; font-style: normal; color: var(--ink-faint); font-weight: 300; }
+.micro { font-size: var(--fs-label); letter-spacing: var(--tr-micro); text-transform: uppercase; color: var(--ink-faint); }
+
+/* two stacked groups, centred in the middle column: which record, then which
+   vantage. Stacking is what gives the deck its rows instead of one very long
+   line that had to fit between two blocks that never yielded. */
+.pager { justify-self: center; display: flex; flex-direction: column; gap: 0.6875rem; align-items: center; }
+.pager .grp { display: flex; align-items: center; gap: 0.75rem; }
+.rail { width: 0.0625rem; height: 1.375rem; background: var(--hair); flex: none; }
+.pk {
+  appearance: none; border: 0; background: none; cursor: pointer; color: var(--ink);
+  font: inherit; font-size: 1.1875rem; font-weight: 300; line-height: 1;
+  padding: 0.25rem 0.3125rem;
+  transition: transform var(--t-med) var(--e-out), color var(--t-swift) var(--e-out),
+              opacity var(--t-swift) var(--e-out);
+}
+.pk:hover { color: var(--accent); }
+.pk[data-act="prev-file"]:hover, .pk[data-act="prev-col"]:hover { transform: translateX(-0.1875rem); }
+.pk[data-act="next-file"]:hover, .pk[data-act="next-col"]:hover { transform: translateX(0.1875rem); }
+.pk:active { transform: translateY(0.0625rem) scale(.94); }
+.pk.flash { color: var(--accent); }
+.cols { display: flex; align-items: center; gap: 0.1875rem; }
+.tick {
+  position: relative; width: 0.5625rem; height: 1.5rem; border: 0; background: none; padding: 0; cursor: pointer;
+}
+.tick::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 0.0625rem; height: 0.5625rem;
+  background: var(--ink-faint); transform: translate(-50%, -50%);
+  transition: height var(--t-med) var(--e-out), width var(--t-med) var(--e-out),
+              background var(--t-swift) var(--e-out);
+}
+.tick:hover::before { background: var(--ink-dim); }
+.tick:active::before { height: 1.3125rem; }
+.tick.on::before { width: 0.125rem; height: 1.0625rem; background: var(--ink); }
+.tick.done::before { background: var(--accent); }
+.col-id {
+  font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink-faint); white-space: nowrap;
+}
+.col-id b { color: var(--ink-dim); font-weight: 500; }
+.col-id i { font-style: normal; }
+.col-name { display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-start; margin-left: 0.375rem; min-width: 0; }
+.col-name b { font-size: var(--fs-body); font-weight: 500; letter-spacing: var(--tr-body); white-space: nowrap; }
+.col-name em {
+  font-style: normal; font-family: var(--mono); font-size: 0.625rem;
+  letter-spacing: var(--tr-label); text-transform: uppercase; color: var(--ink-faint);
+}
+
+.deck-right { display: flex; align-items: flex-end; min-width: 0; }
+/* The console. One row: play, the counter, the rail, then the switches — all of
+   them bare on the frame.
+   It used to be a boxed card, two rows deep: a hairline, a tint of the plate
+   above it, and a rail on a row of its own. The box was saying nothing the plate
+   had not already said, and whenever the band and the dossier met at the bottom
+   of a short window that rectangle painted a bright slab straight across the
+   panel's last rows — the console is printed on the frame, so it now reads as
+   part of it. The rail also moved up beside the counter, which is where a
+   transport puts it, and takes a row off the band's height with it. */
+.transport {
+  display: grid; align-items: center;
+  grid-template-columns: auto auto minmax(6.5rem, 1fr) auto;
+  grid-template-areas: "play counter track icons";
+  gap: 0 0.875rem;
+  /* no backdrop blur and no tint here on purpose: the plate above carries both,
+     and a second always-visible layer is a per-frame compositor pass over the
+     whole canvas for a difference nothing on screen makes. */
+  /* no colour transition either: the plate's tint, line, highlight and shadow are
+     all tokens, and the tokens themselves are what animates (see @property) —
+     reading the same change twice would just double the easing */
+}
+#btn-play { grid-area: play; }
+.transport .counter { grid-area: counter; }
+.tc-set { grid-area: icons; justify-self: end; display: flex; align-items: center; gap: 0.625rem; }
+.track { grid-area: track; position: relative; display: flex; align-items: center; }
+
+/* The fill is its own element rather than a gradient stop on the native track:
+   a gradient cannot be interpolated, so clicking the rail — or pressing Home /
+   End — teleported the ink to its new length in a single frame. A transform can,
+   and it composites. The tick scale stays behind it (a ::before is the first
+   child in paint order), so the measure still reads through the fill. */
+.rail-fill {
+  position: absolute; left: 0; right: 0; top: 50%; height: 0.0625rem;
+  transform: translateY(-50%) scaleX(var(--p, 0));
+  transform-origin: 0 50%;
+  background: var(--ink); pointer-events: none;
+  transition: transform var(--t-fast) var(--e-out), background var(--t-swift) var(--e-out);
+}
+
+.tc-btn {
+  appearance: none; border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0.9375rem; color: var(--chip-ink); background: var(--chip-bg); border-radius: var(--r);
+  font: inherit; font-size: var(--fs-label); font-weight: 500;
+  letter-spacing: var(--tr-label); text-transform: uppercase;
+  transition: transform var(--t-press) var(--e-out), filter var(--t-swift) var(--e-out);
+}
+.tc-btn:hover { filter: brightness(1.16); }
+.tc-btn:active { transform: scale(.98); }
+.tc-btn svg { width: 0.6875rem; height: 0.6875rem; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linejoin: round; }
+/* the two glyphs are drawn in the same 16×16 box, so the swap is a cross-fade
+   rather than a display flip: the triangle shrinks and turns away while the bars
+   rise into place. `display` can never be animated, and on the control that is
+   pressed most often that one-frame swap was the most visible cut on the page. */
+.tc-btn .ico-play { fill: currentColor; stroke: none; }
+.tc-btn .ico-play, .tc-btn .ico-pause {
+  transform-box: fill-box; transform-origin: 50% 50%;
+  transition: opacity .24s var(--e-out), transform .34s var(--e-out);
+}
+.tc-btn .ico-pause { opacity: 0; transform: scale(.62) rotate(12deg); }
+body.playing .tc-btn .ico-play { opacity: 0; transform: scale(.62) rotate(-12deg); }
+body.playing .tc-btn .ico-pause { opacity: 1; transform: none; }
+.counter { display: flex; align-items: baseline; gap: 0.3125rem; font-family: var(--mono); }
+/* one character of a rolling read-out: the live glyph in flow and the leaving
+   one absolutely over it, so the cell's width is the *new* digit's and a roll
+   can never shove what is beside it. Tabular figures mean that width is the
+   same before and after anyway. */
+.od { position: relative; display: inline-block; }
+.od > b { display: block; font-weight: inherit; font-variant-numeric: inherit; }
+.od > b + b { position: absolute; inset: 0; opacity: 0; }
+
+.counter b { font-size: 0.875rem; font-weight: 400; letter-spacing: .05em; transition: color .45s var(--e-out); }
+.counter i, .counter span { font-size: 0.6875rem; font-style: normal; color: var(--ink-faint); transition: color .45s var(--e-out); }
+.tc-ico {
+  appearance: none; display: grid; place-items: center; width: 1.6875rem; height: 1.6875rem; padding: 0;
+  /* the ring is transparent at rest on purpose: the reference deck shows the
+     four glyphs bare, and a ring on all four at once reads as a row of buttons
+     sitting on the plate rather than as marks printed on it. The ring is still
+     there to be revealed — hover and the switched-on state bring it back — so
+     the hit area and the "which one is live" cue are both unchanged. */
+  border: 1px solid transparent; border-radius: 50%; background: transparent; color: var(--ink-dim);
+  cursor: pointer; position: relative;
+  transition: color var(--t-swift) var(--e-out), border-color var(--t-swift) var(--e-out),
+              background var(--t-swift) var(--e-out), transform var(--t-press) var(--e-out);
+}
+.tc-ico:hover { color: var(--ink); border-color: var(--ink-faint); }
+.tc-ico:active { transform: scale(.92); }
+.tc-ico svg { width: 0.875rem; height: 0.875rem; fill: none; stroke: currentColor; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; }
+.tc-ico.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+/* spin the whole svg, not the arc path: the arc's own bbox centre is off the
+   circle's centre, so rotating it orbits instead of turning in place */
+#btn-auto.on svg { animation: spin 6.5s linear infinite; transform-origin: 50% 50%; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #btn-auto.on svg { animation: none; } }
+/* the speaker's arcs retreat and the cross arrives — the same gesture as the
+   transport's play/pause, in the same 0.24s/0.34s */
+.tc-ico .ico-wave, .tc-ico .ico-x {
+  transform-box: fill-box; transform-origin: 50% 50%;
+  transition: opacity .24s var(--e-out), transform .34s var(--e-out);
+}
+.tc-ico .ico-x { opacity: 0; transform: scale(.6) rotate(-14deg); }
+body.muted #btn-mute .ico-wave { opacity: 0; transform: scale(.6) rotate(14deg); }
+body.muted #btn-mute .ico-x { opacity: 1; transform: none; }
+/* only the speaker greys out. `body.muted .tc-ico` was more specific than
+   `.tc-ico.on`, so muting also drained the accent out of the 拆解 / 翻面 /
+   巡览 icons while they were switched on. */
+body.muted #btn-mute { color: var(--ink-faint); }
+
+/* ---- the seek rail ---------------------------------------------------------
+   A real <input type="range">, not a div with a pointer handler: the range owns
+   the drag, the click-to-jump, the arrow keys and the slider role for free, and
+   the page already styles one in the settings sheet, so the rail under the
+   counter and the dial in the sheet are visibly the same part. `--p` is written
+   by the transport (main.js) as a percentage; the track's gradient is the fill. */
+.track::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 0.4375rem;
+  transform: translateY(-50%); pointer-events: none;
+  background: repeating-linear-gradient(90deg,
+    var(--hair) 0 0.0625rem, transparent 0.0625rem 12.5%);
+  opacity: .85;
+}
+.track input[type="range"] {
+  appearance: none; -webkit-appearance: none; position: relative; z-index: 1;
+  display: block; width: 100%; height: 1.375rem; margin: 0; padding: 0; border: 0;
+  background: none; cursor: pointer;
+}
+.track input[type="range"]::-webkit-slider-runnable-track { height: 0.0625rem; background: var(--hair); }
+.track input[type="range"]::-moz-range-track { height: 0.0625rem; background: var(--hair); }
+.track input[type="range"]::-webkit-slider-thumb {
+  appearance: none; -webkit-appearance: none; width: 0.125rem; height: 0.875rem;
+  margin-top: -0.40625rem; border: 0; border-radius: 0; background: var(--ink);
+  transition: background var(--t-fast) var(--e-out), height var(--t-fast) var(--e-out),
+              margin-top var(--t-fast) var(--e-out);
+}
+.track input[type="range"]::-moz-range-thumb {
+  width: 0.125rem; height: 0.875rem; border: 0; border-radius: 0; background: var(--ink);
+}
+.track input[type="range"]:hover::-webkit-slider-thumb,
+.track input[type="range"]:focus-visible::-webkit-slider-thumb {
+  background: var(--accent); height: 1.125rem; margin-top: -0.53125rem;
+}
+.track input[type="range"]:hover::-moz-range-thumb,
+.track input[type="range"]:focus-visible::-moz-range-thumb { background: var(--accent); }
+.track input[type="range"]:focus-visible { outline: none; }
+body.rewinding .track input[type="range"]::-webkit-slider-thumb { background: var(--accent); }
+body.rewinding .track input[type="range"]::-moz-range-thumb { background: var(--accent); }
+body.rewinding .rail-fill { background: var(--accent); }
+
+/* ---- volume readout -------------------------------------------------------
+   The speaker is a knob as well as a switch: the wheel over it sets the level,
+   and this is the only place the number is shown. It sits above the icon, fades
+   in on the first notch and fades out a moment after the last one, so nothing
+   permanent is added to the console for a control that is used occasionally. */
+.vol-read {
+  position: absolute; left: 50%; bottom: calc(100% + 0.4375rem); transform: translate(-50%, 0.25rem);
+  padding: 0.1875rem 0.4375rem; border: 1px solid var(--sheet-line); border-radius: var(--r);
+  background: color-mix(in srgb, var(--sheet-tint) 94%, transparent);
+  font-family: var(--mono); font-size: 0.625rem; letter-spacing: .08em; color: var(--ink);
+  white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums;
+  opacity: 0; transition: opacity var(--t-fast) var(--e-out), transform var(--t-fast) var(--e-out);
+}
+#btn-mute.show-vol .vol-read { opacity: 1; transform: translate(-50%, 0); }
+/* the same readout, hung off the one button in the masthead that has something
+   to say back — what it is loading, or why it will not */
+#btn-add { position: relative; }
+#btn-add.show-vol .vol-read { opacity: 1; transform: translate(-50%, 0); }
+/* the icon carries the level too: one arc below half, two above, so the state
+   reads without the number */
+/* the second arc is a level, not a state: above half it is there, below half it
+   is not, and it fades across the line rather than blinking */
+#btn-mute .ico-wave path { transition: opacity var(--t-med) var(--e-out); }
+#btn-mute.vol-lo .ico-wave path:last-child { opacity: 0; }
+
+/* ============================ hud ===================================== */
+.hud {
+  position: absolute; left: var(--pad); right: var(--pad); bottom: 1.125rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1.25rem;
+  font-size: var(--fs-ui); letter-spacing: var(--tr-ui); text-transform: uppercase; color: var(--ink-faint);
+}
+.hud-l { display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+.live { width: 0.3125rem; height: 0.3125rem; border-radius: 50%; background: var(--accent); animation: pulse 3.6s var(--e-inout) infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.72); } }
+body.playing .live { animation-duration: 1.6s; }
+
+/* The key legend as a row of keycaps rather than a sentence of slashes. Each
+   chip is a real key plus what it does; `data-p` grades them, and the narrow
+   breakpoints drop the lower grades instead of letting the line wrap into the
+   deck. The chip lights when its key is pressed (main.js writes .hit), so the
+   legend doubles as a keyboard read-out. */
+.hud-c {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.4375rem 0.9375rem; flex-wrap: wrap;
+  /* the key-legend switch used to be `display: none`, which is a cut by
+     definition. It closes instead — the row's own height above a cap — so the
+     HUD settles as the chips are put away. */
+  overflow: hidden; max-height: 6rem;
+  transition: opacity .9s var(--e-out), max-height var(--t-slow) var(--e-out);
+}
+.kg { display: inline-flex; align-items: center; gap: 0.3125rem; }
+.kg kbd {
+  font-family: var(--mono); font-size: var(--fs-micro); font-weight: 500;
+  letter-spacing: .06em; line-height: 1; text-transform: none;
+  padding: 0.1875rem 0.3125rem 0.125rem; border: 1px solid var(--hair); border-radius: 2px;
+  background: var(--hair-soft); color: var(--ink-dim);
+  box-shadow: 0 0.0625rem 0 var(--hair-soft);
+  transition: color var(--t-fast) var(--e-out), border-color var(--t-fast) var(--e-out),
+              background var(--t-fast) var(--e-out), transform var(--t-press) var(--e-out);
+}
+.kg em {
+  font-style: normal; font-size: var(--fs-micro); letter-spacing: var(--tr-label);
+  text-transform: uppercase; color: var(--ink-faint);
+}
+.kg.hit kbd { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); transform: translateY(0.0625rem); }
+body.moved .hud-c { opacity: .45; }
+body.moved .hud-c:hover,
+body.moved .hud-c:focus-within { opacity: 1; }
+body.keys-off .hud-c { max-height: 0; opacity: 0; pointer-events: none; }
+.hud-r { white-space: nowrap; font-family: var(--mono); }
+.hud-r i { font-style: normal; opacity: .5; margin: 0 0.375rem; }
+
+/* ============================ index overlay ============================ */
+/* 92% is deliberate: an archive index is a page, and at 82% the room behind it
+   left every slug and spec value sitting in a haze. The scene still reads
+   through it, which is what says the terminal is behind the sheet rather than
+   gone. */
+.index {
+  position: absolute; inset: 0;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(1.375rem) saturate(1.1);
+  -webkit-backdrop-filter: blur(1.375rem) saturate(1.1);
+  display: grid; place-items: center; pointer-events: auto;
+  opacity: 0; visibility: hidden;
+  transition: opacity var(--t-med) var(--e-out), visibility var(--t-med);
+}
+/* a hairline of the room left on either side, so the overlay reads as a sheet
+   laid over the terminal rather than as the terminal disappearing */
+.index::before, .index::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 0.0625rem;
+  background: linear-gradient(90deg, transparent, var(--hair), transparent);
+}
+.index::before { top: 0; }
+.index::after { bottom: 0; }
+.index[hidden] { display: none; }
+.index.open { opacity: 1; visibility: visible; }
+.index-in {
+  width: min(73.75rem, calc(100vw - 5.5rem)); max-height: 76vh; overflow: auto;
+  padding: 0.25rem 0 0.5rem;
+  transform: translateY(0.875rem); opacity: 0;
+  transition: transform var(--t-slow) var(--e-out) .04s, opacity var(--t-med) var(--e-out) .04s;
+  scrollbar-width: thin; scrollbar-color: var(--hair) transparent;
+}
+.index.open .index-in { transform: none; opacity: 1; }
+.index-in::-webkit-scrollbar { width: 0.375rem; }
+.index-in::-webkit-scrollbar-thumb { background: var(--hair); }
+.index-in::-webkit-scrollbar-track { background: transparent; }
+/* the settings sheet is the same overlay with five rows in it, so it gets its
+   own measure rather than a card rack's */
+#settings .index-in { width: min(38.75rem, calc(100vw - 5.5rem)); }
+
+.index-top {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1.25rem;
+  border-bottom: 1px solid var(--hair); padding-bottom: 0.875rem;
+}
+.index-h { font-size: 0.6875rem; letter-spacing: .24em; text-transform: uppercase; display: flex; gap: 0.625rem; align-items: baseline; }
+.index-h span { color: var(--ink-faint); }
+#index-close, #settings-close {
+  border: 1px solid var(--hair); border-radius: var(--r); padding: 0.4375rem 0.75rem;
+  letter-spacing: .18em;
+}
+#index-close:hover, #settings-close:hover { border-color: var(--accent-line); }
+#index-close::after, #settings-close::after { display: none; }
+
+/* rows: the name over its English slug and one line of what it does, with the
+   switch at the right — the theme switcher's segmented control, on its own row */
+.set-list { list-style: none; margin: 0.25rem 0 0; }
+.set-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
+  padding: 1rem 0.125rem; border-bottom: 1px solid var(--hair-soft);
+  transition: padding-left var(--t-med) var(--e-out), border-color var(--t-swift) var(--e-out);
+  /* the rows cascade like the spec rows and the index cards; `--i` is the row's
+     index, written when they are built */
+  animation: cascadeIn .5s var(--e-out) both; animation-delay: calc(var(--i, 0) * 40ms);
+}
+.set-row:hover { padding-left: 0.5rem; border-color: var(--hair); }
+.set-t { display: flex; flex-direction: column; gap: 0.1875rem; min-width: 0; }
+.set-t b { font-size: 0.8125rem; font-weight: 500; letter-spacing: .06em; color: var(--ink); }
+.set-t i {
+  font-style: normal; font-family: var(--mono); font-size: var(--fs-micro);
+  letter-spacing: .18em; text-transform: uppercase; color: var(--ink-faint);
+}
+.set-t em { font-style: normal; font-size: var(--fs-ui); line-height: 1.55; color: var(--ink-dim); }
+.set-row .seg { flex: none; }
+/* the sheet's one dial. Same rail language as the segmented control — a hairline
+   with ink for what is set — but continuous: the ink length is `--fill`, written
+   by the row's own painter, and the handle is a tick on the rail rather than a
+   knob, because nothing else on this page has a round thumb either. The number
+   beside it is the deck's own mono read-out. */
+.set-dial { flex: none; display: flex; align-items: center; gap: 0.875rem; }
+.set-val {
+  min-width: 2.125rem; text-align: right; font-family: var(--mono);
+  font-size: var(--fs-label); letter-spacing: .08em;
+  color: var(--ink);
+}
+/* the same rail as the transport's, out of the same parts: a hairline track, an
+   ink fill that scales, a tick for a thumb */
+.dial-track { position: relative; flex: none; display: flex; align-items: center; width: 8.25rem; }
+.set-dial input[type="range"] {
+  appearance: none; -webkit-appearance: none; display: block;
+  width: 100%; height: 1.625rem; margin: 0; padding: 0; border: 0; background: none;
+  cursor: pointer; pointer-events: auto;
+}
+.set-dial input[type="range"]::-webkit-slider-runnable-track { height: 0.0625rem; background: var(--hair); }
+.set-dial input[type="range"]::-moz-range-track { height: 0.0625rem; background: var(--hair); }
+.set-dial input[type="range"]::-webkit-slider-thumb {
+  appearance: none; -webkit-appearance: none; width: 0.1875rem; height: 0.8125rem;
+  margin-top: -0.375rem; border: 0; border-radius: 0; background: var(--ink);
+}
+.set-dial input[type="range"]::-moz-range-thumb {
+  width: 0.1875rem; height: 0.8125rem; border: 0; border-radius: 0; background: var(--ink);
+}
+.set-dial input[type="range"]:hover::-webkit-slider-thumb,
+.set-dial input[type="range"]:focus-visible::-webkit-slider-thumb { background: var(--accent); }
+.set-dial input[type="range"]:hover::-moz-range-thumb,
+.set-dial input[type="range"]:focus-visible::-moz-range-thumb { background: var(--accent); }
+.set-dial input[type="range"]:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
+
+.index-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.375rem 2.625rem; margin-top: 1.75rem; }
+/* the track list is the second rack in the same overlay: the record's own
+   program, filed under the same rules as its parts */
+#track-top { margin-top: 2.25rem; }
+.icol {
+  display: flex; flex-direction: column;
+  animation: cascadeIn .55s var(--e-out) both; animation-delay: calc(var(--i, 0) * 45ms);
+}
+/* the header of a card is the control: the whole record is one clickable
+   block, and the specs underneath are what it is filed under */
+.icol-h {
+  appearance: none; border: 0; background: none; cursor: pointer; font: inherit; text-align: left;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.625rem;
+  padding: 0 0 0.625rem; border-bottom: 1px solid var(--hair); color: var(--ink);
+  transition: color var(--t-swift) var(--e-out), padding-left var(--t-med) var(--e-out),
+              transform var(--t-press) var(--e-out);
+}
+.icol-h span { font-size: var(--fs-body); letter-spacing: .05em; }
+.icol-h em {
+  font-style: normal; font-family: var(--mono); font-size: 0.625rem; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--ink-faint); transition: color var(--t-swift) var(--e-out);
+}
+.icol-h:hover { color: var(--accent); padding-left: 0.375rem; }
+.icol-h:hover em { color: var(--accent); }
+.icol-h:active { transform: translateY(0.0625rem); }
+.icol.on .icol-h { color: var(--accent); }
+.icol.on .icol-h em { color: var(--accent); }
+.icol.on .icol-h { border-bottom-color: var(--accent-line); }
+.icol .spec { margin-top: 0.25rem; border-top: 0; }
+
+/* ---------- exploded annotations ---------- */
+.lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; transition: opacity .6s var(--e-out); }
+.lines line { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 2 3; }
+.lines circle { fill: none; stroke: var(--accent); stroke-width: 1; }
+/* opacity only — x1/y1/cx/cy are CSS properties in SVG2, so `all` would animate
+   the leaders crawling to their anchors instead of just fading */
+.lines line, .lines circle { transition: opacity .6s var(--e-out); }
+.anno {
+  position: absolute; opacity: 0; visibility: hidden;
+  transition: opacity .6s var(--e-out), visibility .6s;
+  white-space: nowrap; pointer-events: none;
+}
+.anno b { display: block; font-size: 0.75rem; font-weight: 400; letter-spacing: .14em; }
+.anno i { font-style: normal; font-family: var(--mono); font-size: 0.625rem; letter-spacing: .14em; color: var(--ink-faint); }
+.anno u { position: absolute; text-decoration: none; font-family: var(--mono); font-size: 0.625rem; color: var(--accent); letter-spacing: .1em; }
+.anno[data-side="right"] { text-align: right; }
+.anno[data-side="right"] u { right: 0; top: -1rem; }
+.anno[data-side="left"] { text-align: left; }
+.anno[data-side="left"] u { left: 0; top: -1rem; }
+body.exploded .anno { opacity: 1; visibility: visible; }
+/* while one part is being read, its leader line is the only one drawn */
+body.exploded .anno.mute { opacity: 0; visibility: hidden; }
+
+/* ---------- loader ---------- */
+.loader {
+  position: fixed; inset: 0; z-index: 20; background: var(--paper);
+  display: grid; place-items: center;
+  transition: opacity .9s var(--e-out), visibility .9s;
+}
+body.ready .loader { opacity: 0; visibility: hidden; }
+.loader-box { animation: lin .8s var(--e-out) both; }
+@keyframes lin { from { opacity: 0; transform: translateY(0.5625rem); } to { opacity: 1; transform: none; } }
+.loader-mark {
+  font-family: var(--disp);
+  font-size: 0.8125rem; letter-spacing: .5em; color: var(--ink-faint); margin-bottom: 1.375rem; text-align: center;
+}
+.loader-mark b { font-weight: 700; color: var(--ink); }
+.loader-bar { position: relative; width: 15rem; height: 0.0625rem; background: var(--hair); margin: 0 auto; }
+.loader-bar i { display: block; height: 100%; width: 0%; background: var(--ink); transition: width .4s var(--e-out); }
+/* the leading edge of the bar carries the accent, so the one moving thing on
+   this screen is the thing that is doing the work */
+.loader-bar i::after {
+  content: ''; position: absolute; top: -0.125rem; height: 0.3125rem; width: 0.3125rem;
+  background: var(--accent); transform: translateX(-0.3125rem);
+}
+.loader-lbl {
+  display: flex; justify-content: space-between; width: 15rem; margin: 0.8125rem auto 0;
+  font-family: var(--mono); font-size: 0.625rem; letter-spacing: .18em; color: var(--ink-faint);
+}
+@media (prefers-reduced-motion: reduce) { .loader-box { animation: none; } }
+
+/* ---------- reveal ---------- */
+.mast, .dossier, .deck, .hud, .now { opacity: 0; transform: translateY(0.875rem); }
+.dossier { transform: translateY(0.875rem); }
+body.ready .mast, body.ready .deck, body.ready .hud, body.ready .now { opacity: 1; transform: translateY(0); }
+body.ready .dossier { opacity: 1; transform: none; }
+.mast { transition: opacity 1.1s var(--e-out) .1s, transform 1.1s var(--e-out) .1s; }
+.dossier { transition: opacity 1.2s var(--e-out) .24s, transform 1.2s var(--e-out) .24s, left .7s var(--e-out); }
+.now { transition: opacity .9s var(--e-out) .5s, transform .9s var(--e-out) .5s; }
+.deck { transition: opacity 1s var(--e-out) .58s, transform 1s var(--e-out) .58s; }
+.hud { transition: opacity 1s var(--e-out) .72s, transform 1s var(--e-out) .72s; }
+
+/* ============================ responsive ==============================
+   The deck breaks first: two equal outer tracks have to hold the transport and
+   the pager side by side, which needs about 65rem. Below that the pager takes
+   a row of its own, then the whole band stacks. */
+@media (max-width: 1240px) {
+  .dossier { width: min(calc(50% - var(--pad)), var(--plate-max)); }
+  .col-name { display: none; }
+  .deck { gap: 1.125rem 1.75rem; }
+}
+@media (max-width: 1080px) {
+  .deck {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    grid-template-areas: "sel right" "pager pager";
+  }
+  .sel { grid-area: sel; }
+  .deck-right { grid-area: right; }
+  .pager { grid-area: pager; justify-self: center; margin-top: 0.125rem; }
+  /* the deck has just grown a second row, so the now-chip has to clear it */
+  .now { bottom: 12.5rem; }
+}
+@media (max-width: 900px) {
+  :root { --pad: 1.5rem; --sheet-pad-x: 1.25rem; --sheet-pad-t: 1.125rem; --sheet-pad-b: 1.25rem; }
+  .frame { inset: 0.6875rem; }
+  .mast { top: 1.625rem; flex-direction: column; gap: 0.875rem; }
+  .mast-nav { padding-top: 0; flex-wrap: wrap; }
+  /* the record becomes a bottom sheet; the scene keeps the top of the frame.
+     The three offsets are measured off the stacked console below: deck 2.625rem
+     tall 14rem, the now-chip under the plate, and the plate capped so it cannot
+     reach back up into the masthead. */
+  .dossier { left: var(--pad); right: var(--pad); top: auto; bottom: 20rem; transform: none; width: auto; max-width: none; }
+  body.ready .dossier { transform: none; }
+  .dossier, .sheet { max-height: calc(100vh - 36.5rem); }
+  /* the bottom sheet is already the whole column: the retract has nothing to
+     give way to down here, and folding would push it off the left edge */
+  .sheet, .dossier.tight .sheet, .dossier.folded .sheet { margin-left: 0; }
+  .sheet { overflow: auto; scrollbar-width: thin; }
+  .doc-note, .vr { display: none; }
+  .dossier-grid { grid-template-columns: minmax(0, 1fr); gap: 1.125rem; }
+  .ref { align-items: flex-start; text-align: left; }
+  .ref-h { text-align: left; }
+  .ref-list { align-items: stretch; }
+  .row { padding-right: 0; padding-left: 0; }
+  .row:hover, .row.sel { padding-right: 0; padding-left: 0.5rem; }
+  .now { bottom: 17.5rem; max-width: calc(100vw - var(--pad) * 2); }
+  .deck { bottom: 2.625rem; grid-template-columns: minmax(0, 1fr); grid-template-areas: "sel" "right" "pager"; gap: 0.875rem; }
+  .deck-right { justify-content: space-between; width: 100%; }
+  .transport { flex: 1 1 auto; }
+  .sel-num b { font-size: 2.125rem; }
+  /* the legend loses its lower grades rather than wrapping into the deck */
+  .kg[data-p="3"] { display: none; }
+  .hud { justify-content: center; }
+  .hud-l, .hud-r { display: none; }
+}
+@media (max-width: 620px) {
+  .brand-mid, .doc-note { display: none; }
+  .counter span, .counter i { display: none; }
+  .col-id { display: none; }
+  .kg[data-p="2"] { display: none; }
+  .hud { font-size: 0.625rem; }
+  .set-t em { display: none; }
+  .dial-track { width: 5.75rem; }
+  .index-cols { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- the panel measured against itself ----------
+   Deep in the zoom the body is a third of its usual width and two columns
+   cannot be had in it: the left track is squeezed to nothing and the spec
+   values end up painted over the reference list. So the grid drops to one
+   column down there, and the reference area gives way first — it is the same
+   six records the deck's ticks and the archive index already carry, and at
+   that reading distance the tape is the thing on screen.
+
+   The body is what the margin narrows, so the body is what has to be the query
+   container; a viewport query cannot see this, because on a wide window the
+   panel is narrow and the window is not. 282 = 330 less the plate's own two
+   margins, so the one-column switch happens at the same panel width it always
+   did. */
+.dbody { container-type: inline-size; }
+@container (max-width: 282px) {
+  /* both selectors: `.tight` states its own columns, and a container query adds
+     no weight to the selectors inside it */
+  .dossier-grid, .dossier.tight .dossier-grid { grid-template-columns: minmax(0, 1fr); }
+  .ref { display: none; }
+}
+
+/* ---------- more contrast, on request ---------- */
+@media (prefers-contrast: more) {
+  :root, html[data-theme="studio"] {
+    --ink-faint: rgba(20, 22, 26, .82);
+    --hair: rgba(20, 22, 26, .38);
+    --hair-soft: rgba(20, 22, 26, .2);
+    --sheet-a: 94%;
+  }
+  html[data-theme="noir"] {
+    --ink-faint: rgba(242, 239, 233, .82);
+    --hair: rgba(242, 239, 233, .4);
+    --hair-soft: rgba(242, 239, 233, .22);
+    --sheet-a: 94%;
+  }
+  html[data-theme="abyss"] {
+    --ink-faint: rgba(228, 241, 248, .82);
+    --hair: rgba(228, 241, 248, .40);
+    --hair-soft: rgba(228, 241, 248, .22);
+    --sheet-a: 94%;
+  }
+  .frame { border-color: var(--hair); }
+}
+
+/* ============================ reduced motion ============================
+   The JS half of this lives in main.js (`reduce`): no intro, no idle drift, no
+   camera travel, no material cross-fades, and the two text helpers land their
+   value instead of animating it. These are the same decisions on the CSS side.
+
+   `*` rather than a list of selectors. When the whole point of a page is that
+   nothing changes in one frame, a hand-kept list of exceptions is a list that
+   goes stale the moment another detail is animated — and this pass added a dozen
+   of them. Longhands, because the rules being overridden set the `transition` and
+   `animation` shorthands, and a delay left in place is still motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: .01s !important;
+    transition-delay: 0s !important;
+    animation-duration: .01s !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<div class="ui">
+  <div class="frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  <!-- ── masthead: the product, and the lights ─────────────────── -->
+  <header class="mast">
+    <div class="brand">
+      <h1>OHM TAPE</h1>
+      <p class="brand-mid">磁性录音带 · II 型 · 高偏磁</p>
+      <p class="brand-end" id="brand-code">C—05</p>
+    </div>
+    <nav class="mast-nav">
+      <div class="seg" id="theme">
+        <button class="ui-hit" data-theme="noir">暗房</button>
+        <button class="ui-hit on" data-theme="studio">影棚</button>
+        <button class="ui-hit" data-theme="abyss">深海</button>
+      </div>
+      <i class="vr" aria-hidden="true"></i>
+      <button class="tb ui-hit" id="btn-index">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7.1" cy="7.1" r="4.6"/><path d="M10.6 10.6 14 14"/></svg>
+        档案目录
+      </button>
+      <i class="vr" aria-hidden="true"></i>
+      <button class="tb ui-hit" id="btn-add">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.1 12.1V4.3l5.1-1.1v7.3"/><ellipse cx="4.3" cy="12.2" rx="1.9" ry="1.6"/><ellipse cx="9.4" cy="11" rx="1.9" ry="1.6"/><path d="M13.2 2.5v3.2M11.6 4.1h3.2"/></svg>
+        添加音乐
+        <span class="vol-read" id="add-read" aria-hidden="true"></span>
+      </button>
+      <i class="vr" aria-hidden="true"></i>
+      <button class="tb ui-hit" id="btn-settings" aria-expanded="false" aria-controls="settings">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.1v2.2M8 12.7v2.2M1.1 8h2.2M12.7 8h2.2M3.1 3.1l1.6 1.6M11.3 11.3l1.6 1.6M12.9 3.1l-1.6 1.6M4.7 11.3l-1.6 1.6"/></svg>
+        设置
+      </button>
+      <i class="vr" aria-hidden="true"></i>
+      <button class="tb ui-hit" id="btn-reinit">重置</button>
+    </nav>
+  </header>
+
+  <!-- ── the record itself: everything in words is printed on one plate ── -->
+  <section class="dossier" id="dossier">
+    <div class="sheet">
+      <p class="crumb">
+        <span class="crumb-pre">内部档案<i>/</i>数据库<i>/</i></span>
+        <span class="crumb-id" id="col-cn">整机</span>
+        <button class="fold ui-hit" id="btn-fold" aria-expanded="true" aria-controls="dbody">收起详情</button>
+      </p>
+      <div class="dbody" id="dbody">
+        <h2 class="fileno">编号<b id="file-id">00</b><span class="caret" aria-hidden="true"></span></h2>
+        <div class="foldwrap">
+          <div class="dossier-grid">
+            <div class="doc">
+              <p class="doc-cn" id="file-cn">整机</p>
+              <p class="doc-en" id="file-en">磁性录音带 · II 型</p>
+              <p class="doc-note" id="file-note">烟灰聚碳酸酯外壳，γ-Fe₂O₃ 磁层，3.81 mm 带基。在工程与手感之间，一段沉默的机械。</p>
+              <ul class="spec" id="file-spec"></ul>
+            </div>
+            <div class="ref">
+              <p class="ref-h">参考区</p>
+              <ul class="ref-list" id="ref-list"></ul>
+            </div>
+          </div>
+        </div>
+        <button class="access ui-hit" id="btn-access">
+          <span id="access-label">读取整机</span>
+          <svg viewBox="0 0 22 12" aria-hidden="true"><path d="M0 6h19M14.4 1.4 19.4 6l-5 4.6"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── what is in the shell ──────────────────────────────────── -->
+  <div class="now" id="now">
+    <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <b id="now-title">—</b>
+    <em id="now-sub">—</em>
+  </div>
+
+  <!-- ── deck ──────────────────────────────────────────────────── -->
+  <footer class="deck">
+    <div class="sel">
+      <p class="micro">档案 / 选择</p>
+      <p class="sel-num"><b id="sel-i">00</b><i>/</i><span id="sel-n">05</span></p>
+    </div>
+
+    <div class="pager">
+      <div class="grp">
+        <button class="pk ui-hit" data-act="prev-file" aria-label="上一条档案">↑</button>
+        <i class="rail" aria-hidden="true"></i>
+        <div class="cols" id="cols"></div>
+        <i class="rail" aria-hidden="true"></i>
+        <button class="pk ui-hit" data-act="next-file" aria-label="下一条档案">↓</button>
+      </div>
+      <div class="grp">
+        <button class="pk ui-hit" data-act="prev-col" aria-label="上一个机位">←</button>
+        <p class="col-id">机位 <b id="col-i">01</b><i>/</i><span id="col-n">04</span></p>
+        <p class="col-name"><b id="col-cn-2">等轴机位</b><em id="col-en">等角投影</em></p>
+        <button class="pk ui-hit" data-act="next-col" aria-label="下一个机位">→</button>
+      </div>
+    </div>
+
+    <div class="deck-right">
+      <div class="transport">
+        <button class="tc-btn ui-hit" id="btn-play" aria-label="走带">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path class="ico-play" d="M4.6 2.5 13.1 8 4.6 13.5Z"/><g class="ico-pause"><path d="M5.4 2.7v10.6M10.6 2.7v10.6"/></g></svg>
+          <b id="play-label">走带</b>
+        </button>
+        <span class="counter"><b id="tc">00:00</b><i>/</i><span id="td">05:17</span></span>
+        <div class="tc-set">
+          <button class="tc-ico ui-hit" id="btn-explode" aria-label="拆解视图" aria-pressed="false" title="拆解视图（E）">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 13.2 3.6 8 5.7 2.8 3.6zM8 5.9 13.2 8 8 10.1 2.8 8zM8 10.3 13.2 12.4 8 14.5 2.8 12.4z"/></svg>
+          </button>
+          <button class="tc-ico ui-hit" id="btn-flip" aria-label="翻转机身" aria-pressed="false" title="翻转机身（F）">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.7 13.2V2.9M5.7 2.9 3.5 5.1M5.7 2.9l2.2 2.2M10.3 2.8v10.3M10.3 13.1l2.2-2.2M10.3 13.1l-2.2-2.2"/></svg>
+          </button>
+          <button class="tc-ico ui-hit" id="btn-auto" aria-label="自动巡览" aria-pressed="false" title="自动巡览（A）">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.72 9.67a5 5 0 1 1-1.18-5.2"/><path d="M14.11 3.56v3.33h-3.33"/></svg>
+          </button>
+          <button class="tc-ico ui-hit" id="btn-mute" aria-label="静音 / 音量（滚轮调节）" aria-pressed="false" title="滚轮调音量 · 点击静音（M）">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.9 6.1h2.4L8.3 3.4v9.2L5.3 9.9H2.9z"/><g class="ico-wave"><path d="M10.7 6.2a2.9 2.9 0 0 1 0 3.6"/><path d="M12.7 4.3a5.5 5.5 0 0 1 0 7.4"/></g><g class="ico-x"><path d="M11 6.2 14.6 9.8"/></g></svg>
+            <span class="vol-read" id="vol-read" aria-hidden="true">30%</span>
+          </button>
+        </div>
+        <div class="track">
+          <i class="rail-fill" aria-hidden="true"></i>
+          <input type="range" id="seek" min="0" max="1" step="0.005" value="0"
+                 aria-label="走带位置" title="拖动定位 · 键盘 ← → 微调 · Home / End 到两端">
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ── hud ───────────────────────────────────────────────────── -->
+  <div class="hud">
+    <p class="hud-l"><span class="live" aria-hidden="true"></span>会话已授权</p>
+    <p class="hud-c" id="keys">
+      <span class="kg" data-p="1" data-k="arrowup arrowdown"><kbd>↑</kbd><kbd>↓</kbd><em>档案</em></span>
+      <span class="kg" data-p="1" data-k="arrowleft arrowright"><kbd>←</kbd><kbd>→</kbd><em>机位</em></span>
+      <span class="kg" data-p="1" data-k="enter"><kbd>ENTER</kbd><em>读取</em></span>
+      <span class="kg" data-p="1" data-k="space"><kbd>SPACE</kbd><em>走带</em></span>
+      <span class="kg" data-p="1" data-k="e"><kbd>E</kbd><em>拆解</em></span>
+      <span class="kg" data-p="2" data-k="f"><kbd>F</kbd><em>翻面</em></span>
+      <span class="kg" data-p="2" data-k="m"><kbd>M</kbd><em>静音</em></span>
+      <span class="kg" data-p="2" data-k="i"><kbd>I</kbd><em>目录</em></span>
+      <span class="kg" data-p="2" data-k="o"><kbd>O</kbd><em>装带</em></span>
+      <span class="kg" data-p="2" data-k=","><kbd>,</kbd><em>设置</em></span>
+      <span class="kg" data-p="3" data-k="a"><kbd>A</kbd><em>巡览</em></span>
+    </p>
+    <p class="hud-r">OHM TAPE 实验室<i>/</i><span id="clock">00:00:00</span></p>
+  </div>
+
+  <!-- ── the whole index ───────────────────────────────────────── -->
+  <div class="index" id="index" hidden>
+    <div class="index-in">
+      <div class="index-top">
+        <p class="index-h">档案目录<i>/</i><span>这台磁带的全部档案</span></p>
+        <button class="tb ui-hit" id="index-close">关闭 ✕</button>
+      </div>
+      <div class="index-cols" id="index-cols"></div>
+
+      <div class="index-top" id="track-top">
+        <p class="index-h">曲目表<i>/</i><span id="track-sub">两面 · 六首</span></p>
+      </div>
+      <div class="index-cols" id="track-cols"></div>
+    </div>
+  </div>
+
+  <!-- ── settings ──────────────────────────────────────────────── -->
+  <div class="index" id="settings" hidden>
+    <div class="index-in">
+      <div class="index-top">
+        <p class="index-h">设置<i>/</i><span>这台终端的行为</span></p>
+        <button class="tb ui-hit" id="settings-close">关闭 ✕</button>
+      </div>
+      <ul class="set-list" id="set-list"></ul>
+    </div>
+  </div>
+
+  <svg class="lines" id="lines" aria-hidden="true"></svg>
+</div>
+
+<audio id="tape-audio" preload="auto"></audio>
+<input type="file" id="tape-file" accept="audio/*,.mp3,.m4a,.m4b,.aac,.flac,.wav,.wave,.ogg,.oga,.opus,.webm" hidden>
+
+<div class="loader" id="loader">
+  <div class="loader-box">
+    <div class="loader-mark">OHM<b>TAPE</b></div>
+    <div class="loader-bar"><i id="lbar"></i></div>
+    <div class="loader-lbl"><span id="llbl">正在初始化</span><em id="lpct">0%</em></div>
+  </div>
+</div>
+
+<noscript><p style="color:#111;padding:2rem">需要启用 JavaScript。</p></noscript>
+<script>
 (() => {
   // node_modules/three/build/three.core.js
   var REVISION = "180";
@@ -29012,11 +30539,11 @@ void main() {
     }
     ctx.putImageData(img, 0, 0);
   }
-  function blobPath(g, cx, cy, rx, ry, rot, rnd, wob = 0.2) {
+  function blobPath(g, cx, cy, rx, ry, rot, rnd2, wob = 0.2) {
     const n = 64;
-    const p0 = rnd() * 6.2832, p1 = rnd() * 6.2832, p22 = rnd() * 6.2832;
+    const p0 = rnd2() * 6.2832, p1 = rnd2() * 6.2832, p22 = rnd2() * 6.2832;
     const j = new Float32Array(n);
-    for (let i = 0; i < n; i++) j[i] = rnd() - 0.5;
+    for (let i = 0; i < n; i++) j[i] = rnd2() - 0.5;
     for (let k = 0; k < 3; k++)
       for (let i = 0; i < n; i++)
         j[i] = (j[(i - 1 + n) % n] + j[i] * 2 + j[(i + 1) % n]) * 0.25;
@@ -29051,13 +30578,13 @@ void main() {
       rim = 0.3,
       layers = 3
     } = o;
-    const rnd = rng(seed), col = color.join(",");
+    const rnd2 = rng(seed), col = color.join(",");
     g.save();
     for (let i = 0; i < layers; i++) {
       const f = layers > 1 ? i / (layers - 1) : 0;
-      const cx = x + (rnd() - 0.5) * rx * 0.5, cy = y + (rnd() - 0.5) * ry * 0.5;
+      const cx = x + (rnd2() - 0.5) * rx * 0.5, cy = y + (rnd2() - 0.5) * ry * 0.5;
       const s = 1 - f * 0.3;
-      blobPath(g, cx, cy, rx * s, ry * s, rot + (rnd() - 0.5) * 0.5, rnd, wob + f * 0.12);
+      blobPath(g, cx, cy, rx * s, ry * s, rot + (rnd2() - 0.5) * 0.5, rnd2, wob + f * 0.12);
       g.fillStyle = `rgba(${col},${alpha * (0.55 + f * 0.45)})`;
       g.fill();
       if (rim > 0) {
@@ -29134,7 +30661,7 @@ void main() {
       passes = 4,
       flecks = true
     } = o;
-    const p = resample(pts), n = p.length, rnd = rng(seed);
+    const p = resample(pts), n = p.length, rnd2 = rng(seed);
     g.save();
     g.globalCompositeOperation = blend;
     g.lineCap = "round";
@@ -29142,10 +30669,10 @@ void main() {
     for (let i = 0; i < passes; i++) {
       const f = i / Math.max(1, passes - 1);
       const a = Math.floor((n - 1) * 0.3 * f), b = n - 1 - Math.floor((n - 1) * 0.4 * f);
-      const off = (rnd() - 0.5) * width * 0.8;
+      const off = (rnd2() - 0.5) * width * 0.8;
       g.beginPath();
       for (let q = a; q <= b; q++) {
-        const jx = (rnd() - 0.5) * width * 0.5, jy = (rnd() - 0.5) * width * 0.5 + off;
+        const jx = (rnd2() - 0.5) * width * 0.5, jy = (rnd2() - 0.5) * width * 0.5 + off;
         q === a ? g.moveTo(p[q][0] + jx, p[q][1] + jy) : g.lineTo(p[q][0] + jx, p[q][1] + jy);
       }
       g.strokeStyle = `rgba(${color},${alpha * (0.55 - f * 0.32)})`;
@@ -29155,12 +30682,12 @@ void main() {
     if (flecks) {
       g.fillStyle = `rgba(${color},${alpha * 0.35})`;
       for (let i = 0; i < 40; i++) {
-        const q = rnd() * (n - 1) | 0;
+        const q = rnd2() * (n - 1) | 0;
         g.fillRect(
-          p[q][0] + (rnd() - 0.5) * width * 6,
-          p[q][1] + (rnd() - 0.5) * width * 6,
-          1 + rnd() * 3,
-          1 + rnd() * 2
+          p[q][0] + (rnd2() - 0.5) * width * 6,
+          p[q][1] + (rnd2() - 0.5) * width * 6,
+          1 + rnd2() * 3,
+          1 + rnd2() * 2
         );
       }
     }
@@ -29222,18 +30749,18 @@ void main() {
       bow = 0.05
     } = o;
     const X = (f) => f * W, Y = (f) => f * H, U = (u) => u * W / (LX * 2);
-    const rnd = rng(seed);
+    const rnd2 = rng(seed);
     for (let i = 0; i < n; i++) {
       const f = n > 1 ? i / (n - 1) - 0.5 : 0;
-      const s = 0.55 + rnd() * 0.9;
+      const s = 0.55 + rnd2() * 0.9;
       const ax = X(x0 + f * wx), ay = Y(y0 + f * wy);
       const ex = X(x0 + (x1 - x0) * s + f * wx2 * s), ey = Y(y0 + (y1 - y0) * s + f * wy2 * s);
-      const mx = (ax + ex) * 0.5 + X(bow) * (rnd() - 0.5) * 2;
-      const my = (ay + ey) * 0.5 + Y(bow) * (rnd() - 0.5) * 2;
+      const mx = (ax + ex) * 0.5 + X(bow) * (rnd2() - 0.5) * 2;
+      const my = (ay + ey) * 0.5 + Y(bow) * (rnd2() - 0.5) * 2;
       inkStroke(g, [[ax, ay], [mx, my], [ex, ey]], {
         color,
-        alpha: alpha * (0.55 + rnd() * 0.7),
-        width: U(width * (0.55 + rnd() * 0.85)),
+        alpha: alpha * (0.55 + rnd2() * 0.7),
+        width: U(width * (0.55 + rnd2() * 0.85)),
         seed: seed * 31 + i * 7 | 0,
         blend,
         passes: 3,
@@ -29392,7 +30919,7 @@ void main() {
         gy = 0,
         streak = 0
       } = o;
-      const rnd = rng(seed);
+      const rnd2 = rng(seed);
       const cs = Math.cos(rot), sn = Math.sin(rot);
       const px2 = x * gw, py2 = y * gh, prx = rx * gw, pry = ry * gh;
       const x0 = Math.max(1, Math.floor(px2 - prx * 1.7)), x1 = Math.min(gw - 2, Math.ceil(px2 + prx * 1.7));
@@ -29421,9 +30948,9 @@ void main() {
         }
       }
       for (let d = 0; d < drops; d++) {
-        const ang = rnd() * 6.2832, dist = (0.75 + rnd() * 0.75) * prx;
+        const ang = rnd2() * 6.2832, dist = (0.75 + rnd2() * 0.75) * prx;
         const dx = px2 + Math.cos(ang) * dist, dy = py2 + Math.sin(ang) * dist * (pry / prx);
-        const rr = Math.max(1.5, prx * dropR * (0.3 + rnd() * 0.85));
+        const rr = Math.max(1.5, prx * dropR * (0.3 + rnd2() * 0.85));
         const ax = Math.max(1, Math.floor(dx - rr * 2)), bx = Math.min(gw - 2, Math.ceil(dx + rr * 2));
         const ay = Math.max(1, Math.floor(dy - rr * 2)), by = Math.min(gh - 2, Math.ceil(dy + rr * 2));
         for (let cy = ay; cy <= by; cy++) {
@@ -29877,10 +31404,11 @@ void main() {
     g.fillRect(0, 0, size, size);
     const r = rng(77);
     const R0 = R * bore;
-    g.fillStyle = "#0c0e10";
+    g.globalCompositeOperation = "destination-out";
     g.beginPath();
     g.arc(R, R, R0, 0, Math.PI * 2);
     g.fill();
+    g.globalCompositeOperation = "source-over";
     const rings = Math.round((1 - bore) * EDGE_RINGS);
     for (let i = rings; i > 0; i--) {
       const f = bore + i / rings * (1 - bore);
@@ -29966,23 +31494,57 @@ void main() {
     for (const [p, col] of stops) lg.addColorStop(p, col);
     g.fillStyle = lg;
     g.fillRect(0, 0, size, h);
-    if (spot) {
-      const cy = spot.v * h, r = spot.r * size;
-      const mid = spot.color.replace(/[\d.]+\)$/, "0.42)");
-      g.globalCompositeOperation = "lighter";
-      for (const dx of [-size, 0, size]) {
-        const cx = spot.u * size + dx;
-        if (cx + r < 0 || cx - r > size) continue;
-        const rg = g.createRadialGradient(cx, cy, 0, cx, cy, r);
-        rg.addColorStop(0, spot.color);
-        rg.addColorStop(0.55, mid);
-        rg.addColorStop(1, "rgba(0,0,0,0)");
-        g.fillStyle = rg;
-        g.fillRect(0, 0, size, h);
-      }
-      g.globalCompositeOperation = "source-over";
+    if (spot) pool(g, size, h, spot);
+    return tex(soften(c, size, h, Math.round(size / 96)), { srgb: true });
+  }
+  var POLE_TAPER = [
+    [0, 0],
+    [0.07, 0.12],
+    [0.15, 0.5],
+    [0.26, 1],
+    [0.74, 1],
+    [0.85, 0.5],
+    [0.93, 0.12],
+    [1, 0]
+  ];
+  function pool(g, size, h, spot) {
+    const layer = canvas(size, h), pl = layer.getContext("2d");
+    const cy = spot.v * h, r = spot.r * size;
+    const mid = spot.color.replace(/[\d.]+\)$/, "0.42)");
+    pl.globalCompositeOperation = "lighter";
+    for (const dx of [-size, 0, size]) {
+      const cx = spot.u * size + dx;
+      if (cx + r < 0 || cx - r > size) continue;
+      const rg = pl.createRadialGradient(cx, cy, 0, cx, cy, r);
+      rg.addColorStop(0, spot.color);
+      rg.addColorStop(0.55, mid);
+      rg.addColorStop(1, "rgba(0,0,0,0)");
+      pl.fillStyle = rg;
+      pl.fillRect(0, 0, size, h);
     }
-    return tex(c, { srgb: true });
+    pl.globalCompositeOperation = "destination-in";
+    const mask = pl.createLinearGradient(0, 0, 0, h);
+    for (const [p, a] of POLE_TAPER) mask.addColorStop(p, `rgba(0,0,0,${a})`);
+    pl.fillStyle = mask;
+    pl.fillRect(0, 0, size, h);
+    g.globalCompositeOperation = "lighter";
+    g.drawImage(layer, 0, 0);
+    g.globalCompositeOperation = "source-over";
+  }
+  function soften(src, size, h, r) {
+    const pad = Math.ceil(r * 3);
+    const big = canvas(size + pad * 2, h + pad * 2), bg = big.getContext("2d");
+    for (const dx of [-1, 0, 1]) {
+      const x = pad + dx * size;
+      bg.drawImage(src, x, pad, size, h);
+      bg.drawImage(src, 0, 0, size, 1, x, 0, size, pad);
+      bg.drawImage(src, 0, h - 1, size, 1, x, pad + h, size, pad);
+    }
+    const out = canvas(size, h), og = out.getContext("2d");
+    og.filter = `blur(${r}px)`;
+    og.drawImage(big, -pad, -pad);
+    og.filter = "none";
+    return out;
   }
   function gradientTexture(stops, size = 512) {
     const c = canvas(size, size), g = c.getContext("2d");
@@ -30105,6 +31667,34 @@ void main() {
         // cool kicker
         { w: 22, h: 22, c: [0.1, 0.09, 0.08], p: [0, -9, 0] }
         // bounce
+      ]
+    },
+    /* Underwater, and the one room where the *colour of the light* is the whole
+       story. Water takes the red end out first, so nothing that arrives at the
+       subject is neutral: every emitter here is blue-green by construction, and
+       the dome is a gradient of depth rather than a tint. The two thin panels are
+       shafts — a surface a long way up, seen through a column of water that is
+       itself lit, which is why they are strips and not squares. */
+    abyss: {
+      sigma: 0.032,
+      dome: [[0, "#123f52"], [0.38, "#0b2836"], [0.72, "#061723"], [1, "#020910"]],
+      panels: [
+        { w: 26, h: 18, c: [1.35, 2.55, 3.1], p: [0, 14, 1] },
+        // the surface itself
+        { w: 1, h: 34, c: [1.25, 2.3, 2.85], p: [-4.6, 7, -11] },
+        // a shaft
+        { w: 0.9, h: 30, c: [0.7, 1.35, 1.8], p: [5.2, 7, -12] },
+        // ...and a dimmer one
+        { w: 15, h: 11, c: [0.42, 0.86, 1.16], p: [10, 1.4, 6] },
+        // cold fill
+        { w: 13, h: 13, c: [0.3, 0.6, 0.8], p: [-9, 2.4, 7] },
+        // ...from the other side
+        { w: 2.4, h: 2.4, c: [1.7, 2.9, 3.4], p: [-6.4, 10.5, 8] },
+        // a mote of surface light
+        { w: 1.6, h: 1.6, c: [0.6, 1.15, 1.55], p: [8.5, 5, -7] },
+        // cool kicker
+        { w: 20, h: 20, c: [0.06, 0.11, 0.15], p: [0, -9, 1] }
+        // the floor of it
       ]
     }
   };
@@ -30302,17 +31892,6 @@ void main() {
       top: { c: 15660031, i: 0.22, w: 12, h: 12, p: [-0.8, 8.8, 1.2] },
       shadow: { i: 0.75, p: [-6.4, 5.2, 6.6] }
     },
-    toon: {
-      // flat, high key ratio so posterising has as few gradations as possible
-      exposure: 1,
-      envInt: 0.9,
-      key: { c: 16774890, i: 1.55, w: 18, h: 14, p: [-7, 8.5, 8] },
-      fill: { c: 15660287, i: 1.35, w: 20, h: 16, p: [8.5, 4, 7] },
-      rim: { c: 16777215, i: 1.05, w: 2.5, h: 16, p: [2, 6, -10] },
-      bounce: { c: 16774374, i: 0.8, w: 16, h: 16, p: [0.5, -3.4, 4] },
-      top: { c: 16777215, i: 0.6, w: 18, h: 18, p: [0, 11, 1] },
-      shadow: { i: 0.35, p: [-7, 8.5, 8] }
-    },
     studio: {
       exposure: 0.9,
       envInt: 0.7,
@@ -30322,6 +31901,23 @@ void main() {
       bounce: { c: 16774374, i: 0.62, w: 13, h: 13, p: [0.4, -3.2, 4.2] },
       top: { c: 16777215, i: 0.55, w: 15, h: 15, p: [0, 10.5, 1] },
       shadow: { i: 0.5, p: [-7.6, 6.6, 7.6] }
+    },
+    /* The same five positions, with the colour of water on every one of them: the
+       key is what came through the surface (high, and the only source with any
+       real punch), the fill is the column itself, the rim is the blue that a
+       silhouette picks up from behind, and the bounce is nearly nothing because
+       the floor down there is dark and far away. Exposure sits below both other
+       rooms — deep water is not a bright place, and pretending otherwise is what
+       makes a "blue" theme read as a filter over a daylight scene. */
+    abyss: {
+      exposure: 0.86,
+      envInt: 0.6,
+      key: { c: 13166847, i: 1.6, w: 12, h: 8.5, p: [-6.2, 7.8, 5.6] },
+      fill: { c: 5936324, i: 0.62, w: 14, h: 10, p: [9, 1.6, 5.4] },
+      rim: { c: 10412287, i: 2.35, w: 1.2, h: 15, p: [3.6, 5.4, -9.6] },
+      bounce: { c: 2910860, i: 0.36, w: 12, h: 12, p: [0.4, -3.6, 4] },
+      top: { c: 14086399, i: 0.5, w: 14, h: 14, p: [-0.6, 9.8, 1] },
+      shadow: { i: 0.66, p: [-6.2, 7.8, 5.6] }
     }
   };
   function buildRigPanels(themeName2, layer = 2) {
@@ -31048,6 +32644,14 @@ void main() {
         map: tapeEdgeTexture(1024, BORE_V),
         metalness: 0.08,
         roughness: 0.28,
+        /* The disc's bore is *erased* in the texture (see tapeEdgeTexture), and
+           this is what turns erased alpha into a hole rather than into black. The
+           faces stay opaque geometry — they keep writing depth and sorting exactly
+           as they did — but the fragment that used to be the black cap over the
+           hub's bore is simply not drawn, so you look down the bore to the opening
+           in the shell. The hub is a tube and the spindle hole is a hole; a pencil
+           goes through a real cassette here. */
+        alphaTest: 0.5,
         sheen: 0.45,
         sheenColor: new Color(10249782),
         sheenRoughness: 0.45,
@@ -31767,7 +33371,7 @@ void main() {
     mesh2.position.y = y;
     mesh2.renderOrder = 1;
     mesh2.frustumCulled = false;
-    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);
     const rt = new WebGLRenderTarget(
       Math.round(innerWidth * 0.6 * dpr),
       Math.round(innerHeight * 0.6 * dpr),
@@ -31863,7 +33467,7 @@ void main() {
         warmed = false;
       },
       setSize(w, h) {
-        const d = Math.min(devicePixelRatio || 1, 2);
+        const d = Math.min(devicePixelRatio || 1, 1.5);
         rt.setSize(Math.round(w * 0.6 * d), Math.round(h * 0.6 * d));
         warmed = false;
       },
@@ -33295,8 +34899,6 @@ void main() {
   var Grade = {
     uniforms: {
       tDiffuse: { value: null },
-      tDepth: { value: null },
-      uProjInv: { value: new Matrix4() },
       uTime: { value: 0 },
       uGrain: { value: 0.05 },
       uVig: { value: 0.85 },
@@ -33304,19 +34906,17 @@ void main() {
       uFade: { value: 0 },
       uSat: { value: 1 },
       uHal: { value: 0.06 },
+      /* The bleed off the brightest speculars is warm in two of the three rooms and
+         cold in the third, and that is not a detail — a warm halo on a blue
+         highlight is the single fastest way to make a "cold" scene look like a
+         filter. It is a uniform rather than a constant for exactly that reason. */
+      uHalTint: { value: new Vector3(1, 0.6, 0.32) },
       uEdge: { value: 1 },
       // lens defocus strength away from the subject
       uFocus: { value: 0.26 },
       // uv radius that stays sharp
       uCenter: { value: new Vector2(0.5, 0.5) },
-      uTexel: { value: new Vector2(1 / 1920, 1 / 1080) },
-      // stylised (三渲二) stage
-      uToon: { value: 0 },
-      uLevels: { value: 4 },
-      uFlat: { value: 0.85 },
-      uInk: { value: 0.62 },
-      uInkWidth: { value: 1.5 },
-      uInkColor: { value: new Color(723472) }
+      uTexel: { value: new Vector2(1 / 1920, 1 / 1080) }
     },
     vertexShader: (
       /* glsl */
@@ -33328,12 +34928,10 @@ void main() {
     fragmentShader: (
       /* glsl */
       `
-    uniform sampler2D tDiffuse, tDepth;
-    uniform mat4 uProjInv;
+    uniform sampler2D tDiffuse;
     uniform float uTime, uGrain, uVig, uCA, uFade, uSat, uHal, uEdge, uFocus;
-    uniform float uToon, uLevels, uFlat, uInk, uInkWidth;
-    uniform vec3 uInkColor;
     uniform vec2 uCenter, uTexel;
+    uniform vec3 uHalTint;
     varying vec2 vUv;
 
     float hash(vec2 p) { p = fract(p * vec2(443.897, 441.423)); p += dot(p, p + 19.19); return fract(p.x * p.y); }
@@ -33350,15 +34948,6 @@ void main() {
       s += texture2D(tDiffuse, uv + vec2(r.x, -r.y) * 0.70).rgb * 0.095;
       s += texture2D(tDiffuse, uv + vec2(-r.x, r.y) * 0.70).rgb * 0.095;
       return s;
-    }
-
-    vec3 viewPos(vec2 uv, float d) {
-      vec4 p = uProjInv * vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0);
-      return p.xyz / p.w;
-    }
-    vec3 normalAt(vec2 uv, float d) {
-      vec3 p = viewPos(uv, d);
-      return normalize(cross(dFdx(p), dFdy(p)));
     }
 
     void main() {
@@ -33380,51 +34969,10 @@ void main() {
 
       // filmic split tone \u2014 cool shadows, warm highlights
       c *= mix(vec3(0.93, 0.985, 1.07), vec3(1.055, 1.005, 0.935), smoothstep(0.16, 0.86, l));
-      // halation: warm bleed off the brightest speculars
-      c += vec3(1.0, 0.60, 0.32) * smoothstep(0.78, 1.0, l) * uHal;
+      // halation: bleed off the brightest speculars, in whatever colour the
+      // room says a highlight bleeds
+      c += uHalTint * smoothstep(0.78, 1.0, l) * uHal;
       c = mix(vec3(l), c, uSat);
-
-      /* ---- stylised stage: posterised luminance + inked creases ----------
-         Edges come from two independent signals, because neither alone is
-         reliable: the normal break (from depth derivatives) catches creases
-         between touching parts, and the view-space depth step catches the
-         silhouette against the floor and the void. The depth threshold scales
-         with distance so a sloped surface never inks itself at grazing angles. */
-      if (uToon > 0.001) {
-        float d0 = texture2D(tDepth, uv).x;
-        // the floor, glass and dust do not write depth, so large parts of the
-        // frame have no depth at all. Reconstructing a normal from d = 1 gives
-        // NaN, and NaN survives clamp()/mix() as garbage pixels \u2014 so skip
-        // everything that is not solid geometry up front.
-        if (d0 < 0.99999) {
-        vec2 tx = uTexel * uInkWidth;
-        float dR = texture2D(tDepth, uv + vec2(tx.x, 0.0)).x;
-        float dL = texture2D(tDepth, uv - vec2(tx.x, 0.0)).x;
-        float dU = texture2D(tDepth, uv + vec2(0.0, tx.y)).x;
-        float dD = texture2D(tDepth, uv - vec2(0.0, tx.y)).x;
-
-        float z0 = -viewPos(uv, d0).z;
-        float thr = 0.013 * z0;
-        float step0 = abs(-viewPos(uv + vec2(tx.x, 0.0), dR).z - z0);
-        step0 = max(step0, abs(-viewPos(uv - vec2(tx.x, 0.0), dL).z - z0));
-        step0 = max(step0, abs(-viewPos(uv + vec2(0.0, tx.y), dU).z - z0));
-        step0 = max(step0, abs(-viewPos(uv - vec2(0.0, tx.y), dD).z - z0));
-        float depthEdge = smoothstep(thr, thr * 2.2, step0);
-
-        vec3 N = normalAt(uv, d0);
-        float nd = 0.0;
-        if (dR < 0.99999) nd += 1.0 - dot(N, normalAt(uv + vec2(tx.x, 0.0), dR));
-        if (dU < 0.99999) nd += 1.0 - dot(N, normalAt(uv + vec2(0.0, tx.y), dU));
-        float normalEdge = smoothstep(0.10, 0.55, nd);
-
-        float edge = clamp(max(depthEdge, normalEdge) * uInk, 0.0, 1.0);
-
-        float dith = (hash(uv * 977.0) - 0.5) * (0.85 / uLevels);
-        float lq = clamp(floor(l * uLevels + 0.5 + dith) / uLevels, 0.0, 1.0);
-        c *= mix(1.0, lq / max(l, 0.0015), uFlat * uToon);
-        c = mix(c, uInkColor, edge * uToon);
-        }
-      }
 
       float vig = smoothstep(1.18, 0.28, length(d) * 1.42);
       c *= mix(1.0, vig, uVig);
@@ -33433,6 +34981,50 @@ void main() {
       c += (g - 0.5) * uGrain * mix(1.35, 0.35, smoothstep(0.0, 0.8, l));
 
       gl_FragColor = vec4(c * uFade, 1.0);
+    }
+  `
+    )
+  };
+  var Glare = {
+    uniforms: {
+      tDiffuse: { value: null },
+      uTint: { value: new Vector3(0.55, 0.78, 1) },
+      uStrength: { value: 0 },
+      uStride: { value: 0.011 },
+      uThreshold: { value: 0.62 }
+    },
+    vertexShader: (
+      /* glsl */
+      `
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `
+    ),
+    fragmentShader: (
+      /* glsl */
+      `
+    uniform sampler2D tDiffuse;
+    uniform vec3 uTint;
+    uniform float uStrength, uStride, uThreshold;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 base = texture2D(tDiffuse, vUv);
+      vec3 g = vec3(0.0);
+      float wsum = 0.0;
+      for (int i = 1; i <= 6; i++) {
+        float o = float(i) * uStride;
+        float w = 1.0 / float(i);
+        g += texture2D(tDiffuse, vUv + vec2(o, 0.0)).rgb * w;
+        g += texture2D(tDiffuse, vUv - vec2(o, 0.0)).rgb * w;
+        wsum += 2.0 * w;
+      }
+      g /= wsum;
+      // only what is over the threshold contributes, and softly \u2014 a highlight
+      // crosses into leaving a trail rather than switching one on
+      vec3 lit = max(g - uThreshold, 0.0);
+      base.rgb += lit * uTint * uStrength;
+      gl_FragColor = base;
     }
   `
     )
@@ -33456,16 +35048,17 @@ void main() {
     const ao = new AOPass(camera2, size.x, size.y);
     ao.setDepthTexture(depthTexture);
     const bloom2 = new UnrealBloomPass(new Vector2(size.x, size.y), 0.32, 0.7, 0.87);
+    const glare = new ShaderPass(Glare);
     const output = new OutputPass();
     const grade2 = new ShaderPass(Grade);
     grade2.uniforms.uFade.value = 0;
-    grade2.uniforms.tDepth.value = depthTexture;
     composer2.addPass(render2);
     composer2.addPass(ao);
     composer2.addPass(bloom2);
+    composer2.addPass(glare);
     composer2.addPass(output);
     composer2.addPass(grade2);
-    return { composer: composer2, render: render2, ao, bloom: bloom2, grade: grade2, output, depthTexture };
+    return { composer: composer2, render: render2, ao, bloom: bloom2, glare, grade: grade2, output, depthTexture };
   }
 
   // src/controls.js
@@ -33634,6 +35227,7 @@ void main() {
       this.ctx = null;
       this.on = false;
       this.level = 0.42;
+      this.media = null;
     }
     /** master level — ducked while the music plays */
     setLevel(v) {
@@ -33728,6 +35322,36 @@ void main() {
         });
       } catch {
       }
+    }
+    /** Route a media element through an analyser, so the picture can follow a
+          track this page did not synthesise. Returns the analyser, or null when the
+          browser refuses — which is the ordinary outcome under file://, where a
+          media element cannot be pulled into Web Audio at all.
+    
+          The element keeps its own path to the speakers either way: the source node
+          is wired straight to the destination, *not* through `master`, because the
+          tape bed's gain has no business muting the visitor's music. Once this has
+          been called the element no longer reaches the speakers on its own, which
+          is why a context that has not been resumed is the one thing that could
+          silence it — so resume first.
+    
+          Called at most once per element: a second MediaElementSource on the same
+          element is an error, and the page only ever has one. */
+    attachMedia(el) {
+      if (this.media) return this.media;
+      if (!this._ensure()) return null;
+      this._resume();
+      try {
+        const src = this.ctx.createMediaElementSource(el);
+        const an = this.ctx.createAnalyser();
+        an.fftSize = 512;
+        an.smoothingTimeConstant = 0.7;
+        src.connect(an).connect(this.ctx.destination);
+        this.media = an;
+      } catch {
+        this.media = null;
+      }
+      return this.media;
     }
     start() {
       if (this.on) return;
@@ -33868,18 +35492,566 @@ void main() {
     return (file.type || "").startsWith("audio/") || AUDIO_EXT.test(file.name || "");
   }
 
+  // src/demo-audio.js
+  var SR = 44100;
+  var FPS = 60;
+  var HOP = SR / FPS;
+  var hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  var TBL = 4096;
+  var SIN = new Float32Array(TBL + 1);
+  var TRI = new Float32Array(TBL + 1);
+  var CLIP = new Float32Array(TBL + 1);
+  for (let i = 0; i <= TBL; i++) {
+    const p = i / TBL;
+    SIN[i] = Math.sin(2 * Math.PI * p);
+    TRI[i] = 1 - 4 * Math.abs((p + 0.25) % 1 - 0.5);
+    const x = p * 4 - 2;
+    CLIP[i] = Math.tanh(x * 1.7) / Math.tanh(1.7);
+  }
+  var rs = 625341585;
+  function rnd() {
+    rs ^= rs << 13;
+    rs ^= rs >>> 17;
+    rs ^= rs << 5;
+    return (rs >>> 0) / 2147483648 - 1;
+  }
+  var ARR = [
+    { kick: [0, 2], snare: [], hat: 1, arp: 0, bass: [0, 2] },
+    { kick: [0, 2], snare: [1, 3], hat: 0.5, arp: 0.5, bass: [0, 1, 2, 3] },
+    { kick: [0, 1.5, 2, 3.5], snare: [1, 3], hat: 0.5, arp: 0.5, bass: [0, 1, 2, 3], fill: true }
+  ];
+  function bpCoef(f, q, sr) {
+    const w = 2 * Math.PI * f / sr;
+    const a = Math.sin(w) / (2 * q);
+    const c = Math.cos(w);
+    const a0 = 1 + a;
+    return [a / a0, 0, -a / a0, -2 * c / a0, (1 - a) / a0];
+  }
+  function addPad(bus, n0, env, midis) {
+    const n = Math.min(env.length, bus.length - n0);
+    const g = 0.042;
+    for (const m of midis) {
+      const base = hz(m);
+      for (let d = -1; d <= 1; d++) {
+        const inc = base * (1 + d * 4e-3) / SR;
+        let ph = 0.37 + d * 0.21;
+        for (let i = 0; i < n; i++) {
+          const x = ph * TBL, j = x | 0, fr = x - j;
+          bus[n0 + i] += (TRI[j] + (TRI[j + 1] - TRI[j]) * fr) * env[i] * g;
+          ph += inc;
+          if (ph >= 1) ph -= 1;
+        }
+      }
+    }
+  }
+  function addBass(bus, n0, env, coef, midi, g) {
+    const n = Math.min(env.length, bus.length - n0);
+    const inc = hz(midi) / SR;
+    let ph = 0.11, y = 0;
+    for (let i = 0; i < n; i++) {
+      const saw = ph * 2 - 1;
+      y += coef[i] * (saw - y);
+      bus[n0 + i] += y * env[i] * g;
+      ph += inc;
+      if (ph >= 1) ph -= 1;
+    }
+  }
+  function addArp(bus, n0, dur, midi, g) {
+    const n = Math.min(Math.round(dur * SR), bus.length - n0);
+    const inc = hz(midi) / SR;
+    const atk = Math.max(1, Math.round(9e-3 * SR));
+    let ph = 0.29;
+    for (let i = 0; i < n; i++) {
+      const t2 = i / SR;
+      const e = i < atk ? i / atk : Math.exp(-(t2 - atk / SR) / (dur * 0.3));
+      const x = ph * TBL, j = x | 0, fr = x - j;
+      bus[n0 + i] += (TRI[j] + (TRI[j + 1] - TRI[j]) * fr) * e * g;
+      ph += inc;
+      if (ph >= 1) ph -= 1;
+    }
+  }
+  function addKick(bus, n0, g) {
+    const n = Math.min(Math.round(0.34 * SR), bus.length - n0);
+    const dk = 0.11 * SR;
+    let ph = 0;
+    for (let i = 0; i < n; i++) {
+      const t2 = i / SR;
+      const f = i < dk ? 118 * Math.pow(43 / 118, i / dk) : 43;
+      let e = Math.exp(-t2 / 0.075);
+      if (i < 70) e += (1 - i / 70) * 0.22 * rnd();
+      ph += f / SR;
+      if (ph >= 1) ph -= 1;
+      const x = ph * TBL, j = x | 0, fr = x - j;
+      bus[n0 + i] += (SIN[j] + (SIN[j + 1] - SIN[j]) * fr) * e * g;
+    }
+  }
+  function addSnare(bus, n0, g, bp) {
+    const n = Math.min(Math.round(0.2 * SR), bus.length - n0);
+    let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+    let ph = 0.13;
+    const inc = 184 / SR;
+    for (let i = 0; i < n; i++) {
+      const t2 = i / SR;
+      const e = Math.exp(-t2 / 0.055);
+      const x = rnd();
+      const y = bp[0] * x + bp[1] * x1 + bp[2] * x2 - bp[3] * y1 - bp[4] * y2;
+      x2 = x1;
+      x1 = x;
+      y2 = y1;
+      y1 = y;
+      const bx = ph * TBL, bj = bx | 0, bf = bx - bj;
+      const body = (SIN[bj] + (SIN[bj + 1] - SIN[bj]) * bf) * Math.exp(-t2 / 0.032) * 0.45;
+      ph += inc;
+      if (ph >= 1) ph -= 1;
+      bus[n0 + i] += (y * 1.7 + body) * e * g;
+    }
+  }
+  function addHat(bus, n0, g, open) {
+    const d = open ? 0.2 : 0.042;
+    const n = Math.min(Math.round(d * SR), bus.length - n0);
+    const c = 1 - Math.exp(-2 * Math.PI * 7400 / SR);
+    let y = 0;
+    for (let i = 0; i < n; i++) {
+      const e = Math.exp(-(i / SR) / (d * 0.28));
+      const x = rnd();
+      y += c * (x - y);
+      bus[n0 + i] += (x - y) * e * g;
+    }
+  }
+  async function renderSide(spec) {
+    const dur = spec.dur;
+    const N = Math.round(SR * dur);
+    const bus = new Float32Array(N);
+    const spb = 60 / spec.bpm;
+    const bar = spb * 4;
+    const bars = Math.floor(dur / bar);
+    const chords = spec.chords;
+    const roots = spec.roots;
+    const arrIdx = spec.arr || [0, 1, 2];
+    const tracks = spec.tracks;
+    const kicks = [];
+    const at = (t2) => Math.round(t2 * SR);
+    const trackAt2 = (t2) => {
+      for (let i = 0; i < tracks.length; i++) {
+        if (t2 >= tracks[i].start && t2 < tracks[i].start + tracks[i].len) return i;
+      }
+      return 0;
+    };
+    const padLen = bar * 2;
+    const padN = Math.round(padLen * SR);
+    const padEnv = new Float32Array(padN);
+    {
+      const atk = padLen * 0.34;
+      const tail = padLen * 0.5;
+      for (let i = 0; i < padN; i++) {
+        const t2 = i / SR;
+        padEnv[i] = t2 < atk ? t2 / atk : Math.max(0, 1 - (t2 - tail) / (padLen - tail));
+      }
+    }
+    for (let k = 0; k * 2 * bar < dur; k++) {
+      addPad(bus, at(k * 2 * bar), padEnv, chords[k % chords.length]);
+    }
+    const bassDur = spb * 0.92;
+    const bassN = Math.round(bassDur * SR);
+    const bassEnv = new Float32Array(bassN);
+    const bassCoef = new Float32Array(bassN);
+    {
+      const atk = 0.014;
+      const relAt = bassDur - 0.06;
+      for (let i = 0; i < bassN; i++) {
+        const t2 = i / SR;
+        if (t2 < atk) bassEnv[i] = t2 / atk;
+        else if (t2 > relAt) bassEnv[i] = Math.max(0, 1 - (t2 - relAt) / 0.25);
+        else bassEnv[i] = 0.7 + 0.3 * Math.exp(-(t2 - atk) / 0.2);
+      }
+      for (let i = 0; i < bassN; i++) {
+        const t2 = i / SR;
+        const f = t2 < 0.07 ? 110 + (560 - 110) * (t2 / 0.07) : 560 * Math.pow(170 / 560, (t2 - 0.07) / Math.max(0.01, bassDur - 0.07));
+        bassCoef[i] = 1 - Math.exp(-2 * Math.PI * f / SR);
+      }
+    }
+    const bp = bpCoef(1750, 0.8, SR);
+    for (let b = 0; b < bars; b++) {
+      const t0 = b * bar;
+      const ci = Math.floor(b / 2) % chords.length;
+      const A = ARR[arrIdx[Math.min(trackAt2(t0), arrIdx.length - 1)] % ARR.length];
+      const last2 = b % 4 === 3;
+      for (const beat of A.bass) addBass(bus, at(t0 + beat * spb), bassEnv, bassCoef, roots[ci], 0.4);
+      for (const beat of A.kick) {
+        const n0 = at(t0 + beat * spb);
+        addKick(bus, n0, 0.92);
+        kicks.push(n0);
+      }
+      for (const beat of A.snare) addSnare(bus, at(t0 + beat * spb), 0.4, bp);
+      for (let s = 0; s < 4 - 1e-9; s += A.hat) {
+        const open = !!A.fill && last2 && s >= 3 - 1e-9;
+        addHat(bus, at(t0 + s * spb), s % 1 === 0 ? 0.13 : 0.085, open);
+      }
+      if (A.arp) {
+        const tones = chords[ci].map((m) => m + 12);
+        let n = 0;
+        for (let s = 0; s < 4 - 1e-9; s += A.arp) {
+          addArp(bus, at(t0 + s * spb), spb * A.arp * 0.9, tones[n % tones.length], 0.08);
+          n++;
+        }
+      }
+    }
+    const outL = new Float32Array(N);
+    const outR = new Float32Array(N);
+    const dl = new Float32Array(N);
+    const dSamp = Math.round(0.012 * SR);
+    const lfoInc = 0.6 / SR;
+    const lpC = 1 - Math.exp(-2 * Math.PI * 1e4 / SR);
+    const hpC = 1 - Math.exp(-2 * Math.PI * 1500 / SR);
+    const duckCoef = 1 - Math.exp(-1 / (0.055 * SR));
+    kicks.sort((a, b) => a - b);
+    let lp = 0, hp = 0, duck = 1, ki = 0, lfoPh = 0;
+    for (let i = 0; i < N; i++) {
+      dl[i] = bus[i];
+      lfoPh += lfoInc;
+      if (lfoPh >= 1) lfoPh -= 1;
+      const wx = lfoPh * TBL, wj = wx | 0, wf = wx - wj;
+      const wob = SIN[wj] + (SIN[wj + 1] - SIN[wj]) * wf;
+      const rd = i - dSamp - wob * 26;
+      let s = 0;
+      if (rd >= 1) {
+        const rj = rd | 0, rf = rd - rj;
+        s = dl[rj] + (dl[rj + 1] - dl[rj]) * rf;
+      } else if (rd >= 0) s = dl[0];
+      lp += lpC * (s - lp);
+      let cx = (lp + 2) / 4;
+      cx = cx < 0 ? 0 : cx > 1 ? 1 : cx;
+      const cxp = cx * TBL, cj = cxp | 0, cf = cxp - cj;
+      let v = CLIP[cj] + (CLIP[cj + 1] - CLIP[cj]) * cf;
+      if (ki < kicks.length && i >= kicks[ki]) {
+        duck = 0.58;
+        ki++;
+      }
+      duck += (1 - duck) * duckCoef;
+      v *= duck * 0.84;
+      hp += hpC * (v - hp);
+      const side = (v - hp) * 0.16;
+      outL[i] = v + side;
+      outR[i] = v - side;
+    }
+    return { wav: encodeWav(outL, outR), analysis: analyse(outL, outR), dur };
+  }
+  function writeStr(v, at, s) {
+    for (let i = 0; i < s.length; i++) v.setUint8(at + i, s.charCodeAt(i));
+  }
+  function encodeWav(l, r) {
+    const n = l.length;
+    const ch = r ? 2 : 1;
+    const bytes = 44 + n * ch * 2;
+    const ab = new ArrayBuffer(bytes);
+    const dv = new DataView(ab);
+    writeStr(dv, 0, "RIFF");
+    dv.setUint32(4, bytes - 8, true);
+    writeStr(dv, 8, "WAVE");
+    writeStr(dv, 12, "fmt ");
+    dv.setUint32(16, 16, true);
+    dv.setUint16(20, 1, true);
+    dv.setUint16(22, ch, true);
+    dv.setUint32(24, SR, true);
+    dv.setUint32(28, SR * ch * 2, true);
+    dv.setUint16(32, ch * 2, true);
+    dv.setUint16(34, 16, true);
+    writeStr(dv, 36, "data");
+    dv.setUint32(40, n * ch * 2, true);
+    const pcm = new Int16Array(ab, 44, n * ch);
+    let o = 0;
+    for (let i = 0; i < n; i++) {
+      let a = l[i];
+      a = a < -1 ? -1 : a > 1 ? 1 : a;
+      pcm[o++] = a < 0 ? a * 32768 : a * 32767;
+      if (ch === 2) {
+        let b = r[i];
+        b = b < -1 ? -1 : b > 1 ? 1 : b;
+        pcm[o++] = b < 0 ? b * 32768 : b * 32767;
+      }
+    }
+    return new Blob([ab], { type: "audio/wav" });
+  }
+  function analyse(l, r) {
+    const frames = Math.floor(l.length / HOP);
+    const out = new Uint8Array(frames * 4);
+    const a = [120, 500, 2e3].map((f) => 1 - Math.exp(-2 * Math.PI * f / SR));
+    const raw = new Float32Array(frames * 4);
+    const peak = [1e-6, 1e-6, 1e-6, 1e-6];
+    let y1 = 0, y2 = 0, y3 = 0;
+    for (let f = 0; f < frames; f++) {
+      let s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+      const end = (f + 1) * HOP;
+      for (let i = f * HOP; i < end; i++) {
+        const x = r ? (l[i] + r[i]) * 0.5 : l[i];
+        y1 += a[0] * (x - y1);
+        y2 += a[1] * (x - y2);
+        y3 += a[2] * (x - y3);
+        const b0 = y1, b1 = y2 - y1, b2 = y3 - y2, b3 = x - y3;
+        s0 += b0 * b0;
+        s1 += b1 * b1;
+        s2 += b2 * b2;
+        s3 += b3 * b3;
+      }
+      const q = [Math.sqrt(s0 / HOP), Math.sqrt(s1 / HOP), Math.sqrt(s2 / HOP), Math.sqrt(s3 / HOP)];
+      for (let k = 0; k < 4; k++) {
+        raw[f * 4 + k] = q[k];
+        if (q[k] > peak[k]) peak[k] = q[k];
+      }
+    }
+    for (let f = 0; f < frames; f++) {
+      for (let k = 0; k < 4; k++) {
+        const v = raw[f * 4 + k] / peak[k];
+        out[f * 4 + k] = Math.round(Math.min(1, Math.pow(v, 0.6)) * 255);
+      }
+    }
+    return out;
+  }
+
+  // src/playlist.js
+  var ARTIST = "\u6821\u51C6\u5BA4";
+  var A_TRACKS = [
+    { no: "A1", title: "\u9759\u6C34", start: 0, len: 20 },
+    { no: "A2", title: "\u6162\u901F\u5E26", start: 20, len: 20 },
+    { no: "A3", title: "\u96F6\u70B9\u6F02\u79FB", start: 40, len: 20 }
+  ];
+  var B_TRACKS = [
+    { no: "B1", title: "\u957F\u56DE\u58F0", start: 0, len: 20 },
+    { no: "B2", title: "\u9000\u78C1", start: 20, len: 20 },
+    { no: "B3", title: "\u5E95\u566A", start: 40, len: 20 }
+  ];
+  var SIDES = [
+    {
+      id: "A",
+      cn: "A \u9762",
+      /* what gets printed on the cassette's own label for this side */
+      label: { title: "\u4F4E\u6E29\u88C5\u914D", artist: ARTIST, album: "OHM \u6F14\u793A\u5E26 \xB7 A \u9762" },
+      spec: {
+        dur: 60,
+        bpm: 92,
+        arr: [0, 1, 2],
+        tracks: A_TRACKS,
+        chords: [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 62], [55, 59, 62, 66]],
+        roots: [33, 29, 36, 31]
+      }
+    },
+    {
+      id: "B",
+      cn: "B \u9762",
+      label: { title: "\u6DF1\u6C34\u533A", artist: ARTIST, album: "OHM \u6F14\u793A\u5E26 \xB7 B \u9762" },
+      spec: {
+        dur: 60,
+        bpm: 76,
+        arr: [1, 2, 0],
+        tracks: B_TRACKS,
+        chords: [[50, 53, 57, 60], [47, 50, 53, 57], [46, 50, 53, 57], [48, 52, 55, 62]],
+        roots: [38, 43, 46, 48]
+      }
+    }
+  ];
+  for (const s of SIDES) {
+    s.tracks = s.spec.tracks;
+    s.dur = s.spec.dur;
+    s.url = null;
+    s.analysis = null;
+  }
+  async function loadSide(i) {
+    const s = SIDES[i];
+    if (!s) return null;
+    if (s.url) return s;
+    const { wav, analysis } = await renderSide(s.spec);
+    s.url = URL.createObjectURL(wav);
+    s.analysis = analysis;
+    return s;
+  }
+  function sideOf(url) {
+    return SIDES.find((s) => s.url && s.url === url) || null;
+  }
+  function trackAt(side, t2) {
+    if (!side) return null;
+    for (const k of side.tracks) if (t2 >= k.start && t2 < k.start + k.len) return k;
+    return side.tracks[side.tracks.length - 1] || null;
+  }
+
+  // src/viz.js
+  var CHASE = 16;
+  var BAR_MIN = 0.1875;
+  var BAR_MAX = 0.6875;
+  var EDGE_HZ = [20, 160, 500, 2e3, 8e3];
+  var MEDIA_TRIM = 0.62;
+  var BLOOM_FOLLOW = 2;
+  var BLOOM_SWING = 0.55;
+  var BLOOM_MIN = 0.85;
+  var BLOOM_MAX = 1.3;
+  function createViz(bars) {
+    const lv = new Float32Array(4);
+    const raw = new Float32Array(4);
+    let media = null, bins = null, tried = false;
+    let url = null, side = null;
+    let avg = 0, beat = 1;
+    function listen(el, tape) {
+      if (tried) return !!media;
+      tried = true;
+      const an = tape.attachMedia(el);
+      if (!an) return false;
+      media = an;
+      bins = new Uint8Array(an.frequencyBinCount);
+      return true;
+    }
+    function readSide(t2) {
+      const a = side.analysis;
+      const f = Math.min(t2 * FPS | 0, (a.length >> 2) - 1);
+      const o = f << 2;
+      raw[0] = a[o] / 255;
+      raw[1] = a[o + 1] / 255;
+      raw[2] = a[o + 2] / 255;
+      raw[3] = a[o + 3] / 255;
+    }
+    function readMedia() {
+      media.getByteFrequencyData(bins);
+      const n = bins.length;
+      const per = media.context.sampleRate / (n * 2);
+      let lo = Math.max(1, Math.round(EDGE_HZ[0] / per));
+      for (let k = 0; k < 4; k++) {
+        const hi = Math.max(lo + 1, Math.min(n, Math.round(EDGE_HZ[k + 1] / per)));
+        let s = 0;
+        for (let i = lo; i < hi; i++) s += bins[i];
+        raw[k] = Math.min(1, s / (hi - lo) / 255 / MEDIA_TRIM);
+        lo = hi;
+      }
+    }
+    function update(dt, el, live2) {
+      const src = el.currentSrc || el.src;
+      if (src !== url) {
+        url = src;
+        side = sideOf(src);
+      }
+      let ok = false;
+      if (live2) {
+        if (side?.analysis) {
+          readSide(el.currentTime);
+          ok = true;
+        } else if (media) {
+          readMedia();
+          ok = true;
+        }
+      }
+      const k = 1 - Math.exp(-CHASE * dt);
+      for (let i = 0; i < 4; i++) lv[i] += ((ok ? raw[i] : 0) - lv[i]) * k;
+      avg += (lv[0] - avg) * (1 - Math.exp(-BLOOM_FOLLOW * dt));
+      const b = 1 + BLOOM_SWING * (lv[0] - avg);
+      beat = b < BLOOM_MIN ? BLOOM_MIN : b > BLOOM_MAX ? BLOOM_MAX : b;
+      document.body.classList.toggle("eq-live", ok);
+      if (ok) {
+        for (let i = 0; i < 4; i++) {
+          bars[i].style.height = (BAR_MIN + lv[i] * (BAR_MAX - BAR_MIN)).toFixed(4) + "rem";
+        }
+      } else if (bars[0].style.height) {
+        for (const b2 of bars) b2.style.height = "";
+      }
+      return lv;
+    }
+    return {
+      listen,
+      update,
+      /** what the bloom should be multiplied by this frame, 1 being the room's
+          own value — see main.js's applyTheme() */
+      get beat() {
+        return beat;
+      }
+    };
+  }
+
   // src/main.js
   var $ = (s) => document.querySelector(s);
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canvas2 = $("#gl");
+  var RISE = { duration: 300, easing: "cubic-bezier(.16, 1, .3, 1)" };
+  var LEAVE = { duration: 150, easing: "cubic-bezier(.4, 0, 1, 1)", fill: "forwards" };
+  var FROM_ABOVE = [{ opacity: 0, transform: "translateY(.5em)" }, { opacity: 1, transform: "none" }];
+  var TO_ABOVE = [{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(-.5em)" }];
+  var FROM_BELOW = [{ opacity: 0, transform: "translateY(.72em)" }, { opacity: 1, transform: "none" }];
+  var TO_ABOVE_CELL = [{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(-.72em)" }];
+  function swapText(el, text) {
+    if (!el) return;
+    text = String(text);
+    if (el.__t === text) return;
+    const seed = el.__t === void 0;
+    el.__t = text;
+    if (seed || reduce) {
+      el.textContent = text;
+      return;
+    }
+    if (el.__leaving) return;
+    el.__leaving = true;
+    const out = el.animate(TO_ABOVE, LEAVE);
+    clearTimeout(el.__swapT);
+    el.__swapT = setTimeout(() => {
+      el.__leaving = false;
+      out.cancel();
+      el.textContent = el.__t;
+      el.animate(FROM_ABOVE, RISE);
+    }, LEAVE.duration);
+  }
+  function riseText(el, text) {
+    if (!el) return;
+    text = String(text);
+    if (el.__r === text) return;
+    const seed = el.__r === void 0;
+    el.__r = text;
+    el.textContent = text;
+    if (seed || reduce) return;
+    el.animate(FROM_ABOVE, RISE);
+  }
+  function setRoll(el, text) {
+    if (!el) return;
+    text = String(text);
+    if (el.__v === text) return;
+    const seed = el.__v === void 0;
+    el.__v = text;
+    let cells = el.__cells;
+    if (!cells) {
+      el.textContent = "";
+      cells = el.__cells = [];
+    }
+    while (cells.length < text.length) {
+      const c = document.createElement("span");
+      c.className = "od";
+      c.append(document.createElement("b"), document.createElement("b"));
+      el.append(c);
+      cells.push(c);
+    }
+    const off = cells.length - text.length;
+    for (let i = 0; i < cells.length; i++) {
+      const ch = i < off ? "" : text[i - off];
+      const c = cells[i];
+      if (c.__c === ch) continue;
+      const old = c.__c ?? "";
+      c.__c = ch;
+      c.lastElementChild.textContent = old;
+      c.firstElementChild.textContent = ch;
+      if (seed || reduce || !old || !ch) continue;
+      c.lastElementChild.animate(TO_ABOVE_CELL, RISE);
+      c.firstElementChild.animate(FROM_BELOW, RISE);
+    }
+  }
   var THEMES = {
     noir: {
       env: "noir",
       dust: 0.4,
       hal: 0.072,
       ao: 1,
-      grade: { bloom: 0.32, ca: 0.85, grain: 0.05, vig: 0.85, sat: 1, edge: 1, focus: 0.26 },
-      toon: { on: 0 },
+      grade: {
+        bloom: 0.32,
+        ca: 0.85,
+        grain: 0.05,
+        vig: 0.85,
+        sat: 1,
+        edge: 1,
+        focus: 0.26,
+        halTint: [1, 0.6, 0.32]
+        // the warm bleed the page shipped with
+      },
       bg: {
         stops: [[0, "#12151a"], [0.44, "#1e232a"], [0.64, "#0d1014"], [1, "#040507"]],
         spot: { u: 0.849, v: 0.48, r: 0.4, color: "rgba(140,162,200,0.75)" }
@@ -33888,15 +36060,24 @@ void main() {
       floorMix: 0.6,
       shadowOp: 0.44,
       pool: 16747068,
-      poolOp: 0.09
+      poolOp: 0.09,
+      glare: { tint: [1, 0.72, 0.44], strength: 0.2, stride: 0.01, threshold: 0.58 }
     },
     studio: {
       env: "studio",
       dust: 0.16,
       hal: 0.02,
       ao: 0.92,
-      grade: { bloom: 0.32, ca: 0.85, grain: 0.05, vig: 0.85, sat: 1, edge: 1, focus: 0.26 },
-      toon: { on: 0 },
+      grade: {
+        bloom: 0.32,
+        ca: 0.85,
+        grain: 0.05,
+        vig: 0.85,
+        sat: 1,
+        edge: 1,
+        focus: 0.26,
+        halTint: [1, 0.6, 0.32]
+      },
       bg: {
         stops: [[0, "#9aa0a8"], [0.46, "#c2c7ce"], [0.78, "#d8dade"], [1, "#e9ebee"]],
         spot: { u: 0.849, v: 0.48, r: 0.44, color: "rgba(255,255,255,0.50)" }
@@ -33905,30 +36086,49 @@ void main() {
       floorMix: 0.38,
       shadowOp: 0.26,
       pool: 16777215,
-      poolOp: 0.04
+      poolOp: 0.04,
+      // the room the page opens in, so this is the one glare nobody should be
+      // able to notice: a hint of a streak on the speculars and nothing else
+      glare: { tint: [0.86, 0.93, 1], strength: 0.08, stride: 8e-3, threshold: 0.66 }
     },
-    toon: {
-      // 三渲二: flat high-key light, posterised luminance, inked creases
-      env: "studio",
-      dust: 0.09,
-      hal: 0.012,
-      ao: 0.5,
-      grade: { bloom: 0.2, ca: 0.22, grain: 0.026, vig: 0.48, sat: 1.12, edge: 1, focus: 0.26 },
-      toon: { on: 1, levels: 4, flat: 0.88, ink: 0.6, width: 1.5 },
-      bg: {
-        stops: [[0, "#b4b9c1"], [0.46, "#d8dbdf"], [0.78, "#eef0f2"], [1, "#f8f9fa"]],
-        spot: { u: 0.849, v: 0.5, r: 0.52, color: "rgba(255,255,255,0.60)" }
+    /* Deep water. Everything here is downstream of one fact — light that has come
+       down through a column of water has lost its red end — so the room is not a
+       daylight scene with a blue filter over it: the halation is cold, the
+       saturation is pulled down, the defocus is wider (there is more between the
+       lens and the subject down here), and the glare is the longest and bluest of
+       the three, because a streak is what a bright surface looks like from below. */
+    abyss: {
+      env: "abyss",
+      dust: 0.26,
+      hal: 0.038,
+      ao: 1.05,
+      grade: {
+        bloom: 0.44,
+        ca: 0.75,
+        grain: 0.055,
+        vig: 0.92,
+        sat: 0.92,
+        edge: 1.05,
+        focus: 0.24,
+        halTint: [0.42, 0.72, 1]
       },
-      floor2: 11975618,
-      floorMix: 0.26,
-      shadowOp: 0.22,
-      pool: 16777215,
-      poolOp: 0.03
+      bg: {
+        stops: [[0, "#0a1c2a"], [0.46, "#12303f"], [0.74, "#0a1f2c"], [1, "#02080e"]],
+        spot: { u: 0.849, v: 0.48, r: 0.42, color: "rgba(120,196,235,0.62)" }
+      },
+      floor2: 662568,
+      floorMix: 0.52,
+      shadowOp: 0.38,
+      pool: 6277352,
+      poolOp: 0.11,
+      glare: { tint: [0.42, 0.8, 1], strength: 0.34, stride: 0.013, threshold: 0.55 }
     }
   };
   for (const T of Object.values(THEMES)) {
     T.cFloor2 = new Color(T.floor2);
     T.cPool = new Color(T.pool);
+    T.cHalTint = new Vector3(...T.grade.halTint);
+    T.cGlare = new Vector3(...T.glare.tint);
   }
   var themeName = "studio";
   var renderer;
@@ -33938,7 +36138,8 @@ void main() {
     document.body.innerHTML = '<p style="color:#eee;font:14px/1.6 system-ui;padding:3rem">\u5F53\u524D\u6D4F\u89C8\u5668\u65E0\u6CD5\u521D\u59CB\u5316 WebGL\uFF0C\u8BF7\u4F7F\u7528 Chrome / Edge \u6253\u5F00\u3002</p>';
     throw err;
   }
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  var DPR_CAP = 1.5;
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, DPR_CAP));
   renderer.setSize(innerWidth, innerHeight, false);
   renderer.toneMapping = NeutralToneMapping ?? ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1;
@@ -33983,15 +36184,15 @@ void main() {
     blending: AdditiveBlending,
     depthWrite: false
   });
-  var pool = new Mesh(new CircleGeometry(9, 48), poolMat);
-  pool.rotation.x = -Math.PI / 2;
-  pool.renderOrder = 3;
-  scene.add(pool);
+  var pool2 = new Mesh(new CircleGeometry(9, 48), poolMat);
+  pool2.rotation.x = -Math.PI / 2;
+  pool2.renderOrder = 3;
+  scene.add(pool2);
   var FLOOR_Y = -1.62;
   function setFloorDrop(d) {
     floorBase.mesh.position.y = FLOOR_Y - d;
     shadowCatcher.position.y = FLOOR_Y + 8e-3 - d;
-    pool.position.y = FLOOR_Y + 0.02 - d;
+    pool2.position.y = FLOOR_Y + 0.02 - d;
   }
   setFloorDrop(0);
   var dustLayers = [
@@ -34065,6 +36266,7 @@ void main() {
   var composer = null;
   var grade = null;
   var bloom = null;
+  var glarePass = null;
   var probe = null;
   var rigPanels = null;
   var probeDirty = false;
@@ -34109,11 +36311,18 @@ void main() {
     artist: "Matryoshka",
     album: "Laideronnette",
     src: "assets/sacred-play-secret-place.mp3",
-    file: null
+    file: null,
+    minutes: "05"
   };
   var TRACK = { ...TRACK_DEFAULT };
   var objUrl = null;
+  var DEMO_URLS = /* @__PURE__ */ new Set();
+  var releaseUrl = (u) => {
+    if (u && !DEMO_URLS.has(u)) URL.revokeObjectURL(u);
+  };
   var audioEl = $("#tape-audio");
+  var viz = createViz([...document.querySelectorAll("#now .eq i")]);
+  var bloomGain = 1;
   var mode = "idle";
   var muted = false;
   var volume = 0.1;
@@ -34121,7 +36330,7 @@ void main() {
   var bedLevel = () => prefs.hiss ? muted ? 0.45 : 0.3 * volume : 0;
   var audioOk = () => audioEl.readyState >= 2 && isFinite(audioEl.duration) && audioEl.duration > 0;
   var SWAP_DUR = 1.2;
-  var swap = { state: "idle", p: 0, press: 0, neu: null, old: null, dur: 0, play: false, meta: null };
+  var swap = { state: "idle", p: 0, press: 0, neu: null, old: null, dur: 0, play: false, seek: null, meta: null };
   var loadSeq = 0;
   var brandCode = $("#brand-code");
   var currentName = TRACK_DEFAULT.src;
@@ -34137,9 +36346,9 @@ void main() {
     cas.st.duration = d;
   }
   function setNowChip() {
-    $("#now-title").textContent = TRACK.title;
+    swapText($("#now-title"), TRACK.title);
     const credits = [TRACK.artist, TRACK.album].filter(Boolean).join(" \xB7 ");
-    $("#now-sub").textContent = audioFailed ? "\u97F3\u9891\u52A0\u8F7D\u5931\u8D25 \xB7 \u4EC5\u8D70\u5E26\u52A8\u753B" : credits || "\u672A\u77E5\u66F2\u76EE";
+    swapText($("#now-sub"), audioFailed ? "\u97F3\u9891\u52A0\u8F7D\u5931\u8D25 \xB7 \u4EC5\u8D70\u5E26\u52A8\u753B" : credits || "\u672A\u77E5\u66F2\u76EE");
   }
   function whenPlayable() {
     return new Promise((resolve) => {
@@ -34182,10 +36391,11 @@ void main() {
     audioEl.src = src;
     audioEl.load();
     audioEl.currentTime = 0;
+    if (!sideOf(src)) viz.listen(audioEl, audio);
     cas.setProgress(0);
     document.body.classList.remove("no-audio");
     audioFailed = false;
-    if (stale && stale !== src) URL.revokeObjectURL(stale);
+    if (stale && stale !== src) releaseUrl(stale);
     swap.meta = { title, artist, album, src, file };
     swap.state = "arming";
     swap.dur = 0;
@@ -34222,10 +36432,17 @@ void main() {
     swap.meta = null;
     if (swap.dur > 0) {
       cas.st.duration = swap.dur;
-      brandCode.textContent = "C\u2014" + tapeMinutes(swap.dur);
+      swapText(brandCode, "C\u2014" + tapeMinutes(swap.dur));
     }
     setNowChip();
     flashAdd(null);
+    if (swap.seek != null) {
+      const f = swap.seek;
+      swap.seek = null;
+      seekTo(f);
+    }
+    shownTrack = null;
+    syncNowTrack();
     if (swap.play) {
       swap.play = false;
       togglePlay(true);
@@ -34245,7 +36462,7 @@ void main() {
   function reinitTrack() {
     if (swap.state !== "idle") cancelSwap();
     if (objUrl) {
-      URL.revokeObjectURL(objUrl);
+      releaseUrl(objUrl);
       objUrl = null;
     }
     const T = TRACK_DEFAULT;
@@ -34257,7 +36474,7 @@ void main() {
     cas.setProgress(0);
     audioFailed = false;
     Object.assign(TRACK, T);
-    const staged = cas.setLabel({ title: T.title, artist: T.artist, album: T.album, minutes: "05" });
+    const staged = cas.setLabel({ title: T.title, artist: T.artist, album: T.album, minutes: T.minutes });
     for (const e of ghosts) {
       const i = staged.old.indexOf(e.m.map);
       if (i >= 0) e.m.map = staged.neu[i];
@@ -34265,9 +36482,26 @@ void main() {
     cas.commitLabel();
     for (const t2 of staged.old) t2.dispose();
     cas.warmLabel(false);
-    brandCode.textContent = "C\u201405";
+    swapText(brandCode, "C\u2014" + T.minutes);
     setNowChip();
     swap.dur = 0;
+  }
+  async function playSide(i) {
+    const s = await loadSide(i);
+    if (!s) return;
+    applyTrack({ title: s.label.title, artist: s.label.artist, album: s.label.album, src: s.url, file: null });
+  }
+  function flipSide() {
+    setFlip(!flipped);
+    playSide(flipped ? 1 : 0);
+  }
+  async function playTrack(si, ti) {
+    const s = SIDES[si];
+    if (!s) return;
+    const k = s.tracks[ti];
+    await loadSide(si);
+    applyTrack({ title: s.label.title, artist: s.label.artist, album: s.label.album, src: s.url, file: null });
+    swap.seek = k.start / s.dur;
   }
   var Q = new URLSearchParams(location.search);
   function applyQuery(camera2 = true) {
@@ -34298,11 +36532,11 @@ void main() {
     render();
   }
   var ANNOS = [
-    { key: "glass", side: "left", n: "02", t: "\u89C2\u5BDF\u7A97", s: "PC GLASS \xB7 TRANSMISSION 1.0" },
-    { key: "shell", side: "left", n: "01", t: "\u70DF\u7070\u4E0A\u58F3", s: "POLYCARBONATE \xB7 1.1 mm" },
-    { key: "hub", side: "left", n: "05", t: "\u8F6E\u6BC2\u4E0E\u5E26\u76D8", s: "POM \xB7 6-SPLINE \xB7 \u230012" },
+    { key: "glass", side: "left", n: "02", t: "\u89C2\u5BDF\u7A97", s: "PC \u73BB\u7483 \xB7 \u900F\u5C04 1.0" },
+    { key: "shell", side: "left", n: "01", t: "\u70DF\u7070\u4E0A\u58F3", s: "\u805A\u78B3\u9178\u916F \xB7 1.1 mm" },
+    { key: "hub", side: "left", n: "05", t: "\u8F6E\u6BC2\u4E0E\u5E26\u76D8", s: "POM \xB7 \u516D\u9F7F \xB7 \u230012" },
     { key: "tape", side: "left", n: "04", t: "\u78C1\u5E26", s: "\u03B3-Fe\u2082O\u2083 \xB7 3.81 mm" },
-    { key: "screw", side: "left", n: "03", t: "\u81EA\u653B\u87BA\u9489", s: "STEEL \xB7 M2 \xD7 5 \xB7 \xD75" }
+    { key: "screw", side: "left", n: "03", t: "\u81EA\u653B\u87BA\u9489", s: "\u94A2 \xB7 M2 \xD7 5 \xB7 \xD75" }
   ];
   var ui = document.querySelector(".ui");
   var lines = $("#lines");
@@ -34400,6 +36634,7 @@ void main() {
     render();
     scene.environment = envs[THEMES[name].env];
     setBackdrop(name, first);
+    if (first && rig && composer) applyTheme(0, true);
     if (rigPanels) {
       scene.remove(rigPanels);
       rigPanels.traverse((o) => {
@@ -34456,19 +36691,20 @@ void main() {
     shadowCatcher.material.opacity = to(shadowCatcher.material.opacity, T.shadowOp);
     grade.uniforms.uHal.value = to(grade.uniforms.uHal.value, T.hal);
     const G = T.grade ?? {};
+    if (T.cHalTint) grade.uniforms.uHalTint.value.lerp(T.cHalTint, k);
     grade.uniforms.uGrain.value = to(grade.uniforms.uGrain.value, G.grain ?? 0.05);
     grade.uniforms.uCA.value = to(grade.uniforms.uCA.value, G.ca ?? 0.85);
     grade.uniforms.uVig.value = to(grade.uniforms.uVig.value, (G.vig ?? 0.85) * prefs.vig);
     grade.uniforms.uSat.value = to(grade.uniforms.uSat.value, G.sat ?? 1);
     grade.uniforms.uEdge.value = to(grade.uniforms.uEdge.value, G.edge ?? 1);
     grade.uniforms.uFocus.value = to(grade.uniforms.uFocus.value, G.focus ?? 0.26);
-    if (bloom) bloom.strength = to(bloom.strength, G.bloom ?? 0.32);
-    const TO = T.toon ?? { on: 0 };
-    grade.uniforms.uToon.value = to(grade.uniforms.uToon.value, TO.on ?? 0);
-    grade.uniforms.uFlat.value = to(grade.uniforms.uFlat.value, TO.flat ?? 0);
-    grade.uniforms.uInk.value = to(grade.uniforms.uInk.value, TO.ink ?? 0);
-    if (TO.levels) grade.uniforms.uLevels.value = TO.levels;
-    if (TO.width) grade.uniforms.uInkWidth.value = TO.width;
+    if (bloom) bloom.strength = to(bloom.strength, (G.bloom ?? 0.32) * bloomGain);
+    if (glarePass && T.glare) {
+      glarePass.uniforms.uTint.value.lerp(T.cGlare, k);
+      glarePass.uniforms.uStrength.value = to(glarePass.uniforms.uStrength.value, T.glare.strength);
+      glarePass.uniforms.uStride.value = to(glarePass.uniforms.uStride.value, T.glare.stride);
+      glarePass.uniforms.uThreshold.value = to(glarePass.uniforms.uThreshold.value, T.glare.threshold);
+    }
     if (composer?.ao) composer.ao.strength = to(composer.ao.strength, T.ao ?? 1);
     poolMat.color.lerp(T.cPool, k);
     poolMat.opacity = to(poolMat.opacity, T.poolOp);
@@ -34565,24 +36801,34 @@ void main() {
   function showError(msg) {
     console.error(msg);
     if (loaderLbl.parentElement) {
-      loaderPct.textContent = "ERR";
-      loaderLbl.textContent = String(msg).slice(0, 160);
+      setRoll(loaderPct, "\u9519\u8BEF");
+      riseText(loaderLbl, String(msg).slice(0, 160));
       loaderLbl.style.color = "#e0684a";
     }
   }
   addEventListener("error", (e) => showError(e.error?.stack || e.message));
   addEventListener("unhandledrejection", (e) => showError(e.reason?.stack || e.reason?.message || String(e.reason)));
   async function step(label, pct, fn) {
-    loaderLbl.textContent = label;
+    riseText(loaderLbl, label);
     loaderBar.style.width = pct + "%";
-    loaderPct.textContent = pct + "%";
+    setRoll(loaderPct, pct + "%");
     await nextFrame();
     await fn?.();
     await nextFrame();
   }
   async function boot() {
+    await step("\u6B63\u5728\u5408\u6210\u6F14\u793A\u97F3\u9891", 8, async () => {
+      const side = await loadSide(0);
+      DEMO_URLS.add(side.url);
+      Object.assign(TRACK_DEFAULT, side.label, { src: side.url, minutes: tapeMinutes(side.dur) });
+      Object.assign(TRACK, TRACK_DEFAULT);
+      currentName = side.url;
+      audioEl.src = TRACK.src;
+      audioEl.load();
+      swapText(brandCode, "C\u2014" + TRACK.minutes);
+    });
     await step("\u6B63\u5728\u5EFA\u7ACB\u51E0\u4F55\u4F53", 12, () => {
-      cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: "05" });
+      cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: TRACK.minutes });
       scene.add(cas.root);
       rig = createRig(scene);
       renderer.shadowMap.autoUpdate = false;
@@ -34621,6 +36867,7 @@ void main() {
       composer = createComposer(renderer, scene, camera);
       grade = composer.grade;
       bloom = composer.bloom;
+      glarePass = composer.glare;
       setTheme(themeName, true);
       applyTheme(0, true);
     });
@@ -34704,7 +36951,7 @@ void main() {
     {
       no: "00",
       cn: "\u6574\u673A",
-      en: "MAGNETIC TAPE \xB7 TYPE II",
+      en: "\u78C1\u6027\u5F55\u97F3\u5E26 \xB7 II \u578B",
       note: "\u805A\u78B3\u9178\u916F\u5916\u58F3\uFF0C\u03B3-Fe\u2082O\u2083 \u78C1\u5C42\uFF0C3.81 mm \u5E26\u57FA\u3002\u5DE5\u7A0B\u4E0E\u624B\u611F\u4E4B\u95F4\uFF0C\u4E00\u6BB5\u6C89\u9ED8\u7684\u673A\u68B0\u3002",
       spec: [
         ["\u5916\u58F3", "\u805A\u78B3\u9178\u916F \xB7 \u70DF\u7070"],
@@ -34717,80 +36964,80 @@ void main() {
       key: null,
       view: { theta: 0.62, phi: 1.03, radius: 33 },
       viewName: "\u7B49\u8F74\u673A\u4F4D",
-      viewEn: "ISOMETRIC"
+      viewEn: "\u7B49\u89D2\u6295\u5F71"
     },
     {
       no: "01",
       cn: "\u70DF\u7070\u4E0A\u58F3",
-      en: "POLYCARBONATE SHELL",
+      en: "\u805A\u78B3\u9178\u916F\u5916\u58F3",
       note: "\u6CE8\u5851\u4E0A\u58F3\uFF0C\u7EC6\u7EB9\u9762\u534A\u54D1\u6E05\u6F06\u3002\u89C2\u5BDF\u7A97\u3001\u6807\u7B7E\u4E0E\u5168\u90E8\u5370\u5237\u90FD\u843D\u5728\u8FD9\u4E00\u5C42\u3002",
-      spec: [["\u6750\u6599", "\u805A\u78B3\u9178\u916F \xB7 \u70DF\u7070"], ["\u58C1\u539A", "1.1 mm"], ["\u8868\u9762", "\u7EC6\u7EB9 \xB7 \u534A\u54D1"], ["\u5370\u5237", "SIDE A \xB7 \u4E1D\u5370"]],
+      spec: [["\u6750\u6599", "\u805A\u78B3\u9178\u916F \xB7 \u70DF\u7070"], ["\u58C1\u539A", "1.1 mm"], ["\u8868\u9762", "\u7EC6\u7EB9 \xB7 \u534A\u54D1"], ["\u5370\u5237", "A \u9762 \xB7 \u4E1D\u5370"]],
       act: "\u8BFB\u53D6\u4E0A\u58F3",
       key: "shell",
       view: { theta: 0.78, phi: 0.98, radius: 33 },
       viewName: "\u4E13\u7528\u673A\u4F4D",
-      viewEn: "SHELL LIFT"
+      viewEn: "\u4E0A\u58F3\u62AC\u5347"
     },
     {
       no: "02",
       cn: "\u89C2\u5BDF\u7A97",
-      en: "SMOKED WINDOW",
+      en: "\u70DF\u7070\u73BB\u7483",
       note: "\u70DF\u7070 PC \u73BB\u7483\uFF0C\u53CC\u9762\u6E05\u6F06\u3002\u900F\u5149\u538B\u5230\u4E09\u6210\uFF0C\u8D70\u5E26\u6E05\u6670\u800C\u4E0D\u62A2\u5916\u58F3\u7684\u5F62\u3002",
       spec: [["\u6750\u6599", "PC \u73BB\u7483 \xB7 \u70DF\u7070"], ["\u900F\u5C04", "0.30"], ["\u539A\u5EA6", "0.03"], ["\u5DE5\u827A", "\u53CC\u9762\u6E05\u6F06"]],
       act: "\u8BFB\u53D6\u89C2\u5BDF\u7A97",
       key: "glass",
       view: { theta: 0.6, phi: 0.86, radius: 33 },
       viewName: "\u4E13\u7528\u673A\u4F4D",
-      viewEn: "WINDOW LIFT"
+      viewEn: "\u73BB\u7483\u62AC\u5347"
     },
     {
       no: "03",
       cn: "\u81EA\u653B\u87BA\u9489",
-      en: "SELF-TAPPING SCREW",
+      en: "\u5341\u5B57\u81EA\u653B\u87BA\u9489",
       note: "\u4E94\u9897 M2 \u81EA\u653B\u87BA\u9489\uFF0C\u4E24\u524D\u4E24\u540E\u4E00\u9897\u4E2D\u7F6E\uFF0C\u76F4\u63A5\u62E7\u5165\u805A\u78B3\u9178\u916F\u67F1\u3002",
       spec: [["\u89C4\u683C", "M2 \xD7 5"], ["\u6570\u91CF", "5 \u679A"], ["\u6750\u6599", "\u51B7\u8F67\u94A2 \xB7 \u9540\u954D"], ["\u5206\u5E03", "\u56DB\u89D2 + \u4E2D\u7F6E"]],
       act: "\u8BFB\u53D6\u87BA\u9489",
       key: "screw",
       view: { theta: 0.45, phi: 0.8, radius: 33 },
       viewName: "\u4E13\u7528\u673A\u4F4D",
-      viewEn: "POD PLAN"
+      viewEn: "\u87BA\u9489\u5E73\u9762"
     },
     {
       no: "04",
       cn: "\u78C1\u5E26",
-      en: "MAGNETIC TAPE",
+      en: "\u78C1\u6027\u5E26\u57FA",
       note: "\u03B3-Fe\u2082O\u2083 \u78C1\u5C42\u6D82\u5728 3.81 mm \u5E26\u57FA\u4E0A\uFF0C\u4EE5 4.76 cm/s \u8D70\u8FC7\u78C1\u5934\u3002",
       spec: [["\u78C1\u5C42", "\u03B3-Fe\u2082O\u2083"], ["\u5E26\u5BBD", "3.81 mm"], ["\u5E26\u901F", "4.76 cm/s"], ["\u5E26\u57FA", "PET \xB7 12 \xB5m"]],
       act: "\u8BFB\u53D6\u78C1\u5E26",
       key: "tape",
       view: { theta: 1, phi: 0.98, radius: 33 },
       viewName: "\u4E13\u7528\u673A\u4F4D",
-      viewEn: "RIBBON PATH"
+      viewEn: "\u5E26\u8DEF\u8D70\u7EBF"
     },
     {
       no: "05",
       cn: "\u8F6E\u6BC2\u4E0E\u5E26\u76D8",
-      en: "HUB & PACK",
+      en: "\u516D\u9F7F\u8F6E\u6BC2 \xB7 \u53CC\u5E26\u76D8",
       note: "\u516D\u9F7F POM \u8F6E\u6BC2\u5E26\u52A8\u5E26\u76D8\uFF0C\u534A\u5F84\u6309\u5E26\u9762\u79EF\u5B88\u6052\u5B9E\u65F6\u53D8\u5316\u3002",
       spec: [["\u8F6E\u6BC2", "POM \xB7 \u516D\u9F7F"], ["\u8F74\u5F84", "\u230012"], ["\u6EE1\u76D8\u534A\u5F84", "\u230040.4"], ["\u9A71\u52A8", "\u6052\u7EBF\u901F"]],
       act: "\u8BFB\u53D6\u8F6E\u6BC2",
       key: "hub",
       view: { theta: 0.88, phi: 0.76, radius: 33 },
       viewName: "\u4E13\u7528\u673A\u4F4D",
-      viewEn: "HUB MACRO"
+      viewEn: "\u8F6E\u6BC2\u5FAE\u8DDD"
     }
   ];
   var VANTAGES = [
-    { k: "iso", cn: "\u7B49\u8F74\u673A\u4F4D", en: "ISOMETRIC", v: { theta: 0.62, phi: 1.03, radius: 33 } },
-    { k: "front", cn: "\u6B63\u89C6\u673A\u4F4D", en: "ELEVATION", v: { theta: 0.06, phi: 1.3, radius: 31 } },
-    { k: "top", cn: "\u4FEF\u89C6\u673A\u4F4D", en: "PLAN", v: { theta: 0.34, phi: 0.3, radius: 34 } },
-    { k: "detail", cn: "\u7EC6\u8282\u7279\u5199", en: "MACRO", v: { theta: 0.95, phi: 1.14, radius: 21 } }
+    { k: "iso", cn: "\u7B49\u8F74\u673A\u4F4D", en: "\u7B49\u89D2\u6295\u5F71", v: { theta: 0.62, phi: 1.03, radius: 33 } },
+    { k: "front", cn: "\u6B63\u89C6\u673A\u4F4D", en: "\u6B63\u7ACB\u9762", v: { theta: 0.06, phi: 1.3, radius: 31 } },
+    { k: "top", cn: "\u4FEF\u89C6\u673A\u4F4D", en: "\u5E73\u9762", v: { theta: 0.34, phi: 0.3, radius: 34 } },
+    { k: "detail", cn: "\u7EC6\u8282\u7279\u5199", en: "\u5FAE\u8DDD", v: { theta: 0.95, phi: 1.14, radius: 21 } }
   ];
   var ri = 0;
   var vi = 0;
   var savedVi = 0;
   var cur = () => RECORDS[ri];
-  var MACRO = VANTAGES.findIndex((v) => v.en === "MACRO");
+  var MACRO = VANTAGES.findIndex((v) => v.k === "detail");
   var D2 = {
     colCn: $("#col-cn"),
     colCn2: $("#col-cn-2"),
@@ -34975,6 +37222,11 @@ void main() {
   var live = (r, i) => i === ri && (r.key ? focusKey === r.key : !exploded && focusKey === null);
   function swapIn(h0) {
     const el = D2.doc;
+    clearTimeout(reprintT);
+    D2.dossier.classList.remove("reprint");
+    void D2.dossier.offsetWidth;
+    D2.dossier.classList.add("reprint");
+    reprintT = setTimeout(() => D2.dossier.classList.remove("reprint"), 900);
     clearTimeout(docT);
     el.classList.remove("grow");
     el.style.height = "";
@@ -34994,6 +37246,7 @@ void main() {
     }, 460);
   }
   var docT = 0;
+  var reprintT = 0;
   function pinPanel() {
     const h = D2.dossier.getBoundingClientRect().height;
     if (h > 0) D2.dossier.style.setProperty("--panel-half", (h / 2).toFixed(1) + "px");
@@ -35136,27 +37389,28 @@ void main() {
   function render(bump = false) {
     const R = cur();
     const docH = D2.doc.getBoundingClientRect().height;
-    D2.colCn.textContent = R.cn;
+    swapText(D2.colCn, R.cn);
     setFileNo(R.no);
     D2.fileCn.textContent = R.cn;
     D2.fileEn.textContent = R.en;
     D2.fileNote.textContent = R.note;
-    D2.selI.textContent = R.no;
-    D2.accessLabel.textContent = R.act;
+    setRoll(D2.selI, R.no);
+    swapText(D2.accessLabel, R.act);
     D2.access.classList.toggle("done", live(R, ri));
     if (D2.fileSpec.dataset.no !== R.no) {
       D2.fileSpec.dataset.no = R.no;
-      D2.fileSpec.replaceChildren(...R.spec.map(([k, v]) => {
+      D2.fileSpec.replaceChildren(...R.spec.map(([k, v], i) => {
         const li = document.createElement("li");
+        li.style.setProperty("--i", i);
         li.innerHTML = `<span>${k}</span><b>${v}</b>`;
         return li;
       }));
     }
     D2.dossier.classList.toggle("tight", vi === MACRO);
     const V = vi >= 0 ? VANTAGES[vi] : null;
-    D2.colI.textContent = V ? String(vi + 1).padStart(2, "0") : "--";
-    D2.colCn2.textContent = V ? V.cn : R.viewName;
-    D2.colEn.textContent = V ? V.en : R.viewEn;
+    setRoll(D2.colI, V ? String(vi + 1).padStart(2, "0") : "--");
+    swapText(D2.colCn2, V ? V.cn : R.viewName);
+    swapText(D2.colEn, V ? V.en : R.viewEn);
     for (let i = 0; i < RECORDS.length; i++) {
       const l = live(RECORDS[i], i);
       refRows[i].className = "row" + (i === ri ? " sel" : "") + (l ? " done" : "");
@@ -35218,7 +37472,7 @@ void main() {
   var muteBtn = $("#btn-mute");
   var volFlash = 0;
   function showVolume() {
-    volRead.textContent = muted ? "\u9759\u97F3" : `${Math.round(volume * 100)}%`;
+    swapText(volRead, muted ? "\u9759\u97F3" : `${Math.round(volume * 100)}%`);
     muteBtn.classList.add("show-vol");
     clearTimeout(volFlash);
     volFlash = setTimeout(() => muteBtn.classList.remove("show-vol"), 1100);
@@ -35239,6 +37493,7 @@ void main() {
     indexCols.replaceChildren(...RECORDS.map((R, x) => {
       const d = document.createElement("div");
       d.className = "icol" + (x === ri ? " on" : "");
+      d.style.setProperty("--i", x);
       const h = document.createElement("button");
       h.className = "icol-h";
       h.innerHTML = `<span>${R.no} ${R.cn}</span><em>${R.en}</em>`;
@@ -35259,10 +37514,67 @@ void main() {
       return d;
     }));
     syncIndexSel();
+    buildTracks();
   }
   function syncIndexSel() {
     if (!indexOpen) return;
     indexCols.querySelectorAll(".icol").forEach((c, x) => c.classList.toggle("on", x === ri));
+  }
+  var trackCols = $("#track-cols");
+  var trackSub = $("#track-sub");
+  var shownTrack = null;
+  var mmss = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  function buildTracks() {
+    const cards = [];
+    for (let si = 0; si < SIDES.length; si++) {
+      const s = SIDES[si];
+      for (let ti = 0; ti < s.tracks.length; ti++) {
+        const k = s.tracks[ti];
+        const d = document.createElement("div");
+        d.className = "icol";
+        d.dataset.track = `${s.id}${ti}`;
+        d.style.setProperty("--i", cards.length);
+        const h = document.createElement("button");
+        h.className = "icol-h";
+        h.innerHTML = `<span>${k.no} ${k.title}</span><em>${mmss(k.len)}</em>`;
+        h.addEventListener("click", () => {
+          closeIndex();
+          playTrack(si, ti);
+        });
+        d.appendChild(h);
+        const ul = document.createElement("ul");
+        ul.className = "spec";
+        ul.replaceChildren(...[
+          ["\u6240\u5728\u9762", `${s.cn} \xB7 ${s.label.title}`],
+          ["\u8D77\u59CB", mmss(k.start)],
+          ["\u65F6\u957F", mmss(k.len)]
+        ].map(([a, b]) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<span>${a}</span><b>${b}</b>`;
+          return li;
+        }));
+        d.appendChild(ul);
+        cards.push(d);
+      }
+    }
+    trackCols.replaceChildren(...cards);
+    trackSub.textContent = `${SIDES.length} \u9762 \xB7 ${cards.length} \u9996`;
+    syncTrackSel();
+  }
+  function syncTrackSel() {
+    const side = sideOf(audioEl.currentSrc || audioEl.src);
+    const cur2 = side && shownTrack ? `${side.id}${side.tracks.indexOf(shownTrack)}` : null;
+    trackCols.querySelectorAll(".icol").forEach((c) => c.classList.toggle("on", c.dataset.track === cur2));
+  }
+  function syncNowTrack() {
+    const side = sideOf(audioEl.currentSrc || audioEl.src);
+    const k = side ? trackAt(side, audioEl.currentTime) : null;
+    if (k === shownTrack) return;
+    shownTrack = k;
+    if (!k) return;
+    swapText($("#now-title"), k.title);
+    swapText($("#now-sub"), [side.label.artist, side.label.album].filter(Boolean).join(" \xB7 "));
+    syncTrackSel();
   }
   function openIndex() {
     indexOpen = true;
@@ -35282,7 +37594,7 @@ void main() {
   var toggleIndex = () => indexOpen ? closeIndex() : openIndex();
   var PREF_KEY = "ohmtape.prefs";
   var PREF_V = 2;
-  var prefs = { intro: true, loop: true, hiss: true, keys: true, mirror: true, vig: 0.5 };
+  var prefs = { intro: true, loop: true, hiss: true, keys: true, mirror: true, fast: false, viz: true, glare: true, vig: 0.5 };
   try {
     const saved = JSON.parse(localStorage.getItem(PREF_KEY) || "{}");
     const stale = saved.v !== PREF_V;
@@ -35300,18 +37612,31 @@ void main() {
     }
   };
   var SETTINGS = [
-    { k: "intro", cn: "\u5F00\u573A\u52A8\u753B", en: "OPENING MOVE", note: "\u6253\u5F00\u65F6\u90A3 3.4 \u79D2\u7684\u63A8\u8F68\u4E0E\u6D6E\u8D77\uFF0C\u4E0B\u6B21\u6253\u5F00\u751F\u6548\u3002" },
-    { k: "loop", cn: "\u5FAA\u73AF\u64AD\u653E", en: "AUTO REVERSE", note: "\u653E\u5B8C\u81EA\u52A8\u5012\u5E26\u91CD\u653E\uFF1B\u5173\u6389\u5219\u5012\u56DE\u5F00\u5934\u505C\u4F4F\u3002" },
-    { k: "hiss", cn: "\u78C1\u5E26\u5E95\u566A", en: "TAPE BED", note: "\u8D70\u5E26\u65F6\u7684\u5636\u58F0\u4E0E\u9A6C\u8FBE\u55E1\u58F0\uFF0C\u4E0D\u542B\u6362\u5411\u58F0\u4E0E\u65CB\u94AE\u58F0\u3002" },
-    { k: "keys", cn: "\u6309\u952E\u63D0\u793A", en: "KEY LEGEND", note: "\u5E95\u90E8\u90A3\u884C\u5FEB\u6377\u952E\u8BF4\u660E\u3002" },
-    { k: "mirror", cn: "\u5730\u9762\u955C\u50CF", en: "FLOOR MIRROR", note: "\u5730\u9762\u5B9E\u65F6\u53CD\u5C04\uFF0C\u5173\u6389\u53EF\u7701\u4E00\u6574\u904D\u573A\u666F\u6E32\u67D3\u3002" },
-    { k: "vig", cn: "\u6697\u89D2", en: "VIGNETTE", dial: true, note: "\u753B\u9762\u56DB\u5468\u538B\u6697\uFF0C\u50CF\u955C\u5934\u524D\u7684\u906E\u5149\u7F69\u3002\u6ED1\u6761\u8C03\u7684\u662F\u5F3A\u5EA6\uFF0C\u4E09\u5957\u706F\u5149\u5404\u7559\u81EA\u5DF1\u7684\u6DF1\u6D45\u3002" }
+    { k: "intro", cn: "\u5F00\u573A\u52A8\u753B", en: "\u5165\u573A\u63A8\u8F68", note: "\u6253\u5F00\u65F6\u90A3 3.4 \u79D2\u7684\u63A8\u8F68\u4E0E\u6D6E\u8D77\uFF0C\u4E0B\u6B21\u6253\u5F00\u751F\u6548\u3002" },
+    { k: "loop", cn: "\u5FAA\u73AF\u64AD\u653E", en: "\u81EA\u52A8\u6362\u5411", note: "\u653E\u5B8C\u81EA\u52A8\u5012\u5E26\u91CD\u653E\uFF1B\u5173\u6389\u5219\u5012\u56DE\u5F00\u5934\u505C\u4F4F\u3002" },
+    { k: "hiss", cn: "\u78C1\u5E26\u5E95\u566A", en: "\u78C1\u5E26\u5E95\u58F0", note: "\u8D70\u5E26\u65F6\u7684\u5636\u58F0\u4E0E\u9A6C\u8FBE\u55E1\u58F0\uFF0C\u4E0D\u542B\u6362\u5411\u58F0\u4E0E\u65CB\u94AE\u58F0\u3002" },
+    { k: "keys", cn: "\u6309\u952E\u63D0\u793A", en: "\u5FEB\u6377\u952E\u8BF4\u660E", note: "\u5E95\u90E8\u90A3\u884C\u5FEB\u6377\u952E\u8BF4\u660E\u3002" },
+    { k: "mirror", cn: "\u5730\u9762\u955C\u50CF", en: "\u5730\u9762\u53CD\u5C04", note: "\u5730\u9762\u5B9E\u65F6\u53CD\u5C04\uFF0C\u5173\u6389\u53EF\u7701\u4E00\u6574\u904D\u573A\u666F\u6E32\u67D3\u3002" },
+    { k: "viz", cn: "\u97F3\u9891\u8054\u52A8", en: "\u58F0\u753B\u540C\u6B65", note: "\u8D70\u5E26\u65F6\u9891\u8C31\u67F1\u3001\u6D6E\u5C18\u4E0E\u8F89\u5149\u8DDF\u968F\u97F3\u4E50\u8D77\u4F0F\u3002\u5173\u6389\u753B\u9762\u56DE\u5230\u5300\u901F\uFF0C\u67F1\u6761\u4ECD\u4F1A\u81EA\u5DF1\u52A8\u3002" },
+    { k: "glare", cn: "\u955C\u5934\u7729\u5149", en: "\u6A2A\u5411\u5149\u6761", note: "\u4EAE\u5904\u88AB\u955C\u5934\u62C9\u6210\u7684\u90A3\u9053\u6A2A\u6761\uFF0C\u4E09\u5957\u706F\u5149\u5404\u7559\u81EA\u5DF1\u7684\u8272\u4E0E\u957F\u77ED\u3002\u5173\u6389\u753B\u9762\u66F4\u5E72\u51C0\u3002" },
+    { k: "fast", cn: "\u6027\u80FD\u6A21\u5F0F", en: "\u964D\u4E00\u6863\u6E32\u67D3", note: "\u6E32\u67D3\u5206\u8FA8\u7387 1.5\xD7 \u2192 1.1\xD7\uFF0C\u5E76\u5173\u6389\u8D85\u91C7\u6837\u4E0E\u5730\u9762\u53CD\u5C04\u3002\u5E27\u7387\u4E0D\u591F\u65F6\u6253\u5F00\uFF0C\u753B\u9762\u4F1A\u8F6F\u4E00\u70B9\u3002" },
+    { k: "vig", cn: "\u6697\u89D2", en: "\u56DB\u5468\u538B\u6697", dial: true, note: "\u753B\u9762\u56DB\u5468\u538B\u6697\uFF0C\u50CF\u955C\u5934\u524D\u7684\u906E\u5149\u7F69\u3002\u6ED1\u6761\u8C03\u7684\u662F\u5F3A\u5EA6\uFF0C\u4E09\u5957\u706F\u5149\u5404\u7559\u81EA\u5DF1\u7684\u6DF1\u6D45\u3002" }
   ];
   function applyPref(k) {
     if (k === "hiss") audio.setLevel(bedLevel());
     else if (k === "keys") document.body.classList.toggle("keys-off", !prefs.keys);
-    else if (k === "mirror") floorBase.setEnabled(prefs.mirror && quality > 0.8);
+    else if (k === "mirror") floorBase.setEnabled(mirrorOn());
+    else if (k === "glare") {
+      if (glarePass) glarePass.enabled = glareOn();
+    } else if (k === "fast") {
+      onResize();
+      floorBase.setEnabled(mirrorOn());
+      if (glarePass) glarePass.enabled = glareOn();
+    }
   }
+  var mirrorOn = () => prefs.mirror && !prefs.fast && quality > 0.8;
+  var vizOn = () => prefs.viz && !prefs.fast;
+  var glareOn = () => prefs.glare && !prefs.fast;
   function applyPrefs() {
     for (const k of Object.keys(prefs)) applyPref(k);
   }
@@ -35323,9 +37648,10 @@ void main() {
   function paintDial(s) {
     const v = prefs[s.k];
     s.dialEl.value = String(v);
-    s.dialEl.style.setProperty("--fill", (v * 100).toFixed(1) + "%");
-    s.valEl.textContent = v > 0 ? Math.round(v * 100) + "%" : "\u5173";
-    s.dialEl.setAttribute("aria-valuetext", s.valEl.textContent);
+    s.dialEl.parentElement.style.setProperty("--p", v.toFixed(3));
+    const label = v > 0 ? Math.round(v * 100) + "%" : "\u5173";
+    setRoll(s.valEl, label);
+    s.dialEl.setAttribute("aria-valuetext", label);
   }
   function syncSettings() {
     for (const s of SETTINGS) {
@@ -35350,15 +37676,21 @@ void main() {
     document.body.classList.add("moved");
   }
   function buildSettings() {
-    setList.replaceChildren(...SETTINGS.map((s) => {
+    setList.replaceChildren(...SETTINGS.map((s, i) => {
       const li = document.createElement("li");
       li.className = "set-row";
+      li.style.setProperty("--i", i);
       const t2 = document.createElement("div");
       t2.className = "set-t";
       t2.innerHTML = `<b>${s.cn}</b><i>${s.en}</i><em>${s.note}</em>`;
       if (s.dial) {
         const box2 = document.createElement("div");
         box2.className = "set-dial";
+        const track = document.createElement("div");
+        track.className = "dial-track";
+        const fill = document.createElement("i");
+        fill.className = "rail-fill";
+        fill.setAttribute("aria-hidden", "true");
         const r = document.createElement("input");
         r.type = "range";
         r.min = "0";
@@ -35366,6 +37698,7 @@ void main() {
         r.step = String(1 / DIAL_STEPS);
         r.className = "ui-hit";
         r.setAttribute("aria-label", `${s.cn}\u5F3A\u5EA6`);
+        track.append(fill, r);
         const out = document.createElement("b");
         out.className = "set-val";
         let detent = Math.round(prefs.vig * DIAL_STEPS);
@@ -35378,7 +37711,7 @@ void main() {
           }
           setPref(s, v);
         });
-        box2.append(r, out);
+        box2.append(track, out);
         s.dialEl = r;
         s.valEl = out;
         li.append(t2, box2);
@@ -35495,7 +37828,7 @@ void main() {
     render();
   });
   $("#btn-flip").addEventListener("click", () => {
-    setFlip(!flipped);
+    flipSide();
     audio.tick();
     render();
   });
@@ -35511,6 +37844,68 @@ void main() {
   $("#btn-index").addEventListener("click", toggleIndex);
   $("#index-close").addEventListener("click", closeIndex);
   $("#btn-reinit").addEventListener("click", reinit);
+  var seekEl = $("#seek");
+  var railEl = seekEl.parentElement;
+  var scrubbing = false;
+  var railShown = -1;
+  function seekTo(frac) {
+    if (!cas) return;
+    const dur = audioOk() ? audioEl.duration : cas.st.duration;
+    if (!(dur > 0)) return;
+    const f = clamp2(frac, 0, 1);
+    if (mode === "rew") togglePlay(false);
+    cas.st.dir = -1;
+    if (audioOk()) audioEl.currentTime = f * dur;
+    cas.setProgress(f);
+    const tc = $("#tc");
+    const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+    setRoll(tc, fmt(f * dur));
+    seekEl.value = String(f);
+    railShown = f;
+    railEl.style.setProperty("--p", f.toFixed(4));
+    document.body.classList.add("moved");
+  }
+  seekEl.addEventListener("pointerdown", () => {
+    scrubbing = true;
+  });
+  seekEl.addEventListener("input", () => {
+    scrubbing = true;
+    seekTo(+seekEl.value);
+  });
+  seekEl.addEventListener("change", () => {
+    scrubbing = false;
+    seekTo(+seekEl.value);
+  });
+  seekEl.addEventListener("pointerup", () => {
+    scrubbing = false;
+  });
+  seekEl.addEventListener("keyup", () => {
+    scrubbing = false;
+  });
+  seekEl.addEventListener("keydown", (e) => {
+    if (e.key === "Home") {
+      e.preventDefault();
+      seekTo(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      seekTo(1);
+    }
+  });
+  var keyChips = [...document.querySelectorAll("#keys .kg")];
+  var chipFor = (k) => keyChips.find((c) => (c.dataset.k || "").split(" ").includes(k));
+  var chipKey = (e) => e.key === " " ? "space" : String(e.key || "").toLowerCase();
+  addEventListener("keydown", (e) => {
+    if (e.repeat) return;
+    const c = chipFor(chipKey(e));
+    if (c) c.classList.add("hit");
+  });
+  addEventListener("keyup", (e) => {
+    const c = chipFor(chipKey(e));
+    if (c) c.classList.remove("hit");
+  });
+  addEventListener("blur", () => {
+    for (const c of keyChips) c.classList.remove("hit");
+  });
   var addBtn = $("#btn-add");
   var addRead = $("#add-read");
   var fileInput = $("#tape-file");
@@ -35621,7 +38016,7 @@ void main() {
     }
     const l = k.toLowerCase();
     if (l === "e") setExplode(!exploded);
-    else if (l === "f") setFlip(!flipped);
+    else if (l === "f") flipSide();
     else if (l === "a") setAuto(!autoRotate);
     else if (l === "m") {
       setMute(!muted);
@@ -35648,7 +38043,7 @@ void main() {
     }
     st.playing = on;
     document.body.classList.toggle("playing", on);
-    $("#play-label").textContent = on ? "\u6682\u505C" : "\u8D70\u5E26";
+    swapText($("#play-label"), on ? "\u6682\u505C" : "\u8D70\u5E26");
     if (on) {
       mode = "play";
       if (audioOk()) {
@@ -35718,7 +38113,7 @@ void main() {
     perfN++;
     fps = fps ? fps * 0.94 + 1 / Math.max(dt, 1e-3) * 0.06 : 1 / Math.max(dt, 1e-3);
     if (perfEl && (perfN & 3) === 0) {
-      perfEl.textContent = `${fps.toFixed(0)} fps \xB7 js ${jsMs.toFixed(2)} ms \xB7 dpr\xD7${quality.toFixed(1)} \xB7 ${floorBase ? floorBase.mesh.visible ? "mirror" : "no-mirror" : ""} \xB7 off ${viewShift.toFixed(3)}\u2192${viewShiftTarget.toFixed(3)}`;
+      perfEl.textContent = `${fps.toFixed(0)} \u5E27/\u79D2 \xB7 JS ${jsMs.toFixed(2)} \u6BEB\u79D2 \xB7 \u50CF\u7D20\u6BD4\xD7${quality.toFixed(1)} \xB7 ${floorBase ? floorBase.mesh.visible ? "\u955C\u50CF\u5F00" : "\u955C\u50CF\u5173" : ""} \xB7 \u4F4D\u79FB ${viewShift.toFixed(3)}\u2192${viewShiftTarget.toFixed(3)}`;
     }
     if (perfAcc < 2.5) return;
     const avg = perfAcc / perfN;
@@ -35735,7 +38130,7 @@ void main() {
         qualityCeil = Math.min(qualityCeil, quality);
         onResize();
       }
-      if (quality <= 0.8 || !prefs.mirror) floorBase.setEnabled(false);
+      if (!mirrorOn()) floorBase.setEnabled(false);
       perfSkip = 1;
     } else if (avg < 0.018 && quality < qualityCeil) {
       if (++goodWindows >= 2) {
@@ -35743,7 +38138,7 @@ void main() {
         quality = Math.min(qualityCeil, quality + 0.2);
         onResize();
         perfSkip = 1;
-        if (quality >= 1) floorBase.setEnabled(prefs.mirror);
+        if (quality >= 1) floorBase.setEnabled(mirrorOn());
       }
     } else {
       goodWindows = 0;
@@ -35751,15 +38146,19 @@ void main() {
   }
   function onResize() {
     const w = innerWidth, h = innerHeight;
-    const dpr = Math.min(devicePixelRatio || 1, 2) * quality;
+    const cap = prefs.fast ? 1.1 : DPR_CAP;
+    const dpr = Math.min(devicePixelRatio || 1, cap) * quality;
     camera.aspect = w / h;
     renderer.setPixelRatio(dpr);
     renderer.setSize(w, h, false);
     camera.updateProjectionMatrix();
     const px2 = w * dpr * h * dpr;
-    const ss = px2 > 9e6 ? 1 : 1.25;
+    const ss = prefs.fast || px2 > 3e6 ? 1 : 1.25;
     const bw = Math.round(w * dpr * ss), bh = Math.round(h * dpr * ss);
-    if (composer) composer.composer.setSize(bw, bh);
+    if (composer) {
+      composer.composer.setPixelRatio(1);
+      composer.composer.setSize(bw, bh);
+    }
     if (bloom) bloom.setSize(bw, bh);
     floorBase.setSize(w, h);
     if (grade) grade.uniforms.uTexel.value.set(1 / bw, 1 / bh);
@@ -35831,12 +38230,18 @@ void main() {
       cas.parts.reels[1].spin.rotation.y += k * 0.72;
       intro.spin -= dt;
     }
+    const lv = viz.update(
+      dt,
+      audioEl,
+      vizOn() && !reduce && mode !== "rew" && audioOk() && !audioEl.paused && !audioEl.ended
+    );
+    bloomGain = viz.beat;
     const bob = reduce ? 0 : Math.sin(t * 0.62) * 0.055 + Math.sin(t * 1.71) * 0.012;
     cas.root.position.y = intro.y + bob - swap.press;
     cas.root.rotation.z = intro.tilt + (reduce ? 0 : Math.sin(t * 0.42) * 8e-3);
     cas.root.rotation.x = reduce ? 0 : Math.sin(t * 0.33 + 1.2) * 6e-3;
     if (!reduce) {
-      driftDust(dt, t);
+      driftDust(dt * (1 + 0.6 * lv[0]), t);
     }
     if (!reduce) {
       scene.environmentRotation.y = (scene.environmentRotation.y || 0) + 55e-4 * dt;
@@ -35857,7 +38262,6 @@ void main() {
     syncPanelFold();
     cas.root.getWorldPosition(subjectPos).project(camera);
     grade.uniforms.uCenter.value.set(subjectPos.x * 0.5 + 0.5, subjectPos.y * 0.5 + 0.5);
-    grade.uniforms.uProjInv.value.copy(camera.projectionMatrixInverse);
     watchPerf(dt);
     applyTheme(dt, reduce);
     updateAnnotations();
@@ -35867,11 +38271,20 @@ void main() {
       counterAcc = 0;
       const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
       const t1 = fmt(st.time), t2 = fmt(st.duration);
-      if (tcEl.textContent !== t1) tcEl.textContent = t1;
-      if (tdEl.textContent !== t2) tdEl.textContent = t2;
+      setRoll(tcEl, t1);
+      setRoll(tdEl, t2);
+      if (!scrubbing && st.duration > 0) {
+        const frac = clamp2(st.time / st.duration, 0, 1);
+        if (Math.abs(frac - railShown) > 2e-4) {
+          railShown = frac;
+          seekEl.value = String(frac);
+          railEl.style.setProperty("--p", frac.toFixed(4));
+        }
+      }
       const d = /* @__PURE__ */ new Date();
       const cs = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
-      if (clockEl.textContent !== cs) clockEl.textContent = cs;
+      setRoll(clockEl, cs);
+      syncNowTrack();
       const audioLive = audioOk() && !audioEl.paused && !audioEl.ended;
       const title = audioLive ? `\u266A ${fmt(audioEl.currentTime)} \xB7 ${TRACK.title}` : `${TRACK.title} \u2014 OHM TAPE`;
       if (title !== lastTitle) {
@@ -35888,3 +38301,7 @@ void main() {
   }
   boot().catch((e) => showError(e?.stack || e));
 })();
+
+</script>
+</body>
+</html>

@@ -37,6 +37,22 @@ export const RIG = {
     top: { c: 0xffffff, i: 0.55, w: 15, h: 15, p: [0, 10.5, 1.0] },
     shadow: { i: 0.50, p: [-7.6, 6.6, 7.6] },
   },
+  /* The same five positions, with the colour of water on every one of them: the
+     key is what came through the surface (high, and the only source with any
+     real punch), the fill is the column itself, the rim is the blue that a
+     silhouette picks up from behind, and the bounce is nearly nothing because
+     the floor down there is dark and far away. Exposure sits below both other
+     rooms — deep water is not a bright place, and pretending otherwise is what
+     makes a "blue" theme read as a filter over a daylight scene. */
+  abyss: {
+    exposure: 0.86, envInt: 0.60,
+    key: { c: 0xc8e8ff, i: 1.60, w: 12, h: 8.5, p: [-6.2, 7.8, 5.6] },
+    fill: { c: 0x5a94c4, i: 0.62, w: 14, h: 10, p: [9.0, 1.6, 5.4] },
+    rim: { c: 0x9ee0ff, i: 2.35, w: 1.2, h: 15, p: [3.6, 5.4, -9.6] },
+    bounce: { c: 0x2c6a8c, i: 0.36, w: 12, h: 12, p: [0.4, -3.6, 4.0] },
+    top: { c: 0xd6f0ff, i: 0.50, w: 14, h: 14, p: [-0.6, 9.8, 1.0] },
+    shadow: { i: 0.66, p: [-6.2, 7.8, 5.6] },
+  },
 };
 
 /** the rig as geometry on a hidden layer: a reflection probe that enables the

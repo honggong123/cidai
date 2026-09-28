@@ -122,7 +122,10 @@ export function createSoftFloor(opt = {}) {
   // other frame — a 2-4 ms spike landing on every second vsync, which reads as
   // a rhythmic judder. The reflection is blurred by design, so the resolution
   // costs nothing visible, while MSAA (cheap here) keeps the edges clean.
-  const dpr = Math.min(devicePixelRatio || 1, 2);
+  // The mirror follows the main render's cap (main.js DPR_CAP). It only ever
+  // runs at that cap — 性能模式 turns the mirror off before it turns the scale
+  // down — so the two stay in step without an argument.
+  const dpr = Math.min(devicePixelRatio || 1, 1.5);
   const rt = new THREE.WebGLRenderTarget(
     Math.round(innerWidth * 0.6 * dpr), Math.round(innerHeight * 0.6 * dpr),
     {
@@ -218,7 +221,7 @@ export function createSoftFloor(opt = {}) {
     setEnabled(on) { enabled = on; mesh.visible = on; uniforms.uOpacity.value = on ? 1 : 0; },
     refresh() { warmed = false; },
     setSize(w, h) {
-      const d = Math.min(devicePixelRatio || 1, 2);
+      const d = Math.min(devicePixelRatio || 1, 1.5);
       rt.setSize(Math.round(w * 0.6 * d), Math.round(h * 0.6 * d));
       warmed = false;
     },
