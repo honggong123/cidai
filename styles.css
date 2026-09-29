@@ -1,12 +1,12 @@
 /* ============================================================
-   OHM TAPE — archive terminal
+   LUX TAPE — archive terminal
    ============================================================
-   The page is a records terminal: a masthead, a dossier on the
+   The page is a museum label: a masthead, a dossier on the
    subject, and a deck of index controls along the bottom. It is
-   laid out like a printed archive slip — hairline rules, wide
-   tracked micro-labels, one very large numeral per block — and it
-   is wired to the 3D scene, not decoration over it. Every control
-   here maps to a "file" you can select and read.
+   laid out like a gallery caption — square corners, hairline
+   rules, wide tracked micro-labels, one very large numeral per
+   block — and it is wired to the 3D scene, not decoration over
+   it. Every control here maps to a "file" you can select and read.
 
    Two ideas hold the whole sheet together:
 
@@ -28,12 +28,13 @@
 
 /* ============================ tokens =================================== */
 :root {
-  --sans: "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei UI", "PingFang SC", sans-serif;
-  /* an optical display cut for the few things set large. Segoe UI Variable
-     Display is a real optical size; where it is absent the stack falls back to
-     the text face, which at these weights still reads as a display. */
-  --disp: "Segoe UI Variable Display", "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei UI", sans-serif;
-  --mono: "Cascadia Mono", "JetBrains Mono", Consolas, "Microsoft YaHei UI", "PingFang SC", ui-monospace, monospace;
+  --sans: "Helvetica Neue", Helvetica, "Inter", "Segoe UI", Arial, "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  /* a grotesque for the few things set large — Helvetica first, which on
+     Windows resolves to Arial, a more neutral and geometric cut than Segoe UI.
+     Segoe UI Variable Display is the optical-size fallback where Helvetica is
+     absent; at these weights both still read as a display face. */
+  --disp: "Helvetica Neue", Helvetica, "Segoe UI Variable Display", "Segoe UI", Arial, "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  --mono: "SF Mono", "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, "Microsoft YaHei UI", monospace;
 
   /* type scale — one step per job, nothing ad-hoc */
   --fs-micro: 0.59375rem;        /* kbd chips, table slugs */
@@ -60,24 +61,24 @@
   --e-inout: cubic-bezier(.4, 0, .2, 1);
   --e-spring: cubic-bezier(.22, 1.25, .36, 1);
 
-  /* geometry */
-  --pad: clamp(1.375rem, 3vw, 2.75rem);
-  --sheet-pad-x: 1.5rem;
-  --sheet-pad-t: 1.375rem;
-  --sheet-pad-b: 1.375rem;
-  --blur: 1.125rem;
-  --r: 0.125rem;
+  /* geometry — a gallery caption is square, and generous with air */
+  --pad: clamp(1.75rem, 3.6vw, 3.5rem);
+  --sheet-pad-x: 1.75rem;
+  --sheet-pad-t: 1.5rem;
+  --sheet-pad-b: 1.5rem;
+  --blur: 0.625rem;
+  --r: 0;
   /* the widest the record plate is ever allowed to get. Past this it stops
      growing and the room between the subject and the plate does the widening
      instead — a 1100px-wide slip of paper reads as an empty slab, not a record
      (it is a rem length, so the cap itself grows with the root size). */
-  --plate-max: 47rem;
+  --plate-max: 44rem;
 
   /* the plate's own line and edge highlight, overridden per theme */
-  --sheet-tint: #eef0f3;
-  --sheet-a: 78%;
-  --sheet-line: rgba(20, 22, 26, .13);
-  --sheet-hi: rgba(255, 255, 255, .55);
+  --sheet-tint: #ffffff;
+  --sheet-a: 82%;
+  --sheet-line: rgba(22, 22, 26, .12);
+  --sheet-hi: rgba(255, 255, 255, .70);
   --sh-sheet: 0 1.625rem 4rem -2.375rem var(--shadow), 0 0.1875rem 0.875rem -0.5rem var(--shadow);
 }
 
@@ -92,104 +93,108 @@
    gradient stops, color-mix() results, box-shadows, backdrop tints, the inset
    highlight on the paper. One declaration instead of a per-element list that
    would have to be kept in sync with every rule added later. */
-@property --paper { syntax: '<color>'; inherits: true; initial-value: #e6e9ed; }
-@property --ink { syntax: '<color>'; inherits: true; initial-value: #14161a; }
-@property --ink-dim { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .72); }
-@property --ink-faint { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .62); }
-@property --ink-ghost { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .32); }
-@property --hair { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .19); }
-@property --hair-soft { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .1); }
-@property --accent { syntax: '<color>'; inherits: true; initial-value: #8d4712; }
-@property --accent-soft { syntax: '<color>'; inherits: true; initial-value: rgba(141, 71, 18, .11); }
-@property --accent-line { syntax: '<color>'; inherits: true; initial-value: rgba(141, 71, 18, .5); }
-@property --chip-bg { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .93); }
-@property --chip-ink { syntax: '<color>'; inherits: true; initial-value: #f1f2f4; }
-@property --chip-hair { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .16); }
-@property --shadow { syntax: '<color>'; inherits: true; initial-value: rgba(36, 40, 48, .3); }
-@property --sheet-tint { syntax: '<color>'; inherits: true; initial-value: #eef0f3; }
-@property --sheet-line { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .13); }
-@property --sheet-hi { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .55); }
-@property --sheet-a { syntax: '<percentage>'; inherits: true; initial-value: 78%; }
+@property --paper { syntax: '<color>'; inherits: true; initial-value: #f5f4f1; }
+@property --ink { syntax: '<color>'; inherits: true; initial-value: #16161a; }
+@property --ink-dim { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .72); }
+@property --ink-faint { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .60); }
+@property --ink-ghost { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .30); }
+@property --hair { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .16); }
+@property --hair-soft { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .08); }
+@property --accent { syntax: '<color>'; inherits: true; initial-value: #c8362b; }
+@property --accent-soft { syntax: '<color>'; inherits: true; initial-value: rgba(200, 54, 43, .10); }
+@property --accent-line { syntax: '<color>'; inherits: true; initial-value: rgba(200, 54, 43, .45); }
+@property --chip-bg { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .94); }
+@property --chip-ink { syntax: '<color>'; inherits: true; initial-value: #f6f5f2; }
+@property --chip-hair { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .18); }
+@property --shadow { syntax: '<color>'; inherits: true; initial-value: rgba(24, 26, 30, .22); }
+@property --sheet-tint { syntax: '<color>'; inherits: true; initial-value: #ffffff; }
+@property --sheet-line { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .12); }
+@property --sheet-hi { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .70); }
+@property --sheet-a { syntax: '<percentage>'; inherits: true; initial-value: 82%; }
 
-/* ---------- the lamps-off variant ---------- */
+/* ---------- the three galleries ---------- */
 /* `html[…]`, not `[…]`. The three buttons of the segmented control carry
    `data-theme` themselves — that is how the click handler knows which room to
    enter — so a bare attribute selector also matched the buttons, and each one
    re-declared the whole token set on itself. The result was that a button was
    always painted in the room it *names* rather than the room you are standing
-   in: in studio the 暗房 and 深海 labels resolved to noir's and abyss's near-white
-   ink and vanished into the pale plate, and in abyss 暗房 and 影棚 resolved to
-   studio's and noir's dark ink and sank into the blue. Only the live button
+   in: in 白厅 the 黑盒 and 蓝厅 labels resolved to noir's and abyss's near-white
+   ink and vanished into the pale plate, and in 蓝厅 黑盒 and 白厅 resolved to
+   noir's and studio's dark ink and sank into the grey. Only the live button
    looked right, and only because `.on` paints it from the other two tokens. */
+/* 黑盒 — the black box, and now the only dark room of the three. Its light is
+   one warm gallery spot on a black wall, so the accent is gold and the plate is
+   nearly black with a little of the wall still in it. */
 html[data-theme="noir"] {
-  --paper: #08090b;
-  --ink: #f2efe9;
-  --ink-dim: rgba(242, 239, 233, .74);
-  --ink-faint: rgba(242, 239, 233, .62);
-  --ink-ghost: rgba(242, 239, 233, .30);
-  --hair: rgba(242, 239, 233, .17);
-  --hair-soft: rgba(242, 239, 233, .085);
-  --accent: #dd9152;
-  --accent-soft: rgba(221, 145, 82, .15);
-  --accent-line: rgba(221, 145, 82, .55);
-  --chip-bg: rgba(242, 239, 233, .95);
-  --chip-ink: #131110;
-  --chip-hair: rgba(0, 0, 0, .16);
-  --shadow: rgba(0, 0, 0, .55);
+  --paper: #0c0c0e;
+  --ink: #f4f2ee;
+  --ink-dim: rgba(244, 242, 238, .72);
+  --ink-faint: rgba(244, 242, 238, .58);
+  --ink-ghost: rgba(244, 242, 238, .28);
+  --hair: rgba(244, 242, 238, .15);
+  --hair-soft: rgba(244, 242, 238, .07);
+  --accent: #d9a441;
+  --accent-soft: rgba(217, 164, 65, .14);
+  --accent-line: rgba(217, 164, 65, .50);
+  --chip-bg: rgba(244, 242, 238, .95);
+  --chip-ink: #101012;
+  --chip-hair: rgba(0, 0, 0, .18);
+  --shadow: rgba(0, 0, 0, .60);
 
-  --sheet-tint: #101217;
-  --sheet-a: 74%;
-  --sheet-line: rgba(242, 239, 233, .11);
-  --sheet-hi: rgba(255, 255, 255, .07);
+  --sheet-tint: #141416;
+  --sheet-a: 76%;
+  --sheet-line: rgba(244, 242, 238, .10);
+  --sheet-hi: rgba(255, 255, 255, .06);
 }
+/* 白厅 — the white hall, and the room the page opens in. A gallery wall is not
+   pure white: it is a warm off-white with a little body to it, so the plate can
+   be a true white and still read as a separate sheet laid on the wall. The
+   accent is the stamp red of a museum caption. */
 html[data-theme="studio"] {
-  --paper: #e6e9ed;
-  --ink: #14161a;
-  --ink-dim: rgba(20, 22, 26, .72);
-  --ink-faint: rgba(20, 22, 26, .62);
-  --ink-ghost: rgba(20, 22, 26, .32);
-  --hair: rgba(20, 22, 26, .19);
-  --hair-soft: rgba(20, 22, 26, .095);
-  --accent: #8d4712;
-  --accent-soft: rgba(141, 71, 18, .11);
-  --accent-line: rgba(141, 71, 18, .5);
-  --chip-bg: rgba(20, 22, 26, .93);
-  --chip-ink: #f1f2f4;
-  --chip-hair: rgba(255, 255, 255, .16);
-  --shadow: rgba(36, 40, 48, .3);
+  --paper: #f5f4f1;
+  --ink: #16161a;
+  --ink-dim: rgba(22, 22, 26, .72);
+  --ink-faint: rgba(22, 22, 26, .60);
+  --ink-ghost: rgba(22, 22, 26, .30);
+  --hair: rgba(22, 22, 26, .16);
+  --hair-soft: rgba(22, 22, 26, .08);
+  --accent: #c8362b;
+  --accent-soft: rgba(200, 54, 43, .10);
+  --accent-line: rgba(200, 54, 43, .45);
+  --chip-bg: rgba(22, 22, 26, .94);
+  --chip-ink: #f6f5f2;
+  --chip-hair: rgba(255, 255, 255, .18);
+  --shadow: rgba(24, 26, 30, .22);
 
-  --sheet-tint: #eef0f3;
-  --sheet-a: 78%;
-  --sheet-line: rgba(20, 22, 26, .13);
-  --sheet-hi: rgba(255, 255, 255, .55);
+  --sheet-tint: #ffffff;
+  --sheet-a: 82%;
+  --sheet-line: rgba(22, 22, 26, .12);
+  --sheet-hi: rgba(255, 255, 255, .70);
 }
-/* The dark room, in blue rather than in black. `--paper` is the plate's own
-   colour, so this is where the theme is decided: at #08090b (noir) the page is
-   a page in the dark, at #0a1620 it is a page under water. Everything else
-   follows — the ink has the same blue in it, and the accent is the light that
-   gets down here, which is why it is the one token that moves a long way from
-   both other rooms. The accent tab on the now-chip stays #d0783a in all three:
-   like the C—05 plate, it is the machine rather than the room. */
+/* 蓝厅 — a north-lit hall. The same white as the hall next door, but every
+   surface carries the cool of daylight that never saw the sun, so the ink has
+   a little blue in it and the accent is the light coming in through the roof.
+   It is the one token that moves a long way from both other rooms. */
 html[data-theme="abyss"] {
-  --paper: #0a1620;
-  --ink: #e4f1f8;
-  --ink-dim: rgba(228, 241, 248, .74);
-  --ink-faint: rgba(228, 241, 248, .62);
-  --ink-ghost: rgba(228, 241, 248, .30);
-  --hair: rgba(228, 241, 248, .16);
-  --hair-soft: rgba(228, 241, 248, .08);
-  --accent: #5fb4dc;
-  --accent-soft: rgba(95, 180, 220, .16);
-  --accent-line: rgba(95, 180, 220, .55);
-  --chip-bg: rgba(6, 20, 30, .94);
-  --chip-ink: #e6f3fa;
-  --chip-hair: rgba(150, 215, 245, .22);
-  --shadow: rgba(0, 5, 10, .62);
+  --paper: #e5eaee;
+  --ink: #10161c;
+  --ink-dim: rgba(16, 22, 28, .72);
+  --ink-faint: rgba(16, 22, 28, .58);
+  --ink-ghost: rgba(16, 22, 28, .28);
+  --hair: rgba(16, 22, 28, .16);
+  --hair-soft: rgba(16, 22, 28, .08);
+  --accent: #2f6f9e;
+  --accent-soft: rgba(47, 111, 158, .10);
+  --accent-line: rgba(47, 111, 158, .45);
+  --chip-bg: rgba(16, 22, 28, .94);
+  --chip-ink: #eef4f8;
+  --chip-hair: rgba(255, 255, 255, .18);
+  --shadow: rgba(20, 30, 40, .24);
 
-  --sheet-tint: #0d1f2b;
-  --sheet-a: 74%;
-  --sheet-line: rgba(228, 241, 248, .11);
-  --sheet-hi: rgba(180, 232, 255, .07);
+  --sheet-tint: #ffffff;
+  --sheet-a: 82%;
+  --sheet-line: rgba(16, 22, 28, .12);
+  --sheet-hi: rgba(255, 255, 255, .70);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -375,8 +380,8 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   margin-left: var(--retract);
   padding: var(--sheet-pad-t) var(--sheet-pad-x) var(--sheet-pad-b);
   background: color-mix(in srgb, var(--sheet-tint) var(--sheet-a), transparent);
-  backdrop-filter: blur(var(--blur)) saturate(1.06);
-  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.06);
+  backdrop-filter: blur(var(--blur)) saturate(1.0);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.0);
   border: 1px solid var(--sheet-line);
   border-radius: var(--r);
   box-shadow: inset 0 0.0625rem 0 var(--sheet-hi), var(--sh-sheet);
@@ -678,8 +683,11 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
      so that is the only thing timed here */
   transition: opacity .9s var(--e-out), transform .9s var(--e-out);
 }
-/* a 0.125rem accent tab rather than a border, so the chip keeps one clean edge */
-.now::before { content: ''; width: 0.125rem; align-self: stretch; background: #d0783a; flex: none; }
+/* a 0.125rem accent tab rather than a border, so the chip keeps one clean edge.
+   It used to be a fixed #d0783a in all three rooms — the machine rather than the
+   room. In the galleries it is the room's own accent: a caption tab is printed
+   in the ink of the exhibition it belongs to. */
+.now::before { content: ''; width: 0.125rem; align-self: stretch; background: var(--accent); flex: none; }
 .now b { font-size: 0.75rem; font-weight: 500; letter-spacing: .05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .now em {
   font-style: normal; font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em;
@@ -1281,21 +1289,21 @@ body.ready .dossier { opacity: 1; transform: none; }
 /* ---------- more contrast, on request ---------- */
 @media (prefers-contrast: more) {
   :root, html[data-theme="studio"] {
-    --ink-faint: rgba(20, 22, 26, .82);
-    --hair: rgba(20, 22, 26, .38);
-    --hair-soft: rgba(20, 22, 26, .2);
+    --ink-faint: rgba(22, 22, 26, .82);
+    --hair: rgba(22, 22, 26, .38);
+    --hair-soft: rgba(22, 22, 26, .2);
     --sheet-a: 94%;
   }
   html[data-theme="noir"] {
-    --ink-faint: rgba(242, 239, 233, .82);
-    --hair: rgba(242, 239, 233, .4);
-    --hair-soft: rgba(242, 239, 233, .22);
+    --ink-faint: rgba(244, 242, 238, .82);
+    --hair: rgba(244, 242, 238, .4);
+    --hair-soft: rgba(244, 242, 238, .22);
     --sheet-a: 94%;
   }
   html[data-theme="abyss"] {
-    --ink-faint: rgba(228, 241, 248, .82);
-    --hair: rgba(228, 241, 248, .40);
-    --hair-soft: rgba(228, 241, 248, .22);
+    --ink-faint: rgba(16, 22, 28, .82);
+    --hair: rgba(16, 22, 28, .40);
+    --hair-soft: rgba(16, 22, 28, .22);
     --sheet-a: 94%;
   }
   .frame { border-color: var(--hair); }
@@ -1319,4 +1327,22 @@ body.ready .dossier { opacity: 1; transform: none; }
     animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
   }
+  /* …and the tokens themselves do not walk. This one is not a matter of taste.
+
+     `transition-property` starts as `all`, so the rule above — which only sets
+     a duration — turns *every* element into a transition of *every* property.
+     That includes `color` and `background`, which on this page are read from
+     the registered tokens. While `html` is animating those tokens, the target
+     of every descendant's colour transition moves, so each one is restarted on
+     every frame and none of them ever reaches its end: they sit on the value
+     they started from, which is the `@property` initial value. That is the
+     white hall's ink, so in 白厅 nothing looked wrong; in 黑盒 the whole sheet
+     kept the white hall's near-black text and the segmented control painted its
+     live button in that same ink — dark on dark, and a blank block where the
+     label should be.
+
+     Snapping the tokens is what "reduced motion" means anyway, and it is what
+     lets the 0.01s transitions above finish: with nothing left drifting, they
+     run once and land. */
+  html { transition: none !important; }
 }

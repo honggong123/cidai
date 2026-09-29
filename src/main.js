@@ -131,52 +131,53 @@ const THEMES = {
   noir: {
     env: 'noir', dust: 0.40, hal: 0.072, ao: 1.0,
     grade: {
-      bloom: 0.32, ca: 0.85, grain: 0.050, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26,
-      halTint: [1.0, 0.60, 0.32],          // the warm bleed the page shipped with
+      bloom: 0.32, ca: 0.85, grain: 0.040, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26,
+      halTint: [1.0, 0.86, 0.62],          // the gold of the room's one spot
     },
     bg: {
-      stops: [[0, '#12151a'], [0.44, '#1e232a'], [0.64, '#0d1014'], [1, '#040507']],
-      spot: { u: 0.849, v: 0.48, r: 0.40, color: 'rgba(140,162,200,0.75)' },
+      stops: [[0, '#111214'], [0.44, '#1b1c1f'], [0.64, '#0c0d0f'], [1, '#040405']],
+      spot: { u: 0.849, v: 0.48, r: 0.40, color: 'rgba(220,190,140,0.60)' },
     },
-    floor2: 0x101317, floorMix: 0.60, shadowOp: 0.44,
-    pool: 0xff8a3c, poolOp: 0.09,
-    glare: { tint: [1.0, 0.72, 0.44], strength: 0.20, stride: 0.010, threshold: 0.58 },
+    floor2: 0x0e0f11, floorMix: 0.60, shadowOp: 0.44,
+    pool: 0xffc978, poolOp: 0.07,
+    glare: { tint: [1.0, 0.86, 0.62], strength: 0.16, stride: 0.010, threshold: 0.58 },
   },
   studio: {
-    env: 'studio', dust: 0.16, hal: 0.020, ao: 0.92,
+    env: 'studio', dust: 0.10, hal: 0.012, ao: 0.92,
     grade: {
-      bloom: 0.32, ca: 0.85, grain: 0.050, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26,
-      halTint: [1.0, 0.60, 0.32],
+      bloom: 0.32, ca: 0.85, grain: 0.035, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26,
+      // neutral: in a white hall a warm bleed on a white highlight is the one
+      // thing that would give the whole room away as a filter
+      halTint: [1.0, 0.97, 0.94],
     },
     bg: {
-      stops: [[0, '#9aa0a8'], [0.46, '#c2c7ce'], [0.78, '#d8dade'], [1, '#e9ebee']],
-      spot: { u: 0.849, v: 0.48, r: 0.44, color: 'rgba(255,255,255,0.50)' },
+      stops: [[0, '#b8bcc1'], [0.46, '#d7dade'], [0.78, '#ebedef'], [1, '#f6f7f8']],
+      spot: { u: 0.849, v: 0.48, r: 0.44, color: 'rgba(255,255,255,0.42)' },
     },
-    floor2: 0x9ba1a9, floorMix: 0.38, shadowOp: 0.26,
-    pool: 0xffffff, poolOp: 0.04,
+    floor2: 0xd6d8da, floorMix: 0.30, shadowOp: 0.18,
+    pool: 0xffffff, poolOp: 0.03,
     // the room the page opens in, so this is the one glare nobody should be
     // able to notice: a hint of a streak on the speculars and nothing else
-    glare: { tint: [0.86, 0.93, 1.0], strength: 0.08, stride: 0.008, threshold: 0.66 },
+    glare: { tint: [0.92, 0.95, 1.0], strength: 0.06, stride: 0.008, threshold: 0.66 },
   },
-  /* Deep water. Everything here is downstream of one fact — light that has come
-     down through a column of water has lost its red end — so the room is not a
-     daylight scene with a blue filter over it: the halation is cold, the
-     saturation is pulled down, the defocus is wider (there is more between the
-     lens and the subject down here), and the glare is the longest and bluest of
-     the three, because a streak is what a bright surface looks like from below. */
+  /* 蓝厅 — north light, and the one room where the *colour of the light* is the
+     whole story. Nothing that arrives at the subject is neutral: it has been
+     through a roof that never sees the sun. So the halation is cold, the defocus
+     is wide (a daylight hall is a big space), and the glare is the bluest of the
+     three, because a streak is what a bright surface looks like under a roof. */
   abyss: {
-    env: 'abyss', dust: 0.26, hal: 0.038, ao: 1.05,
+    env: 'abyss', dust: 0.18, hal: 0.026, ao: 1.05,
     grade: {
-      bloom: 0.44, ca: 0.75, grain: 0.055, vig: 0.92, sat: 0.92, edge: 1.05, focus: 0.24,
-      halTint: [0.42, 0.72, 1.0],
+      bloom: 0.34, ca: 0.75, grain: 0.040, vig: 0.92, sat: 1.0, edge: 1.05, focus: 0.24,
+      halTint: [0.66, 0.84, 1.0],
     },
     bg: {
-      stops: [[0, '#0a1c2a'], [0.46, '#12303f'], [0.74, '#0a1f2c'], [1, '#02080e']],
-      spot: { u: 0.849, v: 0.48, r: 0.42, color: 'rgba(120,196,235,0.62)' },
+      stops: [[0, '#a8bcc9'], [0.46, '#cbd8e0'], [0.74, '#e2e9ee'], [1, '#f1f5f8']],
+      spot: { u: 0.849, v: 0.48, r: 0.42, color: 'rgba(180,215,240,0.45)' },
     },
-    floor2: 0x0a1c28, floorMix: 0.52, shadowOp: 0.38,
-    pool: 0x5fc8e8, poolOp: 0.11,
-    glare: { tint: [0.42, 0.80, 1.0], strength: 0.34, stride: 0.013, threshold: 0.55 },
+    floor2: 0xc2ced8, floorMix: 0.34, shadowOp: 0.22,
+    pool: 0x5fc8e8, poolOp: 0.06,
+    glare: { tint: [0.62, 0.84, 1.0], strength: 0.22, stride: 0.011, threshold: 0.55 },
   },
 };
 for (const T of Object.values(THEMES)) {
@@ -242,11 +243,11 @@ let backdrop, backdropIn;
    A moving camera forces every frame (see the loop's camMoved), and anything
    the mirror actually shows moving — the drift, the reels — is either slower
    than a texel a frame or behind the smoke glass. */
-const floorBase = createSoftFloor({ base: 0x0b0c0e, mix: 0.62, y: -1.62, interval: 2 });
+const floorBase = createSoftFloor({ base: 0xd6d8da, mix: 0.30, y: -1.62, interval: 2 });
 scene.add(floorBase.mesh);
 const shadowCatcher = new THREE.Mesh(
   new THREE.PlaneGeometry(46, 46),
-  new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.42, transparent: true, depthWrite: false })
+  new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.18, transparent: true, depthWrite: false })
 );
 shadowCatcher.rotation.x = -Math.PI / 2;
 shadowCatcher.position.y = -1.612;
@@ -584,7 +585,7 @@ function settleSwap() {
   // was, and the card keeps the '--' it was printed with
   if (swap.dur > 0) {
     cas.st.duration = swap.dur;
-    swapText(brandCode, 'C—' + tapeMinutes(swap.dur));
+    swapText(brandCode, 'L—' + tapeMinutes(swap.dur));
   }
   setNowChip();
   flashAdd(null);
@@ -639,7 +640,7 @@ function reinitTrack() {
   cas.commitLabel();
   for (const t of staged.old) t.dispose();
   cas.warmLabel(false);
-  swapText(brandCode, 'C—' + T.minutes);
+  swapText(brandCode, 'L—' + T.minutes);
   setNowChip();
   swap.dur = 0;
 }
@@ -728,12 +729,12 @@ function applyQuery(camera = true) {
  *  tape and its reels drop (−1.10) and the screws drop with the bottom plate
  *  (−2.25). Rows and leaders therefore travel together and stay out of each
  *  other's way, and the numbers run out of order down the column as a result:
- *  02 观察窗 over 01 烟灰上壳, 05 轮毂与带盘 over 03 自攻螺钉. Those numbers are
+ *  02 观察窗 over 01 象牙上壳, 05 轮毂与带盘 over 03 自攻螺钉. Those numbers are
  *  the dossier's file numbers — they name the part, and stay with it. Only the
  *  rows move. */
 const ANNOS = [
   { key: 'glass', side: 'left', n: '02', t: '观察窗', s: 'PC 玻璃 · 透射 1.0' },
-  { key: 'shell', side: 'left', n: '01', t: '烟灰上壳', s: '聚碳酸酯 · 1.1 mm' },
+  { key: 'shell', side: 'left', n: '01', t: '象牙上壳', s: '聚碳酸酯 · 1.1 mm' },
   { key: 'hub', side: 'left', n: '05', t: '轮毂与带盘', s: 'POM · 六齿 · ⌀12' },
   { key: 'tape', side: 'left', n: '04', t: '磁带', s: 'γ-Fe₂O₃ · 3.81 mm' },
   { key: 'screw', side: 'left', n: '03', t: '自攻螺钉', s: '钢 · M2 × 5 · ×5' },
@@ -1150,7 +1151,7 @@ async function boot() {
     // counter's total.
     audioEl.src = TRACK.src;
     audioEl.load();
-    swapText(brandCode, 'C—' + TRACK.minutes);
+    swapText(brandCode, 'L—' + TRACK.minutes);
   });
   await step('正在建立几何体', 12, () => {
     cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: TRACK.minutes });
@@ -1334,22 +1335,22 @@ const RECORDS = [
   {
     no: '00', cn: '整机', en: '磁性录音带 · II 型',
     note: '聚碳酸酯外壳，γ-Fe₂O₃ 磁层，3.81 mm 带基。工程与手感之间，一段沉默的机械。',
-    spec: [['外壳', '聚碳酸酯 · 烟灰'], ['磁层', 'γ-Fe₂O₃ · 12 µm'], ['带基', 'PET · 3.81 mm'],
+    spec: [['外壳', '聚碳酸酯 · 象牙'], ['磁层', 'γ-Fe₂O₃ · 12 µm'], ['带基', 'PET · 3.81 mm'],
       ['屏蔽', '冷轧钢 · 0.8 mm'], ['轮毂', 'POM · 六齿']],
     act: '读取整机', key: null,
     view: { theta: 0.62, phi: 1.03, radius: 33 }, viewName: '等轴机位', viewEn: '等角投影',
   },
   {
-    no: '01', cn: '烟灰上壳', en: '聚碳酸酯外壳',
+    no: '01', cn: '象牙上壳', en: '聚碳酸酯外壳',
     note: '注塑上壳，细纹面半哑清漆。观察窗、标签与全部印刷都落在这一层。',
-    spec: [['材料', '聚碳酸酯 · 烟灰'], ['壁厚', '1.1 mm'], ['表面', '细纹 · 半哑'], ['印刷', 'A 面 · 丝印']],
+    spec: [['材料', '聚碳酸酯 · 象牙'], ['壁厚', '1.1 mm'], ['表面', '细纹 · 半哑'], ['印刷', 'A 面 · 丝印']],
     act: '读取上壳', key: 'shell',
     view: { theta: 0.78, phi: 0.98, radius: 33 }, viewName: '专用机位', viewEn: '上壳抬升',
   },
   {
-    no: '02', cn: '观察窗', en: '烟灰玻璃',
-    note: '烟灰 PC 玻璃，双面清漆。透光压到三成，走带清晰而不抢外壳的形。',
-    spec: [['材料', 'PC 玻璃 · 烟灰'], ['透射', '0.30'], ['厚度', '0.03'], ['工艺', '双面清漆']],
+    no: '02', cn: '观察窗', en: '浅灰玻璃',
+    note: '浅灰 PC 玻璃，双面清漆。透光压到两成，走带清晰而不抢外壳的形。',
+    spec: [['材料', 'PC 玻璃 · 浅灰'], ['透射', '0.22'], ['厚度', '0.03'], ['工艺', '双面清漆']],
     act: '读取观察窗', key: 'glass',
     view: { theta: 0.60, phi: 0.86, radius: 33 }, viewName: '专用机位', viewEn: '玻璃抬升',
   },
@@ -2941,7 +2942,7 @@ function loop() {
     const audioLive = audioOk() && !audioEl.paused && !audioEl.ended;
     // writing document.title re-titles the native window every time; only do it
     // when the string actually changes
-    const title = audioLive ? `♪ ${fmt(audioEl.currentTime)} · ${TRACK.title}` : `${TRACK.title} — OHM TAPE`;
+    const title = audioLive ? `♪ ${fmt(audioEl.currentTime)} · ${TRACK.title}` : `${TRACK.title} — LUX TAPE`;
     if (title !== lastTitle) { lastTitle = title; document.title = title; }
   }
 

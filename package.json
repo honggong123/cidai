@@ -1,4 +1,8 @@
 {
+  "name": "lux-tape",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LUX TAPE —— 程序化生成的三维磁带展示页（单文件 HTML，零外部资源）",
   "dependencies": {
     "esbuild": "^0.28.2",
     "three": "^0.180.0"

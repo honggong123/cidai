@@ -21,6 +21,6 @@ html = html.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => {
   return '<script>\n' + read(src) + '\n</script>';
 });
 
-const out = path.join(root, 'dist', 'ohm-tape-standalone.html');
+const out = path.join(root, 'dist', 'lux-tape-standalone.html');
 fs.writeFileSync(out, html);
-console.log(`内联 ${n} 个外部资源 → dist/ohm-tape-standalone.html  ${(fs.statSync(out).size / 1024).toFixed(0)} KB`);
+console.log(`内联 ${n} 个外部资源 → dist/lux-tape-standalone.html  ${(fs.statSync(out).size / 1024).toFixed(0)} KB`);

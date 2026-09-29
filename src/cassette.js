@@ -231,7 +231,7 @@ export function createMaterials(labelOpts = {}) {
     // the coating is drawn on lengthwise, so the highlight streaks along the
     // tape rather than sitting as a round blob
     anisotropy: 0.55, anisotropyRotation: 0,
-    sheen: 0.45, sheenColor: new THREE.Color(0x9c6636), sheenRoughness: 0.45,
+    sheen: 0.45, sheenColor: new THREE.Color(0x8a6a44), sheenRoughness: 0.45,
     iridescence: 0.12, iridescenceIOR: 1.28, iridescenceThicknessRange: [120, 420],
     clearcoat: 0.18, clearcoatRoughness: 0.42,
     envMapIntensity: 0.9, side: THREE.DoubleSide,
@@ -259,19 +259,24 @@ export function createMaterials(labelOpts = {}) {
 
   return {
     micro, micro2, rgh, paperN, brush,
+    /* Ivory, not charcoal. The galleries are white rooms, and a black shell in
+       one reads as a hole; a lacquered bone-white body with a cool sheen sits in
+       them the way a vitrine object does. Everything below moves with it — the
+       window is a pale grey now rather than smoked, and the interior is a mid
+       grey so the cutout still reads as depth. */
     shell: new THREE.MeshPhysicalMaterial({
-      color: 0x14171b, metalness: 0, roughness: 0.34,
-      roughnessMap: rgh, clearcoat: 0.9, clearcoatRoughness: 0.16,
+      color: 0xe9e6df, metalness: 0, roughness: 0.34,
+      roughnessMap: rgh, clearcoat: 0.72, clearcoatRoughness: 0.16,
       normalMap: micro, normalScale: new THREE.Vector2(0.20, 0.20),
-      envMapIntensity: 1.15, sheen: 0.18, sheenRoughness: 0.6, sheenColor: new THREE.Color(0x6b7a8c),
+      envMapIntensity: 0.95, sheen: 0.18, sheenRoughness: 0.6, sheenColor: new THREE.Color(0x9aa6b4),
     }),
     shellMatt: new THREE.MeshPhysicalMaterial({
-      color: 0x191d22, metalness: 0, roughness: 0.66, roughnessMap: rgh,
+      color: 0xdedad2, metalness: 0, roughness: 0.66, roughnessMap: rgh,
       clearcoat: 0.22, clearcoatRoughness: 0.65,
       normalMap: micro2, normalScale: new THREE.Vector2(0.34, 0.34), envMapIntensity: 0.95,
     }),
     inner: new THREE.MeshStandardMaterial({
-      color: 0x0c0e10, metalness: 0.05, roughness: 0.82,
+      color: 0x9a968e, metalness: 0.05, roughness: 0.82,
       normalMap: micro2, normalScale: new THREE.Vector2(0.5, 0.5), envMapIntensity: 0.5,
     }),
     // Smoked window. This used to be a real transmission material, which costs
@@ -280,33 +285,33 @@ export function createMaterials(labelOpts = {}) {
     // the refraction was invisible anyway, so a transparent clearcoat surface
     // gets the same look for none of the cost.
     glass: new THREE.MeshPhysicalMaterial({
-      color: 0x39414a, metalness: 0, roughness: 0.06,
-      transparent: true, opacity: 0.30, depthWrite: false,
+      color: 0xb9c2c8, metalness: 0, roughness: 0.06,
+      transparent: true, opacity: 0.22, depthWrite: false,
       clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.6,
       specularIntensity: 1,
     }),
     hub: new THREE.MeshPhysicalMaterial({
-      color: 0xded7c9, metalness: 0, roughness: 0.42,
+      color: 0xf2efe8, metalness: 0, roughness: 0.42,
       clearcoat: 0.28, clearcoatRoughness: 0.45, sheen: 0.2, envMapIntensity: 0.85,
     }),
     metal: new THREE.MeshPhysicalMaterial({
-      color: 0xb8bcc4, metalness: 1, roughness: 0.30,
+      color: 0xc9c8c4, metalness: 1, roughness: 0.30,
       roughnessMap: brush, anisotropy: 0.55, envMapIntensity: 1.35,
     }),
     metalDark: new THREE.MeshPhysicalMaterial({
-      color: 0x5a5f65, metalness: 1, roughness: 0.62, roughnessMap: brush, envMapIntensity: 0.85,
+      color: 0x8c8a86, metalness: 1, roughness: 0.62, roughnessMap: brush, envMapIntensity: 0.85,
     }),
     rubber: new THREE.MeshStandardMaterial({
-      color: 0x15171a, metalness: 0, roughness: 0.93,
+      color: 0x2a2a28, metalness: 0, roughness: 0.93,
       normalMap: micro2, normalScale: new THREE.Vector2(0.7, 0.7), envMapIntensity: 0.5,
     }),
     // physical, not standard: sheen only exists on MeshPhysicalMaterial, and on
     // a Standard one three drops all three properties with a console warning —
     // the felt pad was rendering as flat black rubber
     felt: new THREE.MeshPhysicalMaterial({
-      color: 0x2a2521, metalness: 0, roughness: 0.97,
+      color: 0x35322e, metalness: 0, roughness: 0.97,
       normalMap: micro2, normalScale: new THREE.Vector2(1.3, 1.3), envMapIntensity: 0.35,
-      sheen: 0.5, sheenColor: new THREE.Color(0x6b5a48), sheenRoughness: 0.9,
+      sheen: 0.5, sheenColor: new THREE.Color(0x8a8278), sheenRoughness: 0.9,
     }),
     tape,
     packSide,
@@ -329,19 +334,19 @@ export function createMaterials(labelOpts = {}) {
          in the shell. The hub is a tube and the spindle hole is a hole; a pencil
          goes through a real cassette here. */
       alphaTest: 0.5,
-      sheen: 0.45, sheenColor: new THREE.Color(0x9c6636), sheenRoughness: 0.45,
+      sheen: 0.45, sheenColor: new THREE.Color(0x8a6a44), sheenRoughness: 0.45,
       clearcoat: 0.18, clearcoatRoughness: 0.42, envMapIntensity: 0.9,
     }),
     labelA: new THREE.MeshPhysicalMaterial({
       map: labelMap('A'), metalness: 0, roughness: 0.84,
       normalMap: paperN, normalScale: new THREE.Vector2(0.22, 0.22),
-      sheen: 0.12, sheenColor: new THREE.Color(0xf6ecd8), sheenRoughness: 0.85,
+      sheen: 0.12, sheenColor: new THREE.Color(0xf4f2ee), sheenRoughness: 0.85,
       envMapIntensity: 0.6, clearcoat: 0.10, clearcoatRoughness: 0.65,
     }),
     labelB: new THREE.MeshPhysicalMaterial({
       map: labelMap('B'), metalness: 0, roughness: 0.84,
       normalMap: paperN, normalScale: new THREE.Vector2(0.22, 0.22),
-      sheen: 0.12, sheenColor: new THREE.Color(0xf6ecd8), sheenRoughness: 0.85,
+      sheen: 0.12, sheenColor: new THREE.Color(0xf4f2ee), sheenRoughness: 0.85,
       envMapIntensity: 0.6, clearcoat: 0.10, clearcoatRoughness: 0.65,
     }),
   };
@@ -596,7 +601,7 @@ export function createCassette(labelOpts = {}) {
       const st = new THREE.Mesh(
         new THREE.PlaneGeometry(HEAD_W, D.H - D.labelInset * 2 - 0.30),
         new THREE.MeshBasicMaterial({
-          map: TX.headStreak(), transparent: true, opacity: 0, color: 0xffe9c8,
+          map: TX.headStreak(), transparent: true, opacity: 0, color: 0xf2efe9,
           blending: THREE.AdditiveBlending, depthWrite: false, fog: false,
         })
       );

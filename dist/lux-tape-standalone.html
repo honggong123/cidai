@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>OHM TAPE — 磁带</title>
+<title>LUX TAPE — 磁带</title>
 <style>
 /* ============================================================
-   OHM TAPE — archive terminal
+   LUX TAPE — archive terminal
    ============================================================
-   The page is a records terminal: a masthead, a dossier on the
+   The page is a museum label: a masthead, a dossier on the
    subject, and a deck of index controls along the bottom. It is
-   laid out like a printed archive slip — hairline rules, wide
-   tracked micro-labels, one very large numeral per block — and it
-   is wired to the 3D scene, not decoration over it. Every control
-   here maps to a "file" you can select and read.
+   laid out like a gallery caption — square corners, hairline
+   rules, wide tracked micro-labels, one very large numeral per
+   block — and it is wired to the 3D scene, not decoration over
+   it. Every control here maps to a "file" you can select and read.
 
    Two ideas hold the whole sheet together:
 
@@ -35,12 +35,13 @@
 
 /* ============================ tokens =================================== */
 :root {
-  --sans: "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei UI", "PingFang SC", sans-serif;
-  /* an optical display cut for the few things set large. Segoe UI Variable
-     Display is a real optical size; where it is absent the stack falls back to
-     the text face, which at these weights still reads as a display. */
-  --disp: "Segoe UI Variable Display", "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Microsoft YaHei UI", sans-serif;
-  --mono: "Cascadia Mono", "JetBrains Mono", Consolas, "Microsoft YaHei UI", "PingFang SC", ui-monospace, monospace;
+  --sans: "Helvetica Neue", Helvetica, "Inter", "Segoe UI", Arial, "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  /* a grotesque for the few things set large — Helvetica first, which on
+     Windows resolves to Arial, a more neutral and geometric cut than Segoe UI.
+     Segoe UI Variable Display is the optical-size fallback where Helvetica is
+     absent; at these weights both still read as a display face. */
+  --disp: "Helvetica Neue", Helvetica, "Segoe UI Variable Display", "Segoe UI", Arial, "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  --mono: "SF Mono", "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, "Microsoft YaHei UI", monospace;
 
   /* type scale — one step per job, nothing ad-hoc */
   --fs-micro: 0.59375rem;        /* kbd chips, table slugs */
@@ -67,24 +68,24 @@
   --e-inout: cubic-bezier(.4, 0, .2, 1);
   --e-spring: cubic-bezier(.22, 1.25, .36, 1);
 
-  /* geometry */
-  --pad: clamp(1.375rem, 3vw, 2.75rem);
-  --sheet-pad-x: 1.5rem;
-  --sheet-pad-t: 1.375rem;
-  --sheet-pad-b: 1.375rem;
-  --blur: 1.125rem;
-  --r: 0.125rem;
+  /* geometry — a gallery caption is square, and generous with air */
+  --pad: clamp(1.75rem, 3.6vw, 3.5rem);
+  --sheet-pad-x: 1.75rem;
+  --sheet-pad-t: 1.5rem;
+  --sheet-pad-b: 1.5rem;
+  --blur: 0.625rem;
+  --r: 0;
   /* the widest the record plate is ever allowed to get. Past this it stops
      growing and the room between the subject and the plate does the widening
      instead — a 1100px-wide slip of paper reads as an empty slab, not a record
      (it is a rem length, so the cap itself grows with the root size). */
-  --plate-max: 47rem;
+  --plate-max: 44rem;
 
   /* the plate's own line and edge highlight, overridden per theme */
-  --sheet-tint: #eef0f3;
-  --sheet-a: 78%;
-  --sheet-line: rgba(20, 22, 26, .13);
-  --sheet-hi: rgba(255, 255, 255, .55);
+  --sheet-tint: #ffffff;
+  --sheet-a: 82%;
+  --sheet-line: rgba(22, 22, 26, .12);
+  --sheet-hi: rgba(255, 255, 255, .70);
   --sh-sheet: 0 1.625rem 4rem -2.375rem var(--shadow), 0 0.1875rem 0.875rem -0.5rem var(--shadow);
 }
 
@@ -99,104 +100,108 @@
    gradient stops, color-mix() results, box-shadows, backdrop tints, the inset
    highlight on the paper. One declaration instead of a per-element list that
    would have to be kept in sync with every rule added later. */
-@property --paper { syntax: '<color>'; inherits: true; initial-value: #e6e9ed; }
-@property --ink { syntax: '<color>'; inherits: true; initial-value: #14161a; }
-@property --ink-dim { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .72); }
-@property --ink-faint { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .62); }
-@property --ink-ghost { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .32); }
-@property --hair { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .19); }
-@property --hair-soft { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .1); }
-@property --accent { syntax: '<color>'; inherits: true; initial-value: #8d4712; }
-@property --accent-soft { syntax: '<color>'; inherits: true; initial-value: rgba(141, 71, 18, .11); }
-@property --accent-line { syntax: '<color>'; inherits: true; initial-value: rgba(141, 71, 18, .5); }
-@property --chip-bg { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .93); }
-@property --chip-ink { syntax: '<color>'; inherits: true; initial-value: #f1f2f4; }
-@property --chip-hair { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .16); }
-@property --shadow { syntax: '<color>'; inherits: true; initial-value: rgba(36, 40, 48, .3); }
-@property --sheet-tint { syntax: '<color>'; inherits: true; initial-value: #eef0f3; }
-@property --sheet-line { syntax: '<color>'; inherits: true; initial-value: rgba(20, 22, 26, .13); }
-@property --sheet-hi { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .55); }
-@property --sheet-a { syntax: '<percentage>'; inherits: true; initial-value: 78%; }
+@property --paper { syntax: '<color>'; inherits: true; initial-value: #f5f4f1; }
+@property --ink { syntax: '<color>'; inherits: true; initial-value: #16161a; }
+@property --ink-dim { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .72); }
+@property --ink-faint { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .60); }
+@property --ink-ghost { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .30); }
+@property --hair { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .16); }
+@property --hair-soft { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .08); }
+@property --accent { syntax: '<color>'; inherits: true; initial-value: #c8362b; }
+@property --accent-soft { syntax: '<color>'; inherits: true; initial-value: rgba(200, 54, 43, .10); }
+@property --accent-line { syntax: '<color>'; inherits: true; initial-value: rgba(200, 54, 43, .45); }
+@property --chip-bg { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .94); }
+@property --chip-ink { syntax: '<color>'; inherits: true; initial-value: #f6f5f2; }
+@property --chip-hair { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .18); }
+@property --shadow { syntax: '<color>'; inherits: true; initial-value: rgba(24, 26, 30, .22); }
+@property --sheet-tint { syntax: '<color>'; inherits: true; initial-value: #ffffff; }
+@property --sheet-line { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .12); }
+@property --sheet-hi { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .70); }
+@property --sheet-a { syntax: '<percentage>'; inherits: true; initial-value: 82%; }
 
-/* ---------- the lamps-off variant ---------- */
+/* ---------- the three galleries ---------- */
 /* `html[…]`, not `[…]`. The three buttons of the segmented control carry
    `data-theme` themselves — that is how the click handler knows which room to
    enter — so a bare attribute selector also matched the buttons, and each one
    re-declared the whole token set on itself. The result was that a button was
    always painted in the room it *names* rather than the room you are standing
-   in: in studio the 暗房 and 深海 labels resolved to noir's and abyss's near-white
-   ink and vanished into the pale plate, and in abyss 暗房 and 影棚 resolved to
-   studio's and noir's dark ink and sank into the blue. Only the live button
+   in: in 白厅 the 黑盒 and 蓝厅 labels resolved to noir's and abyss's near-white
+   ink and vanished into the pale plate, and in 蓝厅 黑盒 and 白厅 resolved to
+   noir's and studio's dark ink and sank into the grey. Only the live button
    looked right, and only because `.on` paints it from the other two tokens. */
+/* 黑盒 — the black box, and now the only dark room of the three. Its light is
+   one warm gallery spot on a black wall, so the accent is gold and the plate is
+   nearly black with a little of the wall still in it. */
 html[data-theme="noir"] {
-  --paper: #08090b;
-  --ink: #f2efe9;
-  --ink-dim: rgba(242, 239, 233, .74);
-  --ink-faint: rgba(242, 239, 233, .62);
-  --ink-ghost: rgba(242, 239, 233, .30);
-  --hair: rgba(242, 239, 233, .17);
-  --hair-soft: rgba(242, 239, 233, .085);
-  --accent: #dd9152;
-  --accent-soft: rgba(221, 145, 82, .15);
-  --accent-line: rgba(221, 145, 82, .55);
-  --chip-bg: rgba(242, 239, 233, .95);
-  --chip-ink: #131110;
-  --chip-hair: rgba(0, 0, 0, .16);
-  --shadow: rgba(0, 0, 0, .55);
+  --paper: #0c0c0e;
+  --ink: #f4f2ee;
+  --ink-dim: rgba(244, 242, 238, .72);
+  --ink-faint: rgba(244, 242, 238, .58);
+  --ink-ghost: rgba(244, 242, 238, .28);
+  --hair: rgba(244, 242, 238, .15);
+  --hair-soft: rgba(244, 242, 238, .07);
+  --accent: #d9a441;
+  --accent-soft: rgba(217, 164, 65, .14);
+  --accent-line: rgba(217, 164, 65, .50);
+  --chip-bg: rgba(244, 242, 238, .95);
+  --chip-ink: #101012;
+  --chip-hair: rgba(0, 0, 0, .18);
+  --shadow: rgba(0, 0, 0, .60);
 
-  --sheet-tint: #101217;
-  --sheet-a: 74%;
-  --sheet-line: rgba(242, 239, 233, .11);
-  --sheet-hi: rgba(255, 255, 255, .07);
+  --sheet-tint: #141416;
+  --sheet-a: 76%;
+  --sheet-line: rgba(244, 242, 238, .10);
+  --sheet-hi: rgba(255, 255, 255, .06);
 }
+/* 白厅 — the white hall, and the room the page opens in. A gallery wall is not
+   pure white: it is a warm off-white with a little body to it, so the plate can
+   be a true white and still read as a separate sheet laid on the wall. The
+   accent is the stamp red of a museum caption. */
 html[data-theme="studio"] {
-  --paper: #e6e9ed;
-  --ink: #14161a;
-  --ink-dim: rgba(20, 22, 26, .72);
-  --ink-faint: rgba(20, 22, 26, .62);
-  --ink-ghost: rgba(20, 22, 26, .32);
-  --hair: rgba(20, 22, 26, .19);
-  --hair-soft: rgba(20, 22, 26, .095);
-  --accent: #8d4712;
-  --accent-soft: rgba(141, 71, 18, .11);
-  --accent-line: rgba(141, 71, 18, .5);
-  --chip-bg: rgba(20, 22, 26, .93);
-  --chip-ink: #f1f2f4;
-  --chip-hair: rgba(255, 255, 255, .16);
-  --shadow: rgba(36, 40, 48, .3);
+  --paper: #f5f4f1;
+  --ink: #16161a;
+  --ink-dim: rgba(22, 22, 26, .72);
+  --ink-faint: rgba(22, 22, 26, .60);
+  --ink-ghost: rgba(22, 22, 26, .30);
+  --hair: rgba(22, 22, 26, .16);
+  --hair-soft: rgba(22, 22, 26, .08);
+  --accent: #c8362b;
+  --accent-soft: rgba(200, 54, 43, .10);
+  --accent-line: rgba(200, 54, 43, .45);
+  --chip-bg: rgba(22, 22, 26, .94);
+  --chip-ink: #f6f5f2;
+  --chip-hair: rgba(255, 255, 255, .18);
+  --shadow: rgba(24, 26, 30, .22);
 
-  --sheet-tint: #eef0f3;
-  --sheet-a: 78%;
-  --sheet-line: rgba(20, 22, 26, .13);
-  --sheet-hi: rgba(255, 255, 255, .55);
+  --sheet-tint: #ffffff;
+  --sheet-a: 82%;
+  --sheet-line: rgba(22, 22, 26, .12);
+  --sheet-hi: rgba(255, 255, 255, .70);
 }
-/* The dark room, in blue rather than in black. `--paper` is the plate's own
-   colour, so this is where the theme is decided: at #08090b (noir) the page is
-   a page in the dark, at #0a1620 it is a page under water. Everything else
-   follows — the ink has the same blue in it, and the accent is the light that
-   gets down here, which is why it is the one token that moves a long way from
-   both other rooms. The accent tab on the now-chip stays #d0783a in all three:
-   like the C—05 plate, it is the machine rather than the room. */
+/* 蓝厅 — a north-lit hall. The same white as the hall next door, but every
+   surface carries the cool of daylight that never saw the sun, so the ink has
+   a little blue in it and the accent is the light coming in through the roof.
+   It is the one token that moves a long way from both other rooms. */
 html[data-theme="abyss"] {
-  --paper: #0a1620;
-  --ink: #e4f1f8;
-  --ink-dim: rgba(228, 241, 248, .74);
-  --ink-faint: rgba(228, 241, 248, .62);
-  --ink-ghost: rgba(228, 241, 248, .30);
-  --hair: rgba(228, 241, 248, .16);
-  --hair-soft: rgba(228, 241, 248, .08);
-  --accent: #5fb4dc;
-  --accent-soft: rgba(95, 180, 220, .16);
-  --accent-line: rgba(95, 180, 220, .55);
-  --chip-bg: rgba(6, 20, 30, .94);
-  --chip-ink: #e6f3fa;
-  --chip-hair: rgba(150, 215, 245, .22);
-  --shadow: rgba(0, 5, 10, .62);
+  --paper: #e5eaee;
+  --ink: #10161c;
+  --ink-dim: rgba(16, 22, 28, .72);
+  --ink-faint: rgba(16, 22, 28, .58);
+  --ink-ghost: rgba(16, 22, 28, .28);
+  --hair: rgba(16, 22, 28, .16);
+  --hair-soft: rgba(16, 22, 28, .08);
+  --accent: #2f6f9e;
+  --accent-soft: rgba(47, 111, 158, .10);
+  --accent-line: rgba(47, 111, 158, .45);
+  --chip-bg: rgba(16, 22, 28, .94);
+  --chip-ink: #eef4f8;
+  --chip-hair: rgba(255, 255, 255, .18);
+  --shadow: rgba(20, 30, 40, .24);
 
-  --sheet-tint: #0d1f2b;
-  --sheet-a: 74%;
-  --sheet-line: rgba(228, 241, 248, .11);
-  --sheet-hi: rgba(180, 232, 255, .07);
+  --sheet-tint: #ffffff;
+  --sheet-a: 82%;
+  --sheet-line: rgba(16, 22, 28, .12);
+  --sheet-hi: rgba(255, 255, 255, .70);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -382,8 +387,8 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   margin-left: var(--retract);
   padding: var(--sheet-pad-t) var(--sheet-pad-x) var(--sheet-pad-b);
   background: color-mix(in srgb, var(--sheet-tint) var(--sheet-a), transparent);
-  backdrop-filter: blur(var(--blur)) saturate(1.06);
-  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.06);
+  backdrop-filter: blur(var(--blur)) saturate(1.0);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.0);
   border: 1px solid var(--sheet-line);
   border-radius: var(--r);
   box-shadow: inset 0 0.0625rem 0 var(--sheet-hi), var(--sh-sheet);
@@ -685,8 +690,11 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
      so that is the only thing timed here */
   transition: opacity .9s var(--e-out), transform .9s var(--e-out);
 }
-/* a 0.125rem accent tab rather than a border, so the chip keeps one clean edge */
-.now::before { content: ''; width: 0.125rem; align-self: stretch; background: #d0783a; flex: none; }
+/* a 0.125rem accent tab rather than a border, so the chip keeps one clean edge.
+   It used to be a fixed #d0783a in all three rooms — the machine rather than the
+   room. In the galleries it is the room's own accent: a caption tab is printed
+   in the ink of the exhibition it belongs to. */
+.now::before { content: ''; width: 0.125rem; align-self: stretch; background: var(--accent); flex: none; }
 .now b { font-size: 0.75rem; font-weight: 500; letter-spacing: .05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .now em {
   font-style: normal; font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em;
@@ -1288,21 +1296,21 @@ body.ready .dossier { opacity: 1; transform: none; }
 /* ---------- more contrast, on request ---------- */
 @media (prefers-contrast: more) {
   :root, html[data-theme="studio"] {
-    --ink-faint: rgba(20, 22, 26, .82);
-    --hair: rgba(20, 22, 26, .38);
-    --hair-soft: rgba(20, 22, 26, .2);
+    --ink-faint: rgba(22, 22, 26, .82);
+    --hair: rgba(22, 22, 26, .38);
+    --hair-soft: rgba(22, 22, 26, .2);
     --sheet-a: 94%;
   }
   html[data-theme="noir"] {
-    --ink-faint: rgba(242, 239, 233, .82);
-    --hair: rgba(242, 239, 233, .4);
-    --hair-soft: rgba(242, 239, 233, .22);
+    --ink-faint: rgba(244, 242, 238, .82);
+    --hair: rgba(244, 242, 238, .4);
+    --hair-soft: rgba(244, 242, 238, .22);
     --sheet-a: 94%;
   }
   html[data-theme="abyss"] {
-    --ink-faint: rgba(228, 241, 248, .82);
-    --hair: rgba(228, 241, 248, .40);
-    --hair-soft: rgba(228, 241, 248, .22);
+    --ink-faint: rgba(16, 22, 28, .82);
+    --hair: rgba(16, 22, 28, .40);
+    --hair-soft: rgba(16, 22, 28, .22);
     --sheet-a: 94%;
   }
   .frame { border-color: var(--hair); }
@@ -1326,6 +1334,24 @@ body.ready .dossier { opacity: 1; transform: none; }
     animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
   }
+  /* …and the tokens themselves do not walk. This one is not a matter of taste.
+
+     `transition-property` starts as `all`, so the rule above — which only sets
+     a duration — turns *every* element into a transition of *every* property.
+     That includes `color` and `background`, which on this page are read from
+     the registered tokens. While `html` is animating those tokens, the target
+     of every descendant's colour transition moves, so each one is restarted on
+     every frame and none of them ever reaches its end: they sit on the value
+     they started from, which is the `@property` initial value. That is the
+     white hall's ink, so in 白厅 nothing looked wrong; in 黑盒 the whole sheet
+     kept the white hall's near-black text and the segmented control painted its
+     live button in that same ink — dark on dark, and a blank block where the
+     label should be.
+
+     Snapping the tokens is what "reduced motion" means anyway, and it is what
+     lets the 0.01s transitions above finish: with nothing left drifting, they
+     run once and land. */
+  html { transition: none !important; }
 }
 
 </style>
@@ -1339,15 +1365,15 @@ body.ready .dossier { opacity: 1; transform: none; }
   <!-- ── masthead: the product, and the lights ─────────────────── -->
   <header class="mast">
     <div class="brand">
-      <h1>OHM TAPE</h1>
-      <p class="brand-mid">磁性录音带 · II 型 · 高偏磁</p>
-      <p class="brand-end" id="brand-code">C—05</p>
+      <h1>LUX TAPE</h1>
+      <p class="brand-mid">聚酯带基 · II 型 · 档案级</p>
+      <p class="brand-end" id="brand-code">L—01</p>
     </div>
     <nav class="mast-nav">
       <div class="seg" id="theme">
-        <button class="ui-hit" data-theme="noir">暗房</button>
-        <button class="ui-hit on" data-theme="studio">影棚</button>
-        <button class="ui-hit" data-theme="abyss">深海</button>
+        <button class="ui-hit" data-theme="noir">黑盒</button>
+        <button class="ui-hit on" data-theme="studio">白厅</button>
+        <button class="ui-hit" data-theme="abyss">蓝厅</button>
       </div>
       <i class="vr" aria-hidden="true"></i>
       <button class="tb ui-hit" id="btn-index">
@@ -1479,7 +1505,7 @@ body.ready .dossier { opacity: 1; transform: none; }
       <span class="kg" data-p="2" data-k=","><kbd>,</kbd><em>设置</em></span>
       <span class="kg" data-p="3" data-k="a"><kbd>A</kbd><em>巡览</em></span>
     </p>
-    <p class="hud-r">OHM TAPE 实验室<i>/</i><span id="clock">00:00:00</span></p>
+    <p class="hud-r">LUX TAPE 实验室<i>/</i><span id="clock">00:00:00</span></p>
   </div>
 
   <!-- ── the whole index ───────────────────────────────────────── -->
@@ -1517,7 +1543,7 @@ body.ready .dossier { opacity: 1; transform: none; }
 
 <div class="loader" id="loader">
   <div class="loader-box">
-    <div class="loader-mark">OHM<b>TAPE</b></div>
+    <div class="loader-mark">LUX<b>TAPE</b></div>
     <div class="loader-bar"><i id="lbar"></i></div>
     <div class="loader-lbl"><span id="llbl">正在初始化</span><em id="lpct">0%</em></div>
   </div>
@@ -30426,13 +30452,13 @@ void main() {
     const mottle = fbm(size, 4, 77);
     for (let i = 0; i < h.length; i++) h[i] = h[i] * 0.72 + mottle[i] * 0.28;
     const BAND = [
-      { c: [104, 88, 72], coarse: 30, rough: [0.2, 0.34], nrm: 0.6 },
+      { c: [102, 92, 80], coarse: 30, rough: [0.2, 0.34], nrm: 0.6 },
       // cut edge
-      { c: [58, 48, 41], coarse: 14, rough: [0.58, 0.82], nrm: 1.4 },
+      { c: [55, 49, 45], coarse: 14, rough: [0.58, 0.82], nrm: 1.4 },
       // back coating
-      { c: [104, 88, 72], coarse: 30, rough: [0.2, 0.34], nrm: 0.6 },
+      { c: [102, 92, 80], coarse: 30, rough: [0.2, 0.34], nrm: 0.6 },
       // cut edge
-      { c: [46, 34, 27], coarse: 11, rough: [0.26, 0.54], nrm: 1 }
+      { c: [43, 35, 31], coarse: 11, rough: [0.26, 0.54], nrm: 1 }
       // oxide face
     ];
     const bandOf = (v) => v < cut2 || v >= 0.5 && v < 0.5 + cut2 ? 0 : v < 0.5 ? 1 : 3;
@@ -30723,12 +30749,12 @@ void main() {
   var LZ = 2.93;
   var WIN = { x0: -3.5, x1: 3.5, z0: -1.85, z1: 1.65 };
   var PALETTE = {
-    blue: [58, 112, 146],
-    cyan: [46, 138, 164],
-    rose: [176, 112, 104],
-    coral: [188, 62, 32],
-    ochre: [150, 122, 70],
-    olive: [116, 120, 84]
+    blue: [70, 104, 132],
+    cyan: [62, 124, 142],
+    rose: [148, 118, 116],
+    coral: [152, 84, 72],
+    ochre: [128, 118, 96],
+    olive: [110, 114, 98]
   };
   function hairFall(g, W, H, o) {
     const {
@@ -31139,7 +31165,7 @@ void main() {
       { x: 0.03, y: 0.7, rx: 0.024, ry: 0.05, rot: 0.04, seed: 827, water: 0.8, mass: 0.45, wob: 0.5, drops: 2 },
       { x: 0.21, y: 0.89, rx: 0.07, ry: 0.032, rot: -0.01, seed: 828, water: 0.7, mass: 0.28, wob: 0.48, drops: 2, streak: 0.45 }
     ] },
-    { core: [192, 132, 124], halo: [212, 166, 154], strokes: [
+    { core: [156, 124, 118], halo: [186, 166, 160], strokes: [
       { x: 0.095, y: 0.028, rx: 0.1, ry: 0.036, rot: -0.02, seed: 836, water: 0.85, mass: 0.48, wob: 0.44, drops: 3, streak: 0.35 },
       { x: 0.145, y: 0.108, rx: 0.085, ry: 0.05, rot: -0.04, seed: 837, water: 0.8, mass: 0.32, wob: 0.46, drops: 3 },
       { x: 0.78, y: 0.9, rx: 0.15, ry: 0.046, rot: 0.01, seed: 838, water: 0.85, mass: 0.3, wob: 0.5, drops: 3, streak: 0.4 },
@@ -31227,7 +31253,7 @@ void main() {
     const Y = (z) => (LZ - z) * S;
     const U = (u) => u * S;
     const dark = face === "B";
-    const base = dark ? ["#252b36", "#141821"] : ["#f4f1e7", "#e5dfce"];
+    const base = dark ? ["#1b1e23", "#0e1013"] : ["#f8f6f1", "#eeebe3"];
     const lg = g.createLinearGradient(0, 0, W * 0.34, H);
     lg.addColorStop(0, base[0]);
     lg.addColorStop(1, base[1]);
@@ -31242,10 +31268,10 @@ void main() {
       g.fillRect(0, 0, W, H * 0.42);
       g.globalCompositeOperation = "source-over";
     }
-    const ink = dark ? "#e8e3d8" : "#2b2c30";
-    const sub = dark ? "rgba(206,203,214,.70)" : "rgba(62,64,70,.86)";
-    const accent = dark ? "#e2664a" : "#bf4626";
-    const lead = dark ? "208,212,218" : "46,49,55";
+    const ink = dark ? "#eeece7" : "#1b1b1d";
+    const sub = dark ? "rgba(210,210,208,.68)" : "rgba(46,48,52,.80)";
+    const accent = dark ? "#d94a3d" : "#c8362b";
+    const lead = dark ? "208,212,218" : "44,46,50";
     const blend = dark ? "screen" : "multiply";
     const r = rng(face === "A" ? 21 : 33);
     const bandZ0 = WIN.z1, bandZ1 = LZ - 0.02;
@@ -31260,7 +31286,7 @@ void main() {
       g.drawImage(paintLayer(W, H), 0, 0, W, H);
       g.globalCompositeOperation = "color";
       g.globalAlpha = 0.42;
-      g.fillStyle = "#2b3c5e";
+      g.fillStyle = "#2b3138";
       g.fillRect(0, 0, W, H);
       g.restore();
     } else {
@@ -31306,28 +31332,28 @@ void main() {
       { color: lead, alpha: dark ? 0.34 : 0.38, width: U(0.05), seed: 61, blend, flecks: false }
     );
     g.fillStyle = ink;
-    g.font = `600 ${U(0.46)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-    tracked(g, face === "A" ? "SIDE A" : "SIDE B", X(-4.5), bandTop + bandH * 0.34, { track: U(0.05) });
+    g.font = `600 ${U(0.46)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+    tracked(g, face === "A" ? "FACE A" : "FACE B", X(-4.5), bandTop + bandH * 0.34, { track: U(0.05) });
     g.fillStyle = sub;
-    g.font = `300 ${U(0.2)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-    tracked(g, "TYPE II  \xB7  HIGH BIAS", X(-4.5), bandTop + bandH * 0.63, { track: U(0.06) });
+    g.font = `300 ${U(0.2)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+    tracked(g, "TYPE II  \xB7  ARCHIVAL", X(-4.5), bandTop + bandH * 0.63, { track: U(0.06) });
     g.fillStyle = ink;
-    g.font = `600 ${U(0.56)}px "Segoe UI", Helvetica, Arial, sans-serif`;
+    g.font = `600 ${U(0.56)}px Helvetica, "Segoe UI", Arial, sans-serif`;
     tracked(g, minutes, X(4.5), bandTop + bandH * 0.84, { track: U(0.02), align: "right" });
     g.fillStyle = sub;
-    g.font = `300 ${U(0.18)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-    tracked(g, "MINUTES", X(4.5), bandTop + bandH * 0.3, { track: U(0.08), align: "right" });
+    g.font = `300 ${U(0.18)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+    tracked(g, "DURATION", X(4.5), bandTop + bandH * 0.3, { track: U(0.08), align: "right" });
     const SCRIPT = 'Gabriola, "Segoe Script", "Lucida Handwriting", "Brush Script MT", cursive';
     const titleY = backTop + backH * 0.48;
     const titleBox = X(4.5) - X(-4.32);
     const creditBox = X(4.5) - X(-4.3);
     if (title) {
       const script = (s) => `400 ${s}px ${SCRIPT}`;
-      const sans = (s) => `300 ${s}px "Segoe UI", Helvetica, Arial, sans-serif`;
+      const sans = (s) => `300 ${s}px Helvetica, "Segoe UI", Arial, sans-serif`;
       const fit = fitRun(g, title, script, U(0.46), titleBox);
       const tw = fit.w;
       g.font = script(fit.size);
-      g.fillStyle = dark ? "rgba(226,220,208,.26)" : "rgba(60,62,68,.26)";
+      g.fillStyle = dark ? "rgba(230,228,222,.26)" : "rgba(52,54,58,.26)";
       g.fillText(fit.text, X(-4.32) + U(0.014), titleY + U(0.014));
       g.fillStyle = ink;
       g.fillText(fit.text, X(-4.32), titleY);
@@ -31354,9 +31380,9 @@ void main() {
       g.font = `300 ${U(0.125)}px "Menlo", "Consolas", monospace`;
       tracked(g, face === "A" ? "SIDE A \xB7 4.76 cm/s" : "SIDE B \xB7 4.76 cm/s", X(-4.3), backTop + backH * 0.92, { track: U(0.04) });
     }
-    const strip = face === "A" ? ["\u03B3-Fe\u2082O\u2083  \xB7  3.81 mm", "MAGNETIC TAPE  \xB7  JAPAN"] : ["PATENTED LOW-NOISE SHELL", "ANTI-STATIC  \xB7  \u2300 12 mm HUB"];
+    const strip = face === "A" ? ["\u03B3-Fe\u2082O\u2083  \xB7  3.81 mm", "POLYESTER  \xB7  3.81 mm"] : ["ARCHIVAL SHELL", "ANTI-STATIC  \xB7  \u2300 12 mm HUB"];
     g.fillStyle = sub;
-    g.font = `300 ${U(0.17)}px "Segoe UI", Helvetica, Arial, sans-serif`;
+    g.font = `300 ${U(0.17)}px Helvetica, "Segoe UI", Arial, sans-serif`;
     strip.forEach((s, i) => {
       g.save();
       g.translate(X(-3.82 + i * 0.28), Y(WIN.z0) - U(0.16));
@@ -31368,21 +31394,21 @@ void main() {
     g.translate(X(3.72), Y(WIN.z1));
     g.rotate(Math.PI / 2);
     g.fillStyle = sub;
-    g.font = `300 ${U(0.17)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-    tracked(g, face === "A" ? "\u25B7  PLAY THIS SIDE" : "\u25C1  PLAY THIS SIDE", 0, -U(0.24), { track: U(0.055) });
+    g.font = `300 ${U(0.17)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+    tracked(g, face === "A" ? "\u25B7  PLAY THIS FACE" : "\u25C1  PLAY THIS FACE", 0, -U(0.24), { track: U(0.055) });
     g.restore();
-    g.fillStyle = dark ? "rgba(232,227,216,.74)" : "rgba(43,44,48,.74)";
+    g.fillStyle = dark ? "rgba(238,236,231,.74)" : "rgba(27,27,29,.74)";
     g.font = `300 ${U(0.15)}px "Menlo", "Consolas", monospace`;
     tracked(g, "4.76 cm/s  \xB7  EQ 70 \xB5s", X(-0.78), bandTop + bandH * 0.34, { track: U(0.035) });
-    g.fillStyle = dark ? "rgba(232,227,216,.5)" : "rgba(43,44,48,.52)";
+    g.fillStyle = dark ? "rgba(238,236,231,.5)" : "rgba(27,27,29,.52)";
     g.font = `300 ${U(0.14)}px "Menlo", "Consolas", monospace`;
-    tracked(g, face === "A" ? "OHM TAPE MFG.  \u2116 000-A" : "OHM TAPE MFG.  \u2116 000-B", X(-0.78), bandTop + bandH * 0.64, { track: U(0.035) });
+    tracked(g, face === "A" ? "LUX TAPE MFG.  \u2116 000-A" : "LUX TAPE MFG.  \u2116 000-B", X(-0.78), bandTop + bandH * 0.64, { track: U(0.035) });
     if (dark) {
       let bx = X(2.65);
       const bh = U(0.72), by = Y(rz0) - U(0.9);
       while (bx < X(4.4)) {
         const bw = U(0.02 + r() * 0.05);
-        g.fillStyle = r() > 0.32 ? "rgba(226,222,212,.50)" : "transparent";
+        g.fillStyle = r() > 0.32 ? "rgba(232,230,226,.50)" : "transparent";
         g.fillRect(bx, by, bw, bh);
         bx += bw + U(0.02);
       }
@@ -31390,7 +31416,7 @@ void main() {
     grain(g, W, H, dark ? 0.055 : 0.035, face === "A" ? 9 : 17);
     const vg = g.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, W * 0.62);
     vg.addColorStop(0, "rgba(0,0,0,0)");
-    vg.addColorStop(1, dark ? "rgba(0,0,0,.42)" : "rgba(70,58,42,.22)");
+    vg.addColorStop(1, dark ? "rgba(0,0,0,.42)" : "rgba(46,46,48,.20)");
     g.fillStyle = vg;
     g.fillRect(0, 0, W, H);
     return tex(c, { srgb: true });
@@ -31400,7 +31426,7 @@ void main() {
   function tapeEdgeTexture(size = 1024, bore = 0) {
     const c = canvas(size, size), g = c.getContext("2d");
     const R = size / 2;
-    g.fillStyle = "#3a3229";
+    g.fillStyle = "#2e2a24";
     g.fillRect(0, 0, size, size);
     const r = rng(77);
     const R0 = R * bore;
@@ -31626,39 +31652,43 @@ void main() {
   }
   var PRESET = {
     studio: {
-      sigma: 0.026,
-      dome: [[0, "#d7dade"], [0.35, "#b4b9c0"], [0.62, "#878d96"], [1, "#272b31"]],
+      sigma: 0.028,
+      /* A white room has to be *dim* in HDR terms or an ivory body blows out
+         against it — the dome tops out well below white, and the key panel is
+         only 2.9. A gallery wall reads as white because of its surroundings, not
+         because it emits. */
+      dome: [[0, "#e4e7ea"], [0.35, "#c9ced3"], [0.62, "#a2a8ae"], [1, "#32363b"]],
       panels: [
-        { w: 20, h: 13, c: [4.4, 4.2, 4], p: [-7.5, 10.5, 8] },
+        { w: 20, h: 13, c: [2.9, 2.9, 2.9], p: [-7.5, 10.5, 8] },
         // key
-        { w: 13, h: 10, c: [1.1, 1.3, 1.7], p: [11, 2.5, 6] },
+        { w: 13, h: 10, c: [1.1, 1.2, 1.3], p: [11, 2.5, 6] },
         // cool fill
-        { w: 1.5, h: 30, c: [2.9, 3.1, 4], p: [0, 7, -13] },
+        { w: 1.5, h: 30, c: [2.1, 2.2, 2.4], p: [0, 7, -13] },
         // rim strip
-        { w: 1.2, h: 22, c: [2.6, 2.4, 2.1], p: [-13, 3.5, -1] },
+        { w: 1.2, h: 22, c: [1.7, 1.7, 1.7], p: [-13, 3.5, -1] },
         // left streak
-        { w: 1.2, h: 22, c: [1.5, 1.8, 2.2], p: [13, 3.5, -1] },
+        { w: 1.2, h: 22, c: [1.4, 1.5, 1.6], p: [13, 3.5, -1] },
         // right streak
-        { w: 22, h: 22, c: [2.1, 2.1, 2], p: [0, 14, 0] },
+        { w: 22, h: 22, c: [1.7, 1.7, 1.7], p: [0, 14, 0] },
         // top wash
-        { w: 3.2, h: 3.2, c: [4.2, 4.1, 3.9], p: [-9, 7.5, 9] },
+        { w: 3.2, h: 3.2, c: [2.8, 2.8, 2.8], p: [-9, 7.5, 9] },
         // kicker (crisp dot)
-        { w: 2.6, h: 2.6, c: [2, 2.2, 2.8], p: [8, 6, -8] },
+        { w: 2.6, h: 2.6, c: [1.5, 1.6, 1.8], p: [8, 6, -8] },
         // cool kicker
-        { w: 18, h: 18, c: [0.22, 0.21, 0.2], p: [0, -9, 2] }
+        { w: 18, h: 18, c: [0.26, 0.26, 0.26], p: [0, -9, 2] }
         // bounce
       ]
     },
     noir: {
       sigma: 0.032,
-      dome: [[0, "#1e2126"], [0.45, "#111318"], [1, "#040507"]],
+      dome: [[0, "#1c1d20"], [0.45, "#101114"], [1, "#040405"]],
       panels: [
-        { w: 1.6, h: 26, c: [6, 4.1, 2.5], p: [-11, 7, 5] },
+        { w: 1.6, h: 26, c: [6, 4.6, 3], p: [-11, 7, 5] },
         // warm strip
         { w: 1.2, h: 26, c: [2, 2.6, 3.8], p: [6, 8, -11] },
         // cool rim
-        { w: 7, h: 5, c: [1.5, 1, 0.55], p: [10, 1.5, 4] },
-        // amber accent
+        { w: 7, h: 5, c: [1.7, 1.2, 0.7], p: [10, 1.5, 4] },
+        // gold accent
         { w: 20, h: 20, c: [0.55, 0.55, 0.6], p: [0, 13, 0] },
         // top wash
         { w: 2.4, h: 2.4, c: [4.6, 4.1, 3.4], p: [-6, 9, 9] },
@@ -31669,31 +31699,29 @@ void main() {
         // bounce
       ]
     },
-    /* Underwater, and the one room where the *colour of the light* is the whole
-       story. Water takes the red end out first, so nothing that arrives at the
-       subject is neutral: every emitter here is blue-green by construction, and
-       the dome is a gradient of depth rather than a tint. The two thin panels are
-       shafts — a surface a long way up, seen through a column of water that is
-       itself lit, which is why they are strips and not squares. */
+    /* 蓝厅 — a north-lit hall. Every emitter is daylight that has been through a
+       roof: neutral to cool, never warm, and the dome is a gradient of depth
+       rather than a tint. The two thin panels are the roof glazing seen edge-on —
+       a surface a long way up, which is why they are strips and not squares. */
     abyss: {
-      sigma: 0.032,
-      dome: [[0, "#123f52"], [0.38, "#0b2836"], [0.72, "#061723"], [1, "#020910"]],
+      sigma: 0.03,
+      dome: [[0, "#ccd8e0"], [0.38, "#b0c0cb"], [0.72, "#8497a5"], [1, "#3e4c57"]],
       panels: [
-        { w: 26, h: 18, c: [1.35, 2.55, 3.1], p: [0, 14, 1] },
-        // the surface itself
-        { w: 1, h: 34, c: [1.25, 2.3, 2.85], p: [-4.6, 7, -11] },
+        { w: 26, h: 18, c: [1.7, 1.9, 2.1], p: [0, 14, 1] },
+        // the roof light
+        { w: 1, h: 34, c: [1.5, 1.7, 1.9], p: [-4.6, 7, -11] },
         // a shaft
-        { w: 0.9, h: 30, c: [0.7, 1.35, 1.8], p: [5.2, 7, -12] },
+        { w: 0.9, h: 30, c: [0.9, 1.2, 1.5], p: [5.2, 7, -12] },
         // ...and a dimmer one
-        { w: 15, h: 11, c: [0.42, 0.86, 1.16], p: [10, 1.4, 6] },
-        // cold fill
-        { w: 13, h: 13, c: [0.3, 0.6, 0.8], p: [-9, 2.4, 7] },
+        { w: 15, h: 11, c: [0.9, 1.2, 1.5], p: [10, 1.4, 6] },
+        // cool fill
+        { w: 13, h: 13, c: [0.7, 1, 1.3], p: [-9, 2.4, 7] },
         // ...from the other side
-        { w: 2.4, h: 2.4, c: [1.7, 2.9, 3.4], p: [-6.4, 10.5, 8] },
-        // a mote of surface light
-        { w: 1.6, h: 1.6, c: [0.6, 1.15, 1.55], p: [8.5, 5, -7] },
+        { w: 2.4, h: 2.4, c: [2, 2.3, 2.6], p: [-6.4, 10.5, 8] },
+        // a mote of roof light
+        { w: 1.6, h: 1.6, c: [0.9, 1.2, 1.5], p: [8.5, 5, -7] },
         // cool kicker
-        { w: 20, h: 20, c: [0.06, 0.11, 0.15], p: [0, -9, 1] }
+        { w: 20, h: 20, c: [0.18, 0.24, 0.3], p: [0, -9, 1] }
         // the floor of it
       ]
     }
@@ -31883,41 +31911,38 @@ void main() {
   // src/lights.js
   var RIG = {
     noir: {
-      exposure: 0.98,
-      envInt: 0.55,
-      key: { c: 16773340, i: 1.75, w: 9, h: 6, p: [-6.4, 5.2, 6.6] },
+      exposure: 0.95,
+      envInt: 0.45,
+      key: { c: 16771528, i: 1.9, w: 9, h: 6, p: [-6.4, 5.2, 6.6] },
       fill: { c: 14083327, i: 0.45, w: 12, h: 8, p: [8.6, 1.8, 5.2] },
-      rim: { c: 12901119, i: 2, w: 1.3, h: 13, p: [4.2, 4.6, -8.6] },
+      rim: { c: 12901119, i: 1.6, w: 1.3, h: 13, p: [4.2, 4.6, -8.6] },
       bounce: { c: 16766888, i: 0.4, w: 12, h: 12, p: [0.5, -3.4, 3.8] },
       top: { c: 15660031, i: 0.22, w: 12, h: 12, p: [-0.8, 8.8, 1.2] },
       shadow: { i: 0.75, p: [-6.4, 5.2, 6.6] }
     },
     studio: {
-      exposure: 0.9,
-      envInt: 0.7,
-      key: { c: 16775406, i: 2.05, w: 14, h: 10, p: [-7.6, 6.6, 7.6] },
-      fill: { c: 15397375, i: 0.95, w: 15, h: 11, p: [9.4, 2.6, 5.8] },
-      rim: { c: 16777215, i: 1.25, w: 1.8, h: 16, p: [0.8, 6.2, -10.5] },
-      bounce: { c: 16774374, i: 0.62, w: 13, h: 13, p: [0.4, -3.2, 4.2] },
-      top: { c: 16777215, i: 0.55, w: 15, h: 15, p: [0, 10.5, 1] },
-      shadow: { i: 0.5, p: [-7.6, 6.6, 7.6] }
+      exposure: 0.8,
+      envInt: 0.56,
+      key: { c: 16777215, i: 1.5, w: 14, h: 10, p: [-7.6, 6.6, 7.6] },
+      fill: { c: 15791354, i: 0.95, w: 15, h: 11, p: [9.4, 2.6, 5.8] },
+      rim: { c: 16777215, i: 1.05, w: 1.8, h: 16, p: [0.8, 6.2, -10.5] },
+      bounce: { c: 16775922, i: 0.55, w: 13, h: 13, p: [0.4, -3.2, 4.2] },
+      top: { c: 16777215, i: 0.5, w: 15, h: 15, p: [0, 10.5, 1] },
+      shadow: { i: 0.34, p: [-7.6, 6.6, 7.6] }
     },
-    /* The same five positions, with the colour of water on every one of them: the
-       key is what came through the surface (high, and the only source with any
-       real punch), the fill is the column itself, the rim is the blue that a
-       silhouette picks up from behind, and the bounce is nearly nothing because
-       the floor down there is dark and far away. Exposure sits below both other
-       rooms — deep water is not a bright place, and pretending otherwise is what
-       makes a "blue" theme read as a filter over a daylight scene. */
+    /* 蓝厅 — the same five positions as the hall next door, with the colour of
+       north light on every one of them: nothing here is warm, and the fill is
+       large and bright because a daylight hall bounces off all four walls. The
+       shadow is the lightest of the three, for the same reason. */
     abyss: {
-      exposure: 0.86,
-      envInt: 0.6,
-      key: { c: 13166847, i: 1.6, w: 12, h: 8.5, p: [-6.2, 7.8, 5.6] },
-      fill: { c: 5936324, i: 0.62, w: 14, h: 10, p: [9, 1.6, 5.4] },
-      rim: { c: 10412287, i: 2.35, w: 1.2, h: 15, p: [3.6, 5.4, -9.6] },
-      bounce: { c: 2910860, i: 0.36, w: 12, h: 12, p: [0.4, -3.6, 4] },
-      top: { c: 14086399, i: 0.5, w: 14, h: 14, p: [-0.6, 9.8, 1] },
-      shadow: { i: 0.66, p: [-6.2, 7.8, 5.6] }
+      exposure: 0.8,
+      envInt: 0.54,
+      key: { c: 15923455, i: 1.45, w: 12, h: 8.5, p: [-6.2, 7.8, 5.6] },
+      fill: { c: 12111840, i: 0.8, w: 14, h: 10, p: [9, 1.6, 5.4] },
+      rim: { c: 13626111, i: 1.3, w: 1.2, h: 15, p: [3.6, 5.4, -9.6] },
+      bounce: { c: 9087164, i: 0.45, w: 12, h: 12, p: [0.4, -3.6, 4] },
+      top: { c: 15004415, i: 0.48, w: 14, h: 14, p: [-0.6, 9.8, 1] },
+      shadow: { i: 0.4, p: [-6.2, 7.8, 5.6] }
     }
   };
   function buildRigPanels(themeName2, layer = 2) {
@@ -32510,7 +32535,7 @@ void main() {
       anisotropy: 0.55,
       anisotropyRotation: 0,
       sheen: 0.45,
-      sheenColor: new Color(10249782),
+      sheenColor: new Color(9071172),
       sheenRoughness: 0.45,
       iridescence: 0.12,
       iridescenceIOR: 1.28,
@@ -32533,22 +32558,27 @@ void main() {
       rgh,
       paperN,
       brush,
+      /* Ivory, not charcoal. The galleries are white rooms, and a black shell in
+         one reads as a hole; a lacquered bone-white body with a cool sheen sits in
+         them the way a vitrine object does. Everything below moves with it — the
+         window is a pale grey now rather than smoked, and the interior is a mid
+         grey so the cutout still reads as depth. */
       shell: new MeshPhysicalMaterial({
-        color: 1316635,
+        color: 15328991,
         metalness: 0,
         roughness: 0.34,
         roughnessMap: rgh,
-        clearcoat: 0.9,
+        clearcoat: 0.72,
         clearcoatRoughness: 0.16,
         normalMap: micro,
         normalScale: new Vector2(0.2, 0.2),
-        envMapIntensity: 1.15,
+        envMapIntensity: 0.95,
         sheen: 0.18,
         sheenRoughness: 0.6,
-        sheenColor: new Color(7043724)
+        sheenColor: new Color(10135220)
       }),
       shellMatt: new MeshPhysicalMaterial({
-        color: 1645858,
+        color: 14605010,
         metalness: 0,
         roughness: 0.66,
         roughnessMap: rgh,
@@ -32559,7 +32589,7 @@ void main() {
         envMapIntensity: 0.95
       }),
       inner: new MeshStandardMaterial({
-        color: 790032,
+        color: 10131086,
         metalness: 0.05,
         roughness: 0.82,
         normalMap: micro2,
@@ -32572,11 +32602,11 @@ void main() {
       // the refraction was invisible anyway, so a transparent clearcoat surface
       // gets the same look for none of the cost.
       glass: new MeshPhysicalMaterial({
-        color: 3752266,
+        color: 12174024,
         metalness: 0,
         roughness: 0.06,
         transparent: true,
-        opacity: 0.3,
+        opacity: 0.22,
         depthWrite: false,
         clearcoat: 1,
         clearcoatRoughness: 0.03,
@@ -32584,7 +32614,7 @@ void main() {
         specularIntensity: 1
       }),
       hub: new MeshPhysicalMaterial({
-        color: 14604233,
+        color: 15921128,
         metalness: 0,
         roughness: 0.42,
         clearcoat: 0.28,
@@ -32593,7 +32623,7 @@ void main() {
         envMapIntensity: 0.85
       }),
       metal: new MeshPhysicalMaterial({
-        color: 12106948,
+        color: 13224132,
         metalness: 1,
         roughness: 0.3,
         roughnessMap: brush,
@@ -32601,14 +32631,14 @@ void main() {
         envMapIntensity: 1.35
       }),
       metalDark: new MeshPhysicalMaterial({
-        color: 5922661,
+        color: 9210502,
         metalness: 1,
         roughness: 0.62,
         roughnessMap: brush,
         envMapIntensity: 0.85
       }),
       rubber: new MeshStandardMaterial({
-        color: 1382170,
+        color: 2763304,
         metalness: 0,
         roughness: 0.93,
         normalMap: micro2,
@@ -32619,14 +32649,14 @@ void main() {
       // a Standard one three drops all three properties with a console warning —
       // the felt pad was rendering as flat black rubber
       felt: new MeshPhysicalMaterial({
-        color: 2762017,
+        color: 3486254,
         metalness: 0,
         roughness: 0.97,
         normalMap: micro2,
         normalScale: new Vector2(1.3, 1.3),
         envMapIntensity: 0.35,
         sheen: 0.5,
-        sheenColor: new Color(7035464),
+        sheenColor: new Color(9077368),
         sheenRoughness: 0.9
       }),
       tape,
@@ -32653,7 +32683,7 @@ void main() {
            goes through a real cassette here. */
         alphaTest: 0.5,
         sheen: 0.45,
-        sheenColor: new Color(10249782),
+        sheenColor: new Color(9071172),
         sheenRoughness: 0.45,
         clearcoat: 0.18,
         clearcoatRoughness: 0.42,
@@ -32666,7 +32696,7 @@ void main() {
         normalMap: paperN,
         normalScale: new Vector2(0.22, 0.22),
         sheen: 0.12,
-        sheenColor: new Color(16182488),
+        sheenColor: new Color(16052974),
         sheenRoughness: 0.85,
         envMapIntensity: 0.6,
         clearcoat: 0.1,
@@ -32679,7 +32709,7 @@ void main() {
         normalMap: paperN,
         normalScale: new Vector2(0.22, 0.22),
         sheen: 0.12,
-        sheenColor: new Color(16182488),
+        sheenColor: new Color(16052974),
         sheenRoughness: 0.85,
         envMapIntensity: 0.6,
         clearcoat: 0.1,
@@ -32842,7 +32872,7 @@ void main() {
             map: headStreak(),
             transparent: true,
             opacity: 0,
-            color: 16771528,
+            color: 15921129,
             blending: AdditiveBlending,
             depthWrite: false,
             fog: false
@@ -34900,7 +34930,7 @@ void main() {
     uniforms: {
       tDiffuse: { value: null },
       uTime: { value: 0 },
-      uGrain: { value: 0.05 },
+      uGrain: { value: 0.035 },
       uVig: { value: 0.85 },
       uCA: { value: 0.85 },
       uFade: { value: 0 },
@@ -34967,8 +34997,11 @@ void main() {
 
       float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
 
-      // filmic split tone \u2014 cool shadows, warm highlights
-      c *= mix(vec3(0.93, 0.985, 1.07), vec3(1.055, 1.005, 0.935), smoothstep(0.16, 0.86, l));
+      // a neutral split tone. It used to be a filmic cool-shadow/warm-highlight
+      // pair, which is the single most "photographic" thing the page did \u2014 and
+      // a gallery label is not a photograph. Kept as a split, just a very small
+      // one, so the highlights do not go flat.
+      c *= mix(vec3(0.985, 0.995, 1.01), vec3(1.01, 1.005, 0.995), smoothstep(0.16, 0.86, l));
       // halation: bleed off the brightest speculars, in whatever colour the
       // room says a highlight bleeds
       c += uHalTint * smoothstep(0.78, 1.0, l) * uHal;
@@ -35047,7 +35080,7 @@ void main() {
     const render2 = new RenderPass(scene2, camera2);
     const ao = new AOPass(camera2, size.x, size.y);
     ao.setDepthTexture(depthTexture);
-    const bloom2 = new UnrealBloomPass(new Vector2(size.x, size.y), 0.32, 0.7, 0.87);
+    const bloom2 = new UnrealBloomPass(new Vector2(size.x, size.y), 0.28, 0.7, 0.87);
     const glare = new ShaderPass(Glare);
     const output = new OutputPass();
     const grade2 = new ShaderPass(Grade);
@@ -35825,7 +35858,7 @@ void main() {
       id: "A",
       cn: "A \u9762",
       /* what gets printed on the cassette's own label for this side */
-      label: { title: "\u4F4E\u6E29\u88C5\u914D", artist: ARTIST, album: "OHM \u6F14\u793A\u5E26 \xB7 A \u9762" },
+      label: { title: "\u4F4E\u6E29\u88C5\u914D", artist: ARTIST, album: "LUX \u6F14\u793A\u5E26 \xB7 A \u9762" },
       spec: {
         dur: 60,
         bpm: 92,
@@ -35838,7 +35871,7 @@ void main() {
     {
       id: "B",
       cn: "B \u9762",
-      label: { title: "\u6DF1\u6C34\u533A", artist: ARTIST, album: "OHM \u6F14\u793A\u5E26 \xB7 B \u9762" },
+      label: { title: "\u6DF1\u6C34\u533A", artist: ARTIST, album: "LUX \u6F14\u793A\u5E26 \xB7 B \u9762" },
       spec: {
         dur: 60,
         bpm: 76,
@@ -36044,84 +36077,85 @@ void main() {
       grade: {
         bloom: 0.32,
         ca: 0.85,
-        grain: 0.05,
+        grain: 0.04,
         vig: 0.85,
         sat: 1,
         edge: 1,
         focus: 0.26,
-        halTint: [1, 0.6, 0.32]
-        // the warm bleed the page shipped with
+        halTint: [1, 0.86, 0.62]
+        // the gold of the room's one spot
       },
       bg: {
-        stops: [[0, "#12151a"], [0.44, "#1e232a"], [0.64, "#0d1014"], [1, "#040507"]],
-        spot: { u: 0.849, v: 0.48, r: 0.4, color: "rgba(140,162,200,0.75)" }
+        stops: [[0, "#111214"], [0.44, "#1b1c1f"], [0.64, "#0c0d0f"], [1, "#040405"]],
+        spot: { u: 0.849, v: 0.48, r: 0.4, color: "rgba(220,190,140,0.60)" }
       },
-      floor2: 1053463,
+      floor2: 921361,
       floorMix: 0.6,
       shadowOp: 0.44,
-      pool: 16747068,
-      poolOp: 0.09,
-      glare: { tint: [1, 0.72, 0.44], strength: 0.2, stride: 0.01, threshold: 0.58 }
+      pool: 16763256,
+      poolOp: 0.07,
+      glare: { tint: [1, 0.86, 0.62], strength: 0.16, stride: 0.01, threshold: 0.58 }
     },
     studio: {
       env: "studio",
-      dust: 0.16,
-      hal: 0.02,
+      dust: 0.1,
+      hal: 0.012,
       ao: 0.92,
       grade: {
         bloom: 0.32,
         ca: 0.85,
-        grain: 0.05,
+        grain: 0.035,
         vig: 0.85,
         sat: 1,
         edge: 1,
         focus: 0.26,
-        halTint: [1, 0.6, 0.32]
+        // neutral: in a white hall a warm bleed on a white highlight is the one
+        // thing that would give the whole room away as a filter
+        halTint: [1, 0.97, 0.94]
       },
       bg: {
-        stops: [[0, "#9aa0a8"], [0.46, "#c2c7ce"], [0.78, "#d8dade"], [1, "#e9ebee"]],
-        spot: { u: 0.849, v: 0.48, r: 0.44, color: "rgba(255,255,255,0.50)" }
+        stops: [[0, "#b8bcc1"], [0.46, "#d7dade"], [0.78, "#ebedef"], [1, "#f6f7f8"]],
+        spot: { u: 0.849, v: 0.48, r: 0.44, color: "rgba(255,255,255,0.42)" }
       },
-      floor2: 10199465,
-      floorMix: 0.38,
-      shadowOp: 0.26,
+      floor2: 14080218,
+      floorMix: 0.3,
+      shadowOp: 0.18,
       pool: 16777215,
-      poolOp: 0.04,
+      poolOp: 0.03,
       // the room the page opens in, so this is the one glare nobody should be
       // able to notice: a hint of a streak on the speculars and nothing else
-      glare: { tint: [0.86, 0.93, 1], strength: 0.08, stride: 8e-3, threshold: 0.66 }
+      glare: { tint: [0.92, 0.95, 1], strength: 0.06, stride: 8e-3, threshold: 0.66 }
     },
-    /* Deep water. Everything here is downstream of one fact — light that has come
-       down through a column of water has lost its red end — so the room is not a
-       daylight scene with a blue filter over it: the halation is cold, the
-       saturation is pulled down, the defocus is wider (there is more between the
-       lens and the subject down here), and the glare is the longest and bluest of
-       the three, because a streak is what a bright surface looks like from below. */
+    /* 蓝厅 — north light, and the one room where the *colour of the light* is the
+       whole story. Nothing that arrives at the subject is neutral: it has been
+       through a roof that never sees the sun. So the halation is cold, the defocus
+       is wide (a daylight hall is a big space), and the glare is the bluest of the
+       three, because a streak is what a bright surface looks like under a roof. */
     abyss: {
       env: "abyss",
-      dust: 0.26,
-      hal: 0.038,
+      dust: 0.18,
+      hal: 0.026,
       ao: 1.05,
       grade: {
-        bloom: 0.44,
+        bloom: 0.34,
         ca: 0.75,
-        grain: 0.055,
+        grain: 0.04,
         vig: 0.92,
-        sat: 0.92,
+        sat: 1,
         edge: 1.05,
         focus: 0.24,
-        halTint: [0.42, 0.72, 1]
+        halTint: [0.66, 0.84, 1]
       },
       bg: {
-        stops: [[0, "#0a1c2a"], [0.46, "#12303f"], [0.74, "#0a1f2c"], [1, "#02080e"]],
-        spot: { u: 0.849, v: 0.48, r: 0.42, color: "rgba(120,196,235,0.62)" }
+        stops: [[0, "#a8bcc9"], [0.46, "#cbd8e0"], [0.74, "#e2e9ee"], [1, "#f1f5f8"]],
+        spot: { u: 0.849, v: 0.48, r: 0.42, color: "rgba(180,215,240,0.45)" }
       },
-      floor2: 662568,
-      floorMix: 0.52,
-      shadowOp: 0.38,
+      floor2: 12766936,
+      floorMix: 0.34,
+      shadowOp: 0.22,
       pool: 6277352,
-      poolOp: 0.11,
-      glare: { tint: [0.42, 0.8, 1], strength: 0.34, stride: 0.013, threshold: 0.55 }
+      poolOp: 0.06,
+      glare: { tint: [0.62, 0.84, 1], strength: 0.22, stride: 0.011, threshold: 0.55 }
     }
   };
   for (const T of Object.values(THEMES)) {
@@ -36165,11 +36199,11 @@ void main() {
     backdropIn.visible = false;
     scene.add(backdropIn);
   }
-  var floorBase = createSoftFloor({ base: 723982, mix: 0.62, y: -1.62, interval: 2 });
+  var floorBase = createSoftFloor({ base: 14080218, mix: 0.3, y: -1.62, interval: 2 });
   scene.add(floorBase.mesh);
   var shadowCatcher = new Mesh(
     new PlaneGeometry(46, 46),
-    new ShadowMaterial({ color: 0, opacity: 0.42, transparent: true, depthWrite: false })
+    new ShadowMaterial({ color: 0, opacity: 0.18, transparent: true, depthWrite: false })
   );
   shadowCatcher.rotation.x = -Math.PI / 2;
   shadowCatcher.position.y = -1.612;
@@ -36432,7 +36466,7 @@ void main() {
     swap.meta = null;
     if (swap.dur > 0) {
       cas.st.duration = swap.dur;
-      swapText(brandCode, "C\u2014" + tapeMinutes(swap.dur));
+      swapText(brandCode, "L\u2014" + tapeMinutes(swap.dur));
     }
     setNowChip();
     flashAdd(null);
@@ -36482,7 +36516,7 @@ void main() {
     cas.commitLabel();
     for (const t2 of staged.old) t2.dispose();
     cas.warmLabel(false);
-    swapText(brandCode, "C\u2014" + T.minutes);
+    swapText(brandCode, "L\u2014" + T.minutes);
     setNowChip();
     swap.dur = 0;
   }
@@ -36533,7 +36567,7 @@ void main() {
   }
   var ANNOS = [
     { key: "glass", side: "left", n: "02", t: "\u89C2\u5BDF\u7A97", s: "PC \u73BB\u7483 \xB7 \u900F\u5C04 1.0" },
-    { key: "shell", side: "left", n: "01", t: "\u70DF\u7070\u4E0A\u58F3", s: "\u805A\u78B3\u9178\u916F \xB7 1.1 mm" },
+    { key: "shell", side: "left", n: "01", t: "\u8C61\u7259\u4E0A\u58F3", s: "\u805A\u78B3\u9178\u916F \xB7 1.1 mm" },
     { key: "hub", side: "left", n: "05", t: "\u8F6E\u6BC2\u4E0E\u5E26\u76D8", s: "POM \xB7 \u516D\u9F7F \xB7 \u230012" },
     { key: "tape", side: "left", n: "04", t: "\u78C1\u5E26", s: "\u03B3-Fe\u2082O\u2083 \xB7 3.81 mm" },
     { key: "screw", side: "left", n: "03", t: "\u81EA\u653B\u87BA\u9489", s: "\u94A2 \xB7 M2 \xD7 5 \xB7 \xD75" }
@@ -36825,7 +36859,7 @@ void main() {
       currentName = side.url;
       audioEl.src = TRACK.src;
       audioEl.load();
-      swapText(brandCode, "C\u2014" + TRACK.minutes);
+      swapText(brandCode, "L\u2014" + TRACK.minutes);
     });
     await step("\u6B63\u5728\u5EFA\u7ACB\u51E0\u4F55\u4F53", 12, () => {
       cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: TRACK.minutes });
@@ -36954,7 +36988,7 @@ void main() {
       en: "\u78C1\u6027\u5F55\u97F3\u5E26 \xB7 II \u578B",
       note: "\u805A\u78B3\u9178\u916F\u5916\u58F3\uFF0C\u03B3-Fe\u2082O\u2083 \u78C1\u5C42\uFF0C3.81 mm \u5E26\u57FA\u3002\u5DE5\u7A0B\u4E0E\u624B\u611F\u4E4B\u95F4\uFF0C\u4E00\u6BB5\u6C89\u9ED8\u7684\u673A\u68B0\u3002",
       spec: [
-        ["\u5916\u58F3", "\u805A\u78B3\u9178\u916F \xB7 \u70DF\u7070"],
+        ["\u5916\u58F3", "\u805A\u78B3\u9178\u916F \xB7 \u8C61\u7259"],
         ["\u78C1\u5C42", "\u03B3-Fe\u2082O\u2083 \xB7 12 \xB5m"],
         ["\u5E26\u57FA", "PET \xB7 3.81 mm"],
         ["\u5C4F\u853D", "\u51B7\u8F67\u94A2 \xB7 0.8 mm"],
@@ -36968,10 +37002,10 @@ void main() {
     },
     {
       no: "01",
-      cn: "\u70DF\u7070\u4E0A\u58F3",
+      cn: "\u8C61\u7259\u4E0A\u58F3",
       en: "\u805A\u78B3\u9178\u916F\u5916\u58F3",
       note: "\u6CE8\u5851\u4E0A\u58F3\uFF0C\u7EC6\u7EB9\u9762\u534A\u54D1\u6E05\u6F06\u3002\u89C2\u5BDF\u7A97\u3001\u6807\u7B7E\u4E0E\u5168\u90E8\u5370\u5237\u90FD\u843D\u5728\u8FD9\u4E00\u5C42\u3002",
-      spec: [["\u6750\u6599", "\u805A\u78B3\u9178\u916F \xB7 \u70DF\u7070"], ["\u58C1\u539A", "1.1 mm"], ["\u8868\u9762", "\u7EC6\u7EB9 \xB7 \u534A\u54D1"], ["\u5370\u5237", "A \u9762 \xB7 \u4E1D\u5370"]],
+      spec: [["\u6750\u6599", "\u805A\u78B3\u9178\u916F \xB7 \u8C61\u7259"], ["\u58C1\u539A", "1.1 mm"], ["\u8868\u9762", "\u7EC6\u7EB9 \xB7 \u534A\u54D1"], ["\u5370\u5237", "A \u9762 \xB7 \u4E1D\u5370"]],
       act: "\u8BFB\u53D6\u4E0A\u58F3",
       key: "shell",
       view: { theta: 0.78, phi: 0.98, radius: 33 },
@@ -36981,9 +37015,9 @@ void main() {
     {
       no: "02",
       cn: "\u89C2\u5BDF\u7A97",
-      en: "\u70DF\u7070\u73BB\u7483",
-      note: "\u70DF\u7070 PC \u73BB\u7483\uFF0C\u53CC\u9762\u6E05\u6F06\u3002\u900F\u5149\u538B\u5230\u4E09\u6210\uFF0C\u8D70\u5E26\u6E05\u6670\u800C\u4E0D\u62A2\u5916\u58F3\u7684\u5F62\u3002",
-      spec: [["\u6750\u6599", "PC \u73BB\u7483 \xB7 \u70DF\u7070"], ["\u900F\u5C04", "0.30"], ["\u539A\u5EA6", "0.03"], ["\u5DE5\u827A", "\u53CC\u9762\u6E05\u6F06"]],
+      en: "\u6D45\u7070\u73BB\u7483",
+      note: "\u6D45\u7070 PC \u73BB\u7483\uFF0C\u53CC\u9762\u6E05\u6F06\u3002\u900F\u5149\u538B\u5230\u4E24\u6210\uFF0C\u8D70\u5E26\u6E05\u6670\u800C\u4E0D\u62A2\u5916\u58F3\u7684\u5F62\u3002",
+      spec: [["\u6750\u6599", "PC \u73BB\u7483 \xB7 \u6D45\u7070"], ["\u900F\u5C04", "0.22"], ["\u539A\u5EA6", "0.03"], ["\u5DE5\u827A", "\u53CC\u9762\u6E05\u6F06"]],
       act: "\u8BFB\u53D6\u89C2\u5BDF\u7A97",
       key: "glass",
       view: { theta: 0.6, phi: 0.86, radius: 33 },
@@ -38286,7 +38320,7 @@ void main() {
       setRoll(clockEl, cs);
       syncNowTrack();
       const audioLive = audioOk() && !audioEl.paused && !audioEl.ended;
-      const title = audioLive ? `\u266A ${fmt(audioEl.currentTime)} \xB7 ${TRACK.title}` : `${TRACK.title} \u2014 OHM TAPE`;
+      const title = audioLive ? `\u266A ${fmt(audioEl.currentTime)} \xB7 ${TRACK.title}` : `${TRACK.title} \u2014 LUX TAPE`;
       if (title !== lastTitle) {
         lastTitle = title;
         document.title = title;

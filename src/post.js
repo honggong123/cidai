@@ -10,7 +10,7 @@ const Grade = {
   uniforms: {
     tDiffuse: { value: null },
     uTime: { value: 0 },
-    uGrain: { value: 0.05 },
+    uGrain: { value: 0.035 },
     uVig: { value: 0.85 },
     uCA: { value: 0.85 },
     uFade: { value: 0 },
@@ -70,8 +70,11 @@ const Grade = {
 
       float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
 
-      // filmic split tone — cool shadows, warm highlights
-      c *= mix(vec3(0.93, 0.985, 1.07), vec3(1.055, 1.005, 0.935), smoothstep(0.16, 0.86, l));
+      // a neutral split tone. It used to be a filmic cool-shadow/warm-highlight
+      // pair, which is the single most "photographic" thing the page did — and
+      // a gallery label is not a photograph. Kept as a split, just a very small
+      // one, so the highlights do not go flat.
+      c *= mix(vec3(0.985, 0.995, 1.01), vec3(1.01, 1.005, 0.995), smoothstep(0.16, 0.86, l));
       // halation: bleed off the brightest speculars, in whatever colour the
       // room says a highlight bleeds
       c += uHalTint * smoothstep(0.78, 1.0, l) * uHal;
@@ -179,7 +182,7 @@ export function createComposer(renderer, scene, camera) {
   const render = new RenderPass(scene, camera);
   const ao = new AOPass(camera, size.x, size.y);
   ao.setDepthTexture(depthTexture);
-  const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.32, 0.70, 0.87);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.28, 0.70, 0.87);
   const glare = new ShaderPass(Glare);
   const output = new OutputPass();
   const grade = new ShaderPass(Grade);

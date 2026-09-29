@@ -20,38 +20,35 @@ import { damp } from './anim.js';
 
 export const RIG = {
   noir: {
-    exposure: 0.98, envInt: 0.55,
-    key: { c: 0xfff0dc, i: 1.75, w: 9.0, h: 6.0, p: [-6.4, 5.2, 6.6] },
+    exposure: 0.95, envInt: 0.45,
+    key: { c: 0xffe9c8, i: 1.90, w: 9.0, h: 6.0, p: [-6.4, 5.2, 6.6] },
     fill: { c: 0xd6e4ff, i: 0.45, w: 12, h: 8.0, p: [8.6, 1.8, 5.2] },
-    rim: { c: 0xc4daff, i: 2.00, w: 1.3, h: 13, p: [4.2, 4.6, -8.6] },
+    rim: { c: 0xc4daff, i: 1.60, w: 1.3, h: 13, p: [4.2, 4.6, -8.6] },
     bounce: { c: 0xffd7a8, i: 0.40, w: 12, h: 12, p: [0.5, -3.4, 3.8] },
     top: { c: 0xeef3ff, i: 0.22, w: 12, h: 12, p: [-0.8, 8.8, 1.2] },
     shadow: { i: 0.75, p: [-6.4, 5.2, 6.6] },
   },
   studio: {
-    exposure: 0.90, envInt: 0.70,
-    key: { c: 0xfff8ee, i: 2.05, w: 14, h: 10, p: [-7.6, 6.6, 7.6] },
-    fill: { c: 0xeaf1ff, i: 0.95, w: 15, h: 11, p: [9.4, 2.6, 5.8] },
-    rim: { c: 0xffffff, i: 1.25, w: 1.8, h: 16, p: [0.8, 6.2, -10.5] },
-    bounce: { c: 0xfff4e6, i: 0.62, w: 13, h: 13, p: [0.4, -3.2, 4.2] },
-    top: { c: 0xffffff, i: 0.55, w: 15, h: 15, p: [0, 10.5, 1.0] },
-    shadow: { i: 0.50, p: [-7.6, 6.6, 7.6] },
+    exposure: 0.80, envInt: 0.56,
+    key: { c: 0xffffff, i: 1.50, w: 14, h: 10, p: [-7.6, 6.6, 7.6] },
+    fill: { c: 0xf0f4fa, i: 0.95, w: 15, h: 11, p: [9.4, 2.6, 5.8] },
+    rim: { c: 0xffffff, i: 1.05, w: 1.8, h: 16, p: [0.8, 6.2, -10.5] },
+    bounce: { c: 0xfffaf2, i: 0.55, w: 13, h: 13, p: [0.4, -3.2, 4.2] },
+    top: { c: 0xffffff, i: 0.50, w: 15, h: 15, p: [0, 10.5, 1.0] },
+    shadow: { i: 0.34, p: [-7.6, 6.6, 7.6] },
   },
-  /* The same five positions, with the colour of water on every one of them: the
-     key is what came through the surface (high, and the only source with any
-     real punch), the fill is the column itself, the rim is the blue that a
-     silhouette picks up from behind, and the bounce is nearly nothing because
-     the floor down there is dark and far away. Exposure sits below both other
-     rooms — deep water is not a bright place, and pretending otherwise is what
-     makes a "blue" theme read as a filter over a daylight scene. */
+  /* 蓝厅 — the same five positions as the hall next door, with the colour of
+     north light on every one of them: nothing here is warm, and the fill is
+     large and bright because a daylight hall bounces off all four walls. The
+     shadow is the lightest of the three, for the same reason. */
   abyss: {
-    exposure: 0.86, envInt: 0.60,
-    key: { c: 0xc8e8ff, i: 1.60, w: 12, h: 8.5, p: [-6.2, 7.8, 5.6] },
-    fill: { c: 0x5a94c4, i: 0.62, w: 14, h: 10, p: [9.0, 1.6, 5.4] },
-    rim: { c: 0x9ee0ff, i: 2.35, w: 1.2, h: 15, p: [3.6, 5.4, -9.6] },
-    bounce: { c: 0x2c6a8c, i: 0.36, w: 12, h: 12, p: [0.4, -3.6, 4.0] },
-    top: { c: 0xd6f0ff, i: 0.50, w: 14, h: 14, p: [-0.6, 9.8, 1.0] },
-    shadow: { i: 0.66, p: [-6.2, 7.8, 5.6] },
+    exposure: 0.80, envInt: 0.54,
+    key: { c: 0xf2f8ff, i: 1.45, w: 12, h: 8.5, p: [-6.2, 7.8, 5.6] },
+    fill: { c: 0xb8cfe0, i: 0.80, w: 14, h: 10, p: [9.0, 1.6, 5.4] },
+    rim: { c: 0xcfeaff, i: 1.30, w: 1.2, h: 15, p: [3.6, 5.4, -9.6] },
+    bounce: { c: 0x8aa8bc, i: 0.45, w: 12, h: 12, p: [0.4, -3.6, 4.0] },
+    top: { c: 0xe4f2ff, i: 0.48, w: 14, h: 14, p: [-0.6, 9.8, 1.0] },
+    shadow: { i: 0.40, p: [-6.2, 7.8, 5.6] },
   },
 };
 

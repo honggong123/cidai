@@ -109,10 +109,10 @@ export function tapeMaps(size = 512, cut = 0.02) {
   // Oxide is a near-black brown (albedo ~4%), the back coating a little greyer
   // and much rougher, the cut PET edge lighter and glossier.
   const BAND = [
-    { c: [104, 88, 72], coarse: 30, rough: [0.20, 0.34], nrm: 0.6 },   // cut edge
-    { c: [58, 48, 41], coarse: 14, rough: [0.58, 0.82], nrm: 1.4 },   // back coating
-    { c: [104, 88, 72], coarse: 30, rough: [0.20, 0.34], nrm: 0.6 },   // cut edge
-    { c: [46, 34, 27], coarse: 11, rough: [0.26, 0.54], nrm: 1.0 },   // oxide face
+    { c: [102, 92, 80], coarse: 30, rough: [0.20, 0.34], nrm: 0.6 },   // cut edge
+    { c: [55, 49, 45], coarse: 14, rough: [0.58, 0.82], nrm: 1.4 },    // back coating
+    { c: [102, 92, 80], coarse: 30, rough: [0.20, 0.34], nrm: 0.6 },   // cut edge
+    { c: [43, 35, 31], coarse: 11, rough: [0.26, 0.54], nrm: 1.0 },    // oxide face
   ];
   const bandOf = (v) => (v < cut || (v >= 0.5 && v < 0.5 + cut)) ? 0 : (v < 0.5 ? 1 : 3);
 
@@ -462,9 +462,13 @@ const WIN = { x0: -3.5, x1: 3.5, z0: -1.85, z1: 1.65 };
    screened onto the night card's dark ground. */
 
 const CARD_INK = [40, 43, 49];
+/* Shifted out of the warm end for the galleries: the earths (coral, ochre,
+   olive, rose) all lose their yellow and come back as muted neutrals, so the
+   painting reads as a study rather than a colour plate. The composition is
+   untouched — only the temperature of the pigment moves. */
 const PALETTE = {
-  blue: [58, 112, 146], cyan: [46, 138, 164], rose: [176, 112, 104],
-  coral: [188, 62, 32], ochre: [150, 122, 70], olive: [116, 120, 84],
+  blue: [70, 104, 132], cyan: [62, 124, 142], rose: [148, 118, 116],
+  coral: [152, 84, 72], ochre: [128, 118, 96], olive: [110, 114, 98],
 };
 
 /* The day card's pigments live in DAY_GLAZES, further down: they belong to the
@@ -859,7 +863,7 @@ function glazeCanvas(W, H, sim, core, halo, K = 0.95) {
 
 /* The day card's three glazes, in the order they were laid down: the cool
    field that carries the composition, the teal note worked into it while it was
-   still wet, and the warm one the cover keeps for the forehead and the far end
+   still wet, and the muted one the cover keeps for the forehead and the far end
    of the foot. One stroke list per glaze, in fractions of the sheet. */
 const DAY_GLAZES = [
   { core: [88, 116, 158], halo: [126, 156, 190], strokes: [
@@ -881,7 +885,7 @@ const DAY_GLAZES = [
     { x: .030, y: .700, rx: .024, ry: .050, rot: .04, seed: 827, water: 0.80, mass: 0.45, wob: .50, drops: 2 },
     { x: .210, y: .890, rx: .070, ry: .032, rot: -.01, seed: 828, water: 0.70, mass: 0.28, wob: .48, drops: 2, streak: .45 },
   ] },
-  { core: [192, 132, 124], halo: [212, 166, 154], strokes: [
+  { core: [156, 124, 118], halo: [186, 166, 160], strokes: [
     { x: .095, y: .028, rx: .100, ry: .036, rot: -.02, seed: 836, water: 0.85, mass: 0.48, wob: .44, drops: 3, streak: .35 },
     { x: .145, y: .108, rx: .085, ry: .050, rot: -.04, seed: 837, water: 0.80, mass: 0.32, wob: .46, drops: 3 },
     { x: .780, y: .900, rx: .150, ry: .046, rot: .01, seed: 838, water: 0.85, mass: 0.30, wob: .50, drops: 3, streak: .4 },
@@ -1024,10 +1028,10 @@ export function labelTexture(face = 'A', { title = '', artist = '', album = '', 
   const U = (u) => u * S;                       // unit length
   const dark = face === 'B';
 
-  // ---- base paper. A face is a sheet off the same block as the cover: warm
-  //  cold-press stock, cooler where the light falls off. B is the night card —
+  // ---- base paper. A face is a sheet off the same block as the cover: a clean
+  //  gallery stock, cooler where the light falls off. B is the night card —
   //  the same painting screened onto a dark ground.
-  const base = dark ? ['#252b36', '#141821'] : ['#f4f1e7', '#e5dfce'];
+  const base = dark ? ['#1b1e23', '#0e1013'] : ['#f8f6f1', '#eeebe3'];
   const lg = g.createLinearGradient(0, 0, W * 0.34, H);
   lg.addColorStop(0, base[0]); lg.addColorStop(1, base[1]);
   g.fillStyle = lg; g.fillRect(0, 0, W, H);
@@ -1041,14 +1045,14 @@ export function labelTexture(face = 'A', { title = '', artist = '', album = '', 
     g.globalCompositeOperation = 'source-over';
   }
 
-  const ink = dark ? '#e8e3d8' : '#2b2c30';
+  const ink = dark ? '#eeece7' : '#1b1b1d';
   // the day card's small print sits on paint for half its length, and at the
   // size the card is actually seen a 70% grey on a wash disappears — the night
   // card's light print has the same problem in reverse, which is why both are
   // set further from the paper than they look like they need to be
-  const sub = dark ? 'rgba(206,203,214,.70)' : 'rgba(62,64,70,.86)';
-  const accent = dark ? '#e2664a' : '#bf4626';
-  const lead = dark ? '208,212,218' : '46,49,55';
+  const sub = dark ? 'rgba(210,210,208,.68)' : 'rgba(46,48,52,.80)';
+  const accent = dark ? '#d94a3d' : '#c8362b';
+  const lead = dark ? '208,212,218' : '44,46,50';
   const blend = dark ? 'screen' : 'multiply';
   const r = rng(face === 'A' ? 21 : 33);
 
@@ -1081,7 +1085,7 @@ export function labelTexture(face = 'A', { title = '', artist = '', album = '', 
     // colour blend keeps the washes luminous and stops the night card going mud
     g.globalCompositeOperation = 'color';
     g.globalAlpha = .42;
-    g.fillStyle = '#2b3c5e';
+    g.fillStyle = '#2b3138';
     g.fillRect(0, 0, W, H);
     g.restore();
   } else {
@@ -1115,17 +1119,17 @@ export function labelTexture(face = 'A', { title = '', artist = '', album = '', 
 
   // ---- the band, printed in ink over the wash
   g.fillStyle = ink;
-  g.font = `600 ${U(0.46)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-  tracked(g, face === 'A' ? 'SIDE A' : 'SIDE B', X(-4.5), bandTop + bandH * 0.34, { track: U(0.05) });
+  g.font = `600 ${U(0.46)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+  tracked(g, face === 'A' ? 'FACE A' : 'FACE B', X(-4.5), bandTop + bandH * 0.34, { track: U(0.05) });
   g.fillStyle = sub;
-  g.font = `300 ${U(0.2)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-  tracked(g, 'TYPE II  ·  HIGH BIAS', X(-4.5), bandTop + bandH * 0.63, { track: U(0.06) });
+  g.font = `300 ${U(0.2)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+  tracked(g, 'TYPE II  ·  ARCHIVAL', X(-4.5), bandTop + bandH * 0.63, { track: U(0.06) });
   g.fillStyle = ink;
-  g.font = `600 ${U(0.56)}px "Segoe UI", Helvetica, Arial, sans-serif`;
+  g.font = `600 ${U(0.56)}px Helvetica, "Segoe UI", Arial, sans-serif`;
   tracked(g, minutes, X(4.5), bandTop + bandH * 0.84, { track: U(0.02), align: 'right' });
   g.fillStyle = sub;
-  g.font = `300 ${U(0.18)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-  tracked(g, 'MINUTES', X(4.5), bandTop + bandH * 0.30, { track: U(0.08), align: 'right' });
+  g.font = `300 ${U(0.18)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+  tracked(g, 'DURATION', X(4.5), bandTop + bandH * 0.30, { track: U(0.08), align: 'right' });
 
   // ---- back band. The ruled title lines are gone: the title is written out in
   //  a calligraphic hand, the way the cover's own name is. It goes down as one
@@ -1139,11 +1143,11 @@ export function labelTexture(face = 'A', { title = '', artist = '', album = '', 
   const creditBox = X(4.5) - X(-4.30);
   if (title) {
     const script = (s) => `400 ${s}px ${SCRIPT}`;
-    const sans = (s) => `300 ${s}px "Segoe UI", Helvetica, Arial, sans-serif`;
+    const sans = (s) => `300 ${s}px Helvetica, "Segoe UI", Arial, sans-serif`;
     const fit = fitRun(g, title, script, U(0.46), titleBox);
     const tw = fit.w;
     g.font = script(fit.size);
-    g.fillStyle = dark ? 'rgba(226,220,208,.26)' : 'rgba(60,62,68,.26)';
+    g.fillStyle = dark ? 'rgba(230,228,222,.26)' : 'rgba(52,54,58,.26)';
     g.fillText(fit.text, X(-4.32) + U(.014), titleY + U(.014));   // ink sinking into the tooth
     g.fillStyle = ink;
     g.fillText(fit.text, X(-4.32), titleY);
@@ -1164,10 +1168,10 @@ export function labelTexture(face = 'A', { title = '', artist = '', album = '', 
   //  two runs so each column fits the cutout's height — as one string it ran
   //  1700px up a 753px margin, over the band and off the plate.
   const strip = face === 'A'
-    ? ['γ-Fe₂O₃  ·  3.81 mm', 'MAGNETIC TAPE  ·  JAPAN']
-    : ['PATENTED LOW-NOISE SHELL', 'ANTI-STATIC  ·  ⌀ 12 mm HUB'];
+    ? ['γ-Fe₂O₃  ·  3.81 mm', 'POLYESTER  ·  3.81 mm']
+    : ['ARCHIVAL SHELL', 'ANTI-STATIC  ·  ⌀ 12 mm HUB'];
   g.fillStyle = sub;
-  g.font = `300 ${U(0.17)}px "Segoe UI", Helvetica, Arial, sans-serif`;
+  g.font = `300 ${U(0.17)}px Helvetica, "Segoe UI", Arial, sans-serif`;
   strip.forEach((s, i) => {
     g.save();
     g.translate(X(-3.82 + i * 0.28), Y(WIN.z0) - U(0.16));
@@ -1179,27 +1183,27 @@ export function labelTexture(face = 'A', { title = '', artist = '', album = '', 
   g.translate(X(3.72), Y(WIN.z1));
   g.rotate(Math.PI / 2);
   g.fillStyle = sub;
-  g.font = `300 ${U(0.17)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-  tracked(g, face === 'A' ? '▷  PLAY THIS SIDE' : '◁  PLAY THIS SIDE', 0, -U(0.24), { track: U(0.055) });
+  g.font = `300 ${U(0.17)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+  tracked(g, face === 'A' ? '▷  PLAY THIS FACE' : '◁  PLAY THIS FACE', 0, -U(0.24), { track: U(0.055) });
   g.restore();
 
   // ---- technical block on the front band
   //  the middle column is bounded on the right by the MINUTES/05 block, so the
   //  spec line keeps clear of it and drops the run-out EQ name — the band's own
   //  left column already says TYPE II
-  g.fillStyle = dark ? 'rgba(232,227,216,.74)' : 'rgba(43,44,48,.74)';
+  g.fillStyle = dark ? 'rgba(238,236,231,.74)' : 'rgba(27,27,29,.74)';
   g.font = `300 ${U(0.15)}px "Menlo", "Consolas", monospace`;
   tracked(g, '4.76 cm/s  ·  EQ 70 µs', X(-0.78), bandTop + bandH * 0.34, { track: U(0.035) });
-  g.fillStyle = dark ? 'rgba(232,227,216,.5)' : 'rgba(43,44,48,.52)';
+  g.fillStyle = dark ? 'rgba(238,236,231,.5)' : 'rgba(27,27,29,.52)';
   g.font = `300 ${U(0.14)}px "Menlo", "Consolas", monospace`;
-  tracked(g, face === 'A' ? 'OHM TAPE MFG.  № 000-A' : 'OHM TAPE MFG.  № 000-B', X(-0.78), bandTop + bandH * 0.64, { track: U(0.035) });
+  tracked(g, face === 'A' ? 'LUX TAPE MFG.  № 000-A' : 'LUX TAPE MFG.  № 000-B', X(-0.78), bandTop + bandH * 0.64, { track: U(0.035) });
 
   if (dark) { // barcode on the back band
     let bx = X(2.65);
     const bh = U(0.72), by = Y(rz0) - U(0.9);
     while (bx < X(4.4)) {
       const bw = U(0.02 + r() * 0.05);
-      g.fillStyle = r() > 0.32 ? 'rgba(226,222,212,.50)' : 'transparent';
+      g.fillStyle = r() > 0.32 ? 'rgba(232,230,226,.50)' : 'transparent';
       g.fillRect(bx, by, bw, bh);
       bx += bw + U(0.02);
     }
@@ -1210,7 +1214,7 @@ export function labelTexture(face = 'A', { title = '', artist = '', album = '', 
   // soft edge shading so paper doesn't look flat
   const vg = g.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, W * 0.62);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, dark ? 'rgba(0,0,0,.42)' : 'rgba(70,58,42,.22)');
+  vg.addColorStop(1, dark ? 'rgba(0,0,0,.42)' : 'rgba(46,46,48,.20)');
   g.fillStyle = vg; g.fillRect(0, 0, W, H);
 
   return tex(c, { srgb: true });
@@ -1231,7 +1235,7 @@ export function tapeEdgeTexture(size = 1024, bore = 0) {
   const R = size / 2;
   // what shows between two layer edges: the shadow in the groove, in the same
   // warm grey family the cut edge is drawn in (see BAND in tapeMaps)
-  g.fillStyle = '#3a3229'; g.fillRect(0, 0, size, size);
+  g.fillStyle = '#2e2a24'; g.fillRect(0, 0, size, size);
   const r = rng(77);
   /* `bore` is the part of this disc the hub stands on, as a share of its radius
      — and it is a *constant*, because the caller scales the whole disc so that
