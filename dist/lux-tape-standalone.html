@@ -807,7 +807,15 @@ body.no-audio .now { opacity: .72; }
    transport puts it, and takes a row off the band's height with it. */
 .transport {
   display: grid; align-items: center;
-  grid-template-columns: auto auto minmax(6.5rem, 1fr) auto;
+  /* The rail is the only column here that may give way, so its floor is set low
+     enough that it does — at 6.5rem it was floored before the transport's own
+     content was, and the shortfall came out of whatever else the grid could
+     squeeze instead: first the counter (which collapsed to one digit wide, see
+     .counter below), then, once that was held, the play key's label, which broke
+     「走带」 across two lines. Both are worse than a shorter rail. In practice the
+     floor only bites between about 1081 and 1200px; above that the rail is over
+     6.5rem on its own and nothing changes. */
+  grid-template-columns: auto auto minmax(3.5rem, 1fr) auto;
   grid-template-areas: "play counter track icons";
   gap: 0 0.875rem;
   /* no backdrop blur and no tint here on purpose: the plate above carries both,
@@ -840,6 +848,10 @@ body.no-audio .now { opacity: .72; }
   padding: 0.5rem 0.9375rem; color: var(--chip-ink); background: var(--chip-bg); border-radius: var(--r);
   font: inherit; font-size: var(--fs-label); font-weight: 500;
   letter-spacing: var(--tr-label); text-transform: uppercase;
+  /* a two-character key label is a word, not a place to break — CJK text will
+     otherwise split it, and the play key was the thing the grid reached for once
+     the counter stopped being squeezable */
+  white-space: nowrap;
   transition: transform var(--t-press) var(--e-out), filter var(--t-swift) var(--e-out);
 }
 .tc-btn:hover { filter: brightness(1.16); }
