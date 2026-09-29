@@ -28,12 +28,17 @@
 
 /* ============================ tokens =================================== */
 :root {
-  --sans: "Helvetica Neue", Helvetica, "Inter", "Segoe UI", Arial, "PingFang SC", "Microsoft YaHei UI", sans-serif;
-  /* a grotesque for the few things set large — Helvetica first, which on
-     Windows resolves to Arial, a more neutral and geometric cut than Segoe UI.
-     Segoe UI Variable Display is the optical-size fallback where Helvetica is
-     absent; at these weights both still read as a display face. */
-  --disp: "Helvetica Neue", Helvetica, "Segoe UI Variable Display", "Segoe UI", Arial, "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  --sans: "Helvetica Neue", "Inter", "Segoe UI", Helvetica, Arial, "PingFang SC", "Microsoft YaHei UI", sans-serif;
+  /* a grotesque for the few things set large — Helvetica Neue first, the cut
+     this face was picked for, then the two real grotesques a Windows or Linux
+     machine actually has. Bare `Helvetica` is deliberately the last of the
+     three: Chrome does not fall *back* on it, it *substitutes* for it, and on
+     Windows the substitute is Arial — about 6% wider than Segoe UI. Ahead of
+     Segoe UI it silently widened every line on this page, which grew the record
+     plate 41px taller at 1100px and printed the transport on top of it. A font
+     that is missing costs you a fallback; a font that is swapped costs you a
+     layout. */
+  --disp: "Helvetica Neue", "Segoe UI Variable Display", "Segoe UI", Helvetica, Arial, "PingFang SC", "Microsoft YaHei UI", sans-serif;
   --mono: "SF Mono", "Cascadia Mono", "JetBrains Mono", Consolas, ui-monospace, "Microsoft YaHei UI", monospace;
 
   /* type scale — one step per job, nothing ad-hoc */
@@ -1221,6 +1226,41 @@ body.ready .dossier { opacity: 1; transform: none; }
   /* the deck has just grown a second row, so the now-chip has to clear it */
   .now { bottom: 12.5rem; }
 }
+
+/* ---------- the plate's ceiling ----------
+   Between the two layouts there was a hole. From 901px up the plate hangs from
+   the frame's middle and grows downward with nothing underneath it, while the
+   deck has already begun taking rows — two of them at 1080 — so a long record
+   ends up printed on the transport: at 1100 the 走带 key lands on the plate's
+   own 读取 button and the counter is cut in half by its left edge. The original
+   build does the same thing; its face is 5.7% narrower, which leaves its plate
+   41px shorter and keeps the worst of it under 1100.
+
+   So the plate is anchored to the band between the masthead and the deck rather
+   than to the middle of the frame, and its body scrolls inside that band. The
+   ≤900 layout already answers the same question in its own way. Two details:
+   the ceiling is on the body, not the sheet, because the sheet's registration
+   tick sits a hair outside the padding box and `overflow` would clip it; and
+   the body scrolls rather than the sheet for the same reason. */
+@media (min-width: 901px) {
+  .dossier {
+    --floor: 8.25rem;              /* the deck: its own height plus its inset */
+    top: var(--floor); bottom: var(--floor);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .sheet { max-height: 100%; display: flex; flex-direction: column; }
+  /* the crumb keeps its size so the body is the only thing that gives */
+  .sheet > .crumb { flex: 0 0 auto; }
+  .dbody { min-height: 0; overflow: auto; scrollbar-width: thin; }
+}
+@media (min-width: 901px) and (max-width: 1080px) {
+  /* Down here the deck is two rows tall and the plate has left the middle of the
+     frame anyway, so it takes the whole band between the masthead and the deck
+     rather than half of it — a symmetric 14.5rem would leave 150px of plate above
+     the nav's line doing nothing. */
+  .dossier { top: 5.5rem; bottom: 14.5rem; }
+}
+
 @media (max-width: 900px) {
   :root { --pad: 1.5rem; --sheet-pad-x: 1.25rem; --sheet-pad-t: 1.125rem; --sheet-pad-b: 1.25rem; }
   .frame { inset: 0.6875rem; }
