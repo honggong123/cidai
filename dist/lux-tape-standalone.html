@@ -1258,39 +1258,23 @@ body.ready .dossier { opacity: 1; transform: none; }
   .now { bottom: 12.5rem; }
 }
 
-/* ---------- the plate's ceiling ----------
-   Between the two layouts there was a hole. From 901px up the plate hangs from
-   the frame's middle and grows downward with nothing underneath it, while the
-   deck has already begun taking rows — two of them at 1080 — so a long record
-   ends up printed on the transport: at 1100 the 走带 key lands on the plate's
-   own 读取 button and the counter is cut in half by its left edge. The original
-   build does the same thing; its face is 5.7% narrower, which leaves its plate
-   41px shorter and keeps the worst of it under 1100.
-
-   So the plate is anchored to the band between the masthead and the deck rather
-   than to the middle of the frame, and its body scrolls inside that band. The
-   ≤900 layout already answers the same question in its own way. Two details:
-   the ceiling is on the body, not the sheet, because the sheet's registration
-   tick sits a hair outside the padding box and `overflow` would clip it; and
-   the body scrolls rather than the sheet for the same reason. */
-@media (min-width: 901px) {
-  .dossier {
-    --floor: 8.25rem;              /* the deck: its own height plus its inset */
-    top: var(--floor); bottom: var(--floor);
-    display: flex; flex-direction: column; justify-content: center;
-  }
-  .sheet { max-height: 100%; display: flex; flex-direction: column; }
-  /* the crumb keeps its size so the body is the only thing that gives */
-  .sheet > .crumb { flex: 0 0 auto; }
-  .dbody { min-height: 0; overflow: auto; scrollbar-width: thin; }
-}
-@media (min-width: 901px) and (max-width: 1080px) {
-  /* Down here the deck is two rows tall and the plate has left the middle of the
-     frame anyway, so it takes the whole band between the masthead and the deck
-     rather than half of it — a symmetric 14.5rem would leave 150px of plate above
-     the nav's line doing nothing. */
-  .dossier { top: 5.5rem; bottom: 14.5rem; }
-}
+/* ---------- the plate's ceiling: tried, measured, removed ----------
+   A ceiling was added here — the plate anchored to the band between the masthead
+   and the deck, its body scrolling inside that band — on the strength of a sweep
+   that reported the plate printing on the transport from 901px to 1190px, worst
+   at 1100 (32232px²). That reading was the sweep's, not the page's: it changed
+   the device metrics and measured a quarter of a second later, while .sheet
+   carries a .58s margin-left and .dossier a .7s left, so it was reading the
+   record re-flowed at a width the layout never settles at. Measured after the
+   transitions, 1100 overlaps the transport by nothing at all, and so does every
+   other width above 1080. What the ceiling actually did was cap the sheet and
+   clip the body — and the whole .ui layer is pointer-events:none, so the clipped
+   part of the record had no scrollbar anyone could drag and no wheel it could
+   claim: at 1080 it hid 55px including the panel's 读取 key, at 1000 193px.
+   Trading a silent loss of the record for a phantom overlap is not a trade.
+   What is left is upstream's own behaviour and it is small: at 1080 the plate
+   reaches 9px past the transport, at 1000x700 78px, and the plate takes no
+   pointer events, so the transport underneath still works. */
 
 @media (max-width: 900px) {
   :root { --pad: 1.5rem; --sheet-pad-x: 1.25rem; --sheet-pad-t: 1.125rem; --sheet-pad-b: 1.25rem; }

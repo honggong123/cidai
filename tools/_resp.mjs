@@ -67,7 +67,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 await send('Page.enable');
 await send('Runtime.enable');
-await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+// the prelude and any RESP_WHEEL run before the sweep, so they need to start at
+// the size the caller is asking about rather than at the sweep's first width
+const START = process.env.RESP_SIZE ? process.env.RESP_SIZE.split('x').map(Number) : [1600, 900];
+await send('Emulation.setDeviceMetricsOverride', { width: START[0], height: START[1], deviceScaleFactor: 1, mobile: false });
 await send('Page.navigate', { url });
 
 let ready = false;
@@ -89,7 +92,21 @@ if (!ready) console.log('warning: loader never cleared — the plate may still b
    two disagree — a transient reading is indistinguishable from a real one by eye,
    and silently reporting one is worse than not measuring at all. */
 await evaluate('(async () => { await document.fonts.ready; return document.fonts.size; })()').catch(() => 0);
-const SETTLE = 250;
+/* Changing the device metrics re-runs the media queries but the page then
+   *transitions* to the new layout: .sheet carries a .58s margin-left and .dossier
+   a .7s left, and the plate's width changes with the breakpoint — so the whole
+   record is re-measured at a width it never settles at. Two things have to be
+   true before a reading means anything, and neither is a fixed sleep:
+   the change must have been through a style recalc and a paint (two frames), and
+   the transitions those frames started must have finished. Waiting a flat 250ms
+   reported the plate overlapping the transport at 1100 (32232px²) when a fresh
+   load at 1100 overlaps it by nothing at all, and reported the record clipped at
+   1280 when a fresh load at 1280 is complete. Both were the transition. */
+const settle = async () => {
+  await evaluate('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(1))))')
+    .catch(() => 0);
+  await sleep(1500);
+};
 
 /* Not every state is reachable by resizing. `--give` retracts the plate from the
    camera's orbit radius and a retracted plate is narrower, so its text reflows
@@ -105,6 +122,31 @@ const SETTLE = 250;
 if (process.env.RESP_PRELUDE) {
   const out = await evaluate(process.env.RESP_PRELUDE);
   console.log('prelude → ' + JSON.stringify(out) + '\n');
+}
+
+/* A wheel sent through CDP's Input domain is *trusted*, and that is the only way
+   to ask whether the page's own wheel handler steals a scroll: a synthetic
+   WheelEvent built in page JS never performs the default action, so it cannot
+   answer the question at all. RESP_WHEEL="x,y,deltaY[,deltaY...]" scrolls at that
+   point and reports what the body and the camera each did. */
+if (process.env.RESP_WHEEL) {
+  const [wx, wy, ...deltas] = process.env.RESP_WHEEL.split(',').map(Number);
+  const probe = `(() => { const d = document.querySelector('.dbody');
+    const s = document.querySelector('.sheet');
+    return { dbodyScrollTop: d ? d.scrollTop : null,
+             sheetScrollTop: s ? s.scrollTop : null,
+             give: getComputedStyle(document.querySelector('.dossier')).getPropertyValue('--give').trim(),
+             wheelSeen: window.__wheelSeen ?? null,
+             events: window.__ev ?? null }; })()`;
+  const before = await evaluate(probe);
+  for (const deltaY of deltas) {
+    await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: wx, y: wy, deltaX: 0, deltaY, pointerType: 'mouse' });
+    await sleep(500);
+  }
+  await sleep(Number(process.env.RESP_WHEEL_WAIT ?? 1500));
+  const after = await evaluate(probe);
+  console.log('wheel @' + wx + ',' + wy + ' deltas=' + deltas.join('/') +
+    '\n  before ' + JSON.stringify(before) + '\n  after  ' + JSON.stringify(after) + '\n');
 }
 
 /* NOTE FOR ANYONE EDITING THE PROBE BELOW: it is a template literal, so a
@@ -152,31 +194,43 @@ const MEASURE = `(() => {
     .filter(([, d]) => d !== null && d > 8)
     .map(([sel, d]) => sel + '+ ' + d);
 
-  // The plate's ceiling works by making the body scroll, so "is any of the record
-  // unreachable" is a vertical question and the horizontal check above cannot see
-  // it. scrollHeight - clientHeight is how much is behind the scroll; the last
-  // row's own bottom is what a reader would actually have to reach.
+  // Two vertical questions the horizontal check above cannot see, and they are
+  // different questions. (1) Does the *visible* plate print on the transport?
+  // (2) Is any of the record clipped away where the reader cannot get at it?
   //
-  // The last row only means something when nothing between it and the body clips
-  // it on purpose. The fold collapses a max-height:0 wrapper, and everything
-  // inside still reports a rect while being deliberately hidden — so a row is
-  // only counted as stranded if no clipping ancestor actually cuts it off.
+  // (1) cannot be asked of the boxes: capping the sheet and clipping the body
+  // makes box-overlap read zero while the last row of the record is simply gone.
+  // So it is asked of the last row's own bottom — but only while that row is
+  // actually on screen, because a row that is clipped is not printing anywhere.
+  //
+  // (2) is the reason this matters here: the whole .ui layer is pointer-events:
+  // none (only buttons/rows/inputs opt back in), so a scrollable box inside the
+  // panel has no scrollbar anyone can drag, and the wheel belongs to the camera
+  // (controls.js preventDefaults it everywhere except the archive list). Content
+  // past the body's box is therefore not merely scrolled — it is unreachable.
   const db = document.querySelector('.dbody');
-  const cutOff = (el) => {
+  const dbBox = db ? db.getBoundingClientRect() : null;
+  const dbPE = db ? getComputedStyle(db).pointerEvents : '-';
+  const dbOver = db ? db.scrollHeight - db.clientHeight : null;
+  const folded = !!document.querySelector('.dossier.folded');
+  const hiddenBy = (el) => {
     const b = el.getBoundingClientRect().bottom;
-    for (let n = el.parentElement; n && n !== db; n = n.parentElement) {
+    for (let n = el.parentElement; n; n = n.parentElement) {
       const cs = getComputedStyle(n);
       if (cs.overflow === 'visible' && cs.overflowY === 'visible') continue;
-      if (b > n.getBoundingClientRect().bottom + 1) return true;
+      if (b > n.getBoundingClientRect().bottom + 1) return n.className || n.tagName;
     }
-    return false;
+    return null;
   };
   const dbRows = db ? [...db.querySelectorAll('*')].filter((e) => e.getBoundingClientRect().height > 2) : [];
   const dbLastEl = dbRows.length
     ? dbRows.reduce((a, b) => (a.getBoundingClientRect().bottom >= b.getBoundingClientRect().bottom ? a : b))
     : null;
   const dbLast = dbLastEl ? dbLastEl.getBoundingClientRect().bottom : null;
-  const dbLastHidden = dbLastEl ? cutOff(dbLastEl) : false;
+  const dbLastHiddenBy = dbLastEl ? hiddenBy(dbLastEl) : null;
+  const visOverTransport = dbLast !== null && !dbLastHiddenBy && transport
+    ? +Math.max(0, dbLast - transport.getBoundingClientRect().top).toFixed(1) : 0;
+  const unreachable = !folded && dbPE === 'none' && dbOver > 2 ? dbOver : 0;
 
   // when something is squeezed, the shape of the thing that gave way is the
   // whole diagnosis — so carry it, rather than re-running and hoping to catch
@@ -231,16 +285,14 @@ const MEASURE = `(() => {
     counter: r(document.querySelector('.counter')),
     track: r(document.querySelector('.track')),
     squeezed, diag,
-    // how much of the record sits behind the body's scroll, and whether the body
-    // can actually be scrolled (an overflow:auto that never engages, or a
-    // centring flex parent that clips the start edge, both look fine here)
-    dbodyOver: db ? db.scrollHeight - db.clientHeight : null,
+    dbodyOver: dbOver,
     dbodyOverflowY: db ? getComputedStyle(db).overflowY : '-',
-    // the last row is below the body's visible box by this much — reachable only
-    // if the body scrolls
-    dbodyLastPast: db && dbLast !== null ? +(dbLast - db.getBoundingClientRect().bottom).toFixed(1) : null,
-    dbodyLastHidden: dbLastHidden,
-    dbodyCanScroll: db ? db.scrollTop : null,
+    dbodyPointerEvents: dbPE,
+    dbodyLastPast: dbLast !== null && dbBox ? +(dbLast - dbBox.bottom).toFixed(1) : null,
+    dbodyLastHiddenBy: dbLastHiddenBy,
+    visOverTransport,
+    unreachable,
+    dbodyScrollTop: db ? db.scrollTop : null,
     dbodyMax: document.querySelector('.dbody')
       ? getComputedStyle(document.querySelector('.dbody')).maxHeight : '-',
     // 100vh as the layout actually resolves it, plus which guard queries match —
@@ -267,11 +319,7 @@ console.log('  vw   vh  root   scrollW  navRows  deck(y x..r)          sheet(y x
 const bad = [];
 for (const [w, h] of WIDTHS) {
   await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
-  await sleep(SETTLE);
-  // throw the first read away: it is what warms the layout, and under SwiftShader
-  // the first one after a metrics change can still be a frame behind
-  await evaluate(MEASURE);
-  await sleep(SETTLE);
+  await settle();
   const m = await evaluate(MEASURE);
   if (!m) { console.log(`${w} measurement failed`); continue; }
   const again = await evaluate(MEASURE);
@@ -282,12 +330,10 @@ for (const [w, h] of WIDTHS) {
   if (m.spill.length) flags.push('spill ' + m.spill.join(' '));
   if (m.navRows > 1) flags.push(`nav wrapped (${m.navRows} rows)`);
   if (m.squeezed.length) flags.push('squeezed ' + m.squeezed.join(' '));
-  // content that hangs past the body with nothing to scroll means the ceiling
-  // clipped the record instead of letting the reader reach it — unless something
-  // in between is hiding it on purpose (the fold)
-  if (m.dbodyLastPast > 2 && m.dbodyOver <= 1 && !m.dbodyLastHidden) {
-    flags.push(`body content past the box but not scrollable (${m.dbodyLastPast}px)`);
-  }
+  // the plate's ceiling must not hide the record: content past the body's box in
+  // a panel that takes no pointer events has no way back
+  if (m.unreachable) flags.push(`record clipped out of reach (${m.unreachable}px)`);
+  if (m.visOverTransport > 2) flags.push(`plate prints on transport (${m.visOverTransport}px)`);
   if (drift) flags.push('UNSTABLE — two reads of the same width disagree, re-run');
   if (m.deckOverSheet > 0) flags.push(`deck∩sheet ${m.deckOverSheet}px²`);
   if (m.transportOverSheet > 0) flags.push(`transport∩sheet ${m.transportOverSheet}px²`);
@@ -319,7 +365,9 @@ for (const [w, h] of WIDTHS) {
     '  counter=' + (m.counter ? `${m.counter.w}x${m.counter.h}` : '-') +
     '  track=' + (m.track ? `${m.track.w}x${m.track.h}` : '-') + drift +
     '\n        dbody: over=' + m.dbodyOver + ' overflowY=' + m.dbodyOverflowY +
-    ' lastPast=' + m.dbodyLastPast + ' hiddenByAncestor=' + m.dbodyLastHidden
+    ' pointerEvents=' + m.dbodyPointerEvents + ' lastPast=' + m.dbodyLastPast +
+    (m.dbodyLastHiddenBy ? ' hiddenBy=' + m.dbodyLastHiddenBy : '') +
+    '  visOverTransport=' + m.visOverTransport + ' unreachable=' + m.unreachable
   );
   if (m.diag) console.log('        diag: ' + JSON.stringify(m.diag));
 }
