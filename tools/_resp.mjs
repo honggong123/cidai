@@ -106,13 +106,16 @@ const MEASURE = `(() => {
   const dossier = document.querySelector('.dossier');
   const hud = document.querySelector('.hud');
 
-  // a nav that has wrapped is taller than its own tallest child: comparing the
-  // children's top values instead reports three "rows" on a wide window,
-  // because the seg and the tb buttons are different heights and so are not
-  // top-aligned even on one line
+  // A nav that has wrapped has children on more than one line. Comparing their
+  // top values directly reports several "rows" on a single line, because the
+  // seg and the tb buttons are different heights and a flex line centres them.
+  // Dividing the nav's height by a guessed row pitch is worse: at 480 a genuine
+  // two-row nav came out as six. Cluster by vertical centre instead.
   const navKids = nav ? [...nav.children].filter((c) => getComputedStyle(c).display !== 'none') : [];
-  const kidH = navKids.map((c) => c.getBoundingClientRect().height);
-  const rows = nav && kidH.length ? Math.max(1, Math.round((nav.getBoundingClientRect().height - Math.max(...kidH)) / 6)) : 0;
+  const centres = navKids
+    .map((c) => { const b = c.getBoundingClientRect(); return b.top + b.height / 2; })
+    .sort((a, b) => a - b);
+  const rows = centres.reduce((n, c, i) => n + (i === 0 || c - centres[i - 1] > 4 ? 1 : 0), 0);
 
   // A grid track that is auto is floored at the item's min-content, but the
   // item's *own* min-content is not the floor when the item is itself a flex or

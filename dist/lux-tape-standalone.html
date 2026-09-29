@@ -858,6 +858,18 @@ body.no-audio .now { opacity: .72; }
 body.playing .tc-btn .ico-play { opacity: 0; transform: scale(.62) rotate(-12deg); }
 body.playing .tc-btn .ico-pause { opacity: 1; transform: none; }
 .counter { display: flex; align-items: baseline; gap: 0.3125rem; font-family: var(--mono); }
+/* The read-out may not be squeezed below its own text. `#tc` and `#td` are flex
+   items, so each one's automatic minimum size is its min-content — and once the
+   roll markup exists that min-content is a *single* .od cell (8.9px), not the
+   string (38px), because atomic inline-blocks are each allowed a line of their
+   own. So a tight transport column used to collapse the counter to one digit
+   wide with the five digits stacked on five lines: measured at 1100px it read
+   58x80 against 93x16 healthy, and the transport 404x80 against 439x44. nowrap
+   puts min-content back to the whole string, which leaves the grid no choice but
+   to give way somewhere that does not break — the rail, which is a slider.
+   The original build has the same collapse; its face is 5.7% narrower and its
+   padding smaller, which keeps the worst of it out of a common window width. */
+.counter > b, .counter > span { white-space: nowrap; }
 /* one character of a rolling read-out: the live glyph in flow and the leaving
    one absolutely over it, so the cell's width is the *new* digit's and a roll
    can never shove what is beside it. Tabular figures mean that width is the
