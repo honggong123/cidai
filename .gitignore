@@ -6,3 +6,5 @@ Thumbs.db
 assets/
 # tools/_viz.mjs 自己建的插桩副本；正常跑完会删掉，崩了才会留下
 _viz_probe/
+# 本地验收截图（tools/page-shot.mjs 的输出），不进仓库
+_shots/

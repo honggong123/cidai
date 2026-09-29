@@ -541,10 +541,25 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
 /* 16.5rem for the record unless that would eat into the room the reference rows
    need — this panel is not always as long as it used to be, and the second track
    is not the one that should pay for it. 184 = the column gap plus the 140 the
-   tight grid below settles on for those rows. */
+   tight grid below settles on for those rows.
+
+   The first track's floor used to be 0, and that was wrong in a way that only
+   showed up as height. A spec row is label, leader, value; the value may not
+   break (see .spec li b) and the leader is already at its minimum, so the label
+   is the only part that can give — and at a 129px track it gave all the way down
+   to one character per line. Every row went to two lines, the table grew from 28
+   to 42px a row, and the whole sheet was 78px taller at exactly the widths where
+   the plate has the least room above the transport. Measured: sheet.h 494.6 at
+   1080, 572.8 at 1040, 608.9 at 960 — a cliff, not a reflow.
+
+   min-content is that floor stated once, in the browser's own terms: with the
+   label held on one line it is the widest value plus its leader, so a record with
+   longer readings raises its own floor and a shorter one lowers it, and the
+   reference rows still give way first (they are built to — see .row .rt) and
+   still keep their 11.5rem whenever there is room for it. */
 .dossier-grid {
   display: grid;
-  grid-template-columns: minmax(0, min(16.5rem, calc(100% - 11.5rem))) minmax(0, 1fr);
+  grid-template-columns: minmax(min-content, min(16.5rem, calc(100% - 11.5rem))) minmax(0, 1fr);
   gap: 1.375rem 2.5rem; margin-top: 1.375rem;
   /* the record's name and REFERENCE AREA are two headers on one line, so they
      sit on one baseline rather than on one top edge — which is what they did
@@ -570,7 +585,9 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   padding: 0.40625rem 0; border-bottom: 1px solid var(--hair-soft);
   transition: padding-left var(--t-med) var(--e-out), border-color var(--t-swift) var(--e-out);
 }
-.spec li span { order: 1; font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em; color: var(--ink-faint); transition: color var(--t-swift) var(--e-out); }
+/* the label is a word, not a column: it is what the grid floor above is measured
+   from, so it may not break. Left to wrap, it did — one character per line. */
+.spec li span { order: 1; white-space: nowrap; font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em; color: var(--ink-faint); transition: color var(--t-swift) var(--e-out); }
 /* the value never breaks: these are readings, and "12 µm" split across two
    lines is the one thing a spec table may not do. They are short enough that
    nowrap costs nothing. */
@@ -1239,23 +1256,46 @@ body.ready .dossier { opacity: 1; transform: none; }
 
 /* ============================ responsive ==============================
    The deck breaks first: two equal outer tracks have to hold the transport and
-   the pager side by side, which needs about 65rem. Below that the pager takes
-   a row of its own, then the whole band stacks. */
+   the pager side by side, which needs about 65rem. Below that the band goes to
+   three rows with the transport last — why that order, and not the two-row one
+   it used to be, is argued at the 1080 block below. */
 @media (max-width: 1240px) {
   .dossier { width: min(calc(50% - var(--pad)), var(--plate-max)); }
   .col-name { display: none; }
   .deck { gap: 1.125rem 1.75rem; }
 }
 @media (max-width: 1080px) {
+  /* The band stacks into three rows, and the transport goes *last*.
+     It used to sit beside the archive list with the pager on a row below it, and
+     that put the transport's top at vh-167 instead of the vh-82 it holds at every
+     other width — the console jumped 85px up as the window crossed 1080 and back
+     down again at 1081. Nothing above it can move down to meet it either: the
+     transport is bottom-aligned inside row one, so row one's bottom is fixed by
+     the pager's row and the deck's own bottom, and shrinking the archive list
+     moves the transport not at all.
+
+     85px is also exactly the room the plate needs. The plate hangs centred on
+     --panel-half and its record is a fixed height, so at 1080x700 its last row
+     landed on the counter's read-out (measured: 388px2 of glyph over glyph, and
+     the same at 1040, 1000 and 960 with different rows — 轮毂 at 1000, 读取整机
+     at 1080 — because a fixed shift only moves which row collides). Put the
+     transport back on the floor of the band and the collision stops existing at
+     any height, without a line of the record having to be given up: the plate
+     needs vh-575 where before it needed vh-693.
+
+     The pager still spans the full deck, so it is still on the frame's centre
+     line; only its neighbours changed rows. The now-chip moves up with the deck
+     it has to clear, the way it already does at 900. */
   .deck {
-    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
-    grid-template-areas: "sel right" "pager pager";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "sel" "pager" "right";
   }
   .sel { grid-area: sel; }
   .deck-right { grid-area: right; }
-  .pager { grid-area: pager; justify-self: center; margin-top: 0.125rem; }
-  /* the deck has just grown a second row, so the now-chip has to clear it */
-  .now { bottom: 12.5rem; }
+  .pager { grid-area: pager; justify-self: center; margin-top: 0; }
+  /* the deck is 188px deep here (57 + 18 + 65 + 18 + 30) against the 142 it was,
+     so the chip clears its top rather than its old one */
+  .now { bottom: 15.5rem; }
 }
 
 /* ---------- the plate's ceiling: tried, measured, removed ----------
@@ -1272,9 +1312,21 @@ body.ready .dossier { opacity: 1; transform: none; }
    part of the record had no scrollbar anyone could drag and no wheel it could
    claim: at 1080 it hid 55px including the panel's 读取 key, at 1000 193px.
    Trading a silent loss of the record for a phantom overlap is not a trade.
-   What is left is upstream's own behaviour and it is small: at 1080 the plate
-   reaches 9px past the transport, at 1000x700 78px, and the plate takes no
-   pointer events, so the transport underneath still works. */
+
+   What was left after the ceiling came out has since gone too, and the way it
+   went is the reason this block is worth reading twice. The plate never
+   overlapped the transport: their *boxes* overlap by tens of thousands of square
+   pixels at every width from 901 to 1240 and always have, because one is a padded
+   plate and the other a bar of small controls, and most of that area is padding
+   and dead space. What actually happened is narrower — one row of the record
+   landing on the counter's read-out — and only in the band where the transport
+   sat 85px higher than it does everywhere else. So the fix was to put the
+   transport back on the floor of the band (see the 1080 block above), and the
+   collision stopped existing at every height, with no line of the record given up.
+
+   tools/_ov.mjs is the measure that can tell those two apart: it intersects the
+   elements that carry text on each side rather than their boxes. At 1080,
+   transport∩sheet reads 12829px² and the glyph collisions are zero. */
 
 @media (max-width: 900px) {
   :root { --pad: 1.5rem; --sheet-pad-x: 1.25rem; --sheet-pad-t: 1.125rem; --sheet-pad-b: 1.25rem; }
