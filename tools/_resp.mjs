@@ -78,6 +78,19 @@ for (let i = 0; i < 120 && !ready; i++) {
 }
 if (!ready) console.log('warning: loader never cleared — the plate may still be mid-intro\n');
 
+/* Fonts are the one thing here that resolves late, and it resolves *after* the
+   loader: the page asks for `Cascadia Mono`, and until the platform has actually
+   enumerated it Chrome lays the counter out in the generic fallback, which is a
+   different width. A sweep that starts the moment the loader clears therefore
+   reads the counter mid-swap — the very first run of this tool reported the
+   counter wrapping at 1100 (44.4×80, five lines) and at 1280 (82.3×32); the same
+   sweep a minute later reported 94.3×16 everywhere, matching the original build.
+   So: wait for the font set, and then measure every width twice and shout if the
+   two disagree — a transient reading is indistinguishable from a real one by eye,
+   and silently reporting one is worse than not measuring at all. */
+await evaluate('(async () => { await document.fonts.ready; return document.fonts.size; })()').catch(() => 0);
+const SETTLE = 250;
+
 const MEASURE = `(() => {
   const r = (el) => { if (!el) return null; const b = el.getBoundingClientRect();
     return { l: +b.left.toFixed(1), t: +b.top.toFixed(1), r: +b.right.toFixed(1), b: +b.bottom.toFixed(1),
@@ -100,6 +113,40 @@ const MEASURE = `(() => {
   const navKids = nav ? [...nav.children].filter((c) => getComputedStyle(c).display !== 'none') : [];
   const kidH = navKids.map((c) => c.getBoundingClientRect().height);
   const rows = nav && kidH.length ? Math.max(1, Math.round((nav.getBoundingClientRect().height - Math.max(...kidH)) / 6)) : 0;
+
+  // A grid track that is auto is floored at the item's min-content, but the
+  // item's *own* min-content is not the floor when the item is itself a flex or
+  // grid container whose children can be squeezed past it — so when the
+  // transport's four columns stop fitting, the counter is handed less width than
+  // its digits need and the read-out falls apart (measured at 1100: 44.4px wide
+  // and five lines tall, against 94.3×16 healthy). Nothing overflows the
+  // *viewport*, so the spill check above never sees it. Asking each box whether
+  // its content fits is the font-independent way to catch it. */
+  const fit = (sel) => { const e = document.querySelector(sel); if (!e) return null;
+    return e.scrollWidth - e.clientWidth; };
+  const squeezed = ['.transport', '.deck-right', '.counter', '.track', '.sel', '.pager']
+    .map((sel) => [sel, fit(sel)])
+    .filter(([, d]) => d !== null && d > 8)
+    .map(([sel, d]) => sel + '+ ' + d);
+
+  // when something is squeezed, the shape of the thing that gave way is the
+  // whole diagnosis — so carry it, rather than re-running and hoping to catch
+  // the same state twice
+  const diag = squeezed.length ? (() => {
+    const c = document.querySelector('.counter');
+    const tc = document.getElementById('tc');
+    const col = (sel) => { const e = document.querySelector(sel); if (!e) return '-';
+      const b = e.getBoundingClientRect(); return e.className.split(' ')[0] + ':' + b.width.toFixed(0); };
+    return {
+      cols: ['.sel', '.pager', '.deck-right', '.transport'].map(col).join(' '),
+      counterHTML: c ? c.outerHTML.slice(0, 240) : '-',
+      counterKids: c ? [...c.children].map((k) => k.tagName + '.' + (k.className || '-')
+        + ':' + k.getBoundingClientRect().width.toFixed(1) + 'x' + k.getBoundingClientRect().height.toFixed(1)).join(' ') : '-',
+      tcDisplay: tc ? getComputedStyle(tc).display : '-',
+      tcKids: tc ? [...tc.children].map((k) => k.tagName + '.' + (k.className || '-')
+        + ':' + getComputedStyle(k).display).join(' ') : '-',
+    };
+  })() : null;
 
   // anything sticking out to the right of the viewport, worst first
   const spill = [...document.querySelectorAll('.ui *')]
@@ -132,6 +179,9 @@ const MEASURE = `(() => {
     dossier: r(dossier),
     dbody: r(document.querySelector('.dbody')),
     crumb: r(document.querySelector('.sheet .crumb')),
+    counter: r(document.querySelector('.counter')),
+    track: r(document.querySelector('.track')),
+    squeezed, diag,
     dbodyMax: document.querySelector('.dbody')
       ? getComputedStyle(document.querySelector('.dbody')).maxHeight : '-',
     // 100vh as the layout actually resolves it, plus which guard queries match —
@@ -158,13 +208,22 @@ console.log('  vw   vh  root   scrollW  navRows  deck(y x..r)          sheet(y x
 const bad = [];
 for (const [w, h] of WIDTHS) {
   await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
-  await sleep(120);
+  await sleep(SETTLE);
+  // throw the first read away: it is what warms the layout, and under SwiftShader
+  // the first one after a metrics change can still be a frame behind
+  await evaluate(MEASURE);
+  await sleep(SETTLE);
   const m = await evaluate(MEASURE);
   if (!m) { console.log(`${w} measurement failed`); continue; }
+  const again = await evaluate(MEASURE);
+  const drift = again && (again.sheet.h !== m.sheet.h || again.transport.w !== m.transport.w
+    || (again.counter && m.counter && again.counter.h !== m.counter.h)) ? ' UNSTABLE' : '';
   const flags = [];
   if (m.scrollW > m.vw + 1) flags.push(`H-OVERFLOW ${m.scrollW - m.vw}px`);
   if (m.spill.length) flags.push('spill ' + m.spill.join(' '));
   if (m.navRows > 1) flags.push(`nav wrapped (${m.navRows} rows)`);
+  if (m.squeezed.length) flags.push('squeezed ' + m.squeezed.join(' '));
+  if (drift) flags.push('UNSTABLE — two reads of the same width disagree, re-run');
   if (m.deckOverSheet > 0) flags.push(`deck∩sheet ${m.deckOverSheet}px²`);
   if (m.transportOverSheet > 0) flags.push(`transport∩sheet ${m.transportOverSheet}px²`);
   if (m.selOverSheet > 0) flags.push(`sel∩sheet ${m.selOverSheet}px²`);
@@ -190,8 +249,12 @@ for (const [w, h] of WIDTHS) {
     '\n        dossier.h=' + m.dossier.h + '  sheet.h=' + m.sheet.h +
     '  crumb.h=' + (m.crumb ? m.crumb.h : '-') +
     '  dbody.h=' + (m.dbody ? m.dbody.h : '-') +
-    '  dbody.max=' + m.dbodyMax + '  vh100=' + m.vh100 + '  mq=' + m.mq
+    '  dbody.max=' + m.dbodyMax + '  vh100=' + m.vh100 + '  mq=' + m.mq +
+    '\n        transport: h=' + m.transport.h +
+    '  counter=' + (m.counter ? `${m.counter.w}x${m.counter.h}` : '-') +
+    '  track=' + (m.track ? `${m.track.w}x${m.track.h}` : '-') + drift
   );
+  if (m.diag) console.log('        diag: ' + JSON.stringify(m.diag));
 }
 
 console.log('');
