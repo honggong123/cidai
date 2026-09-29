@@ -75,8 +75,12 @@ await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceSc
    renderer running at about one frame a second it never advances — so a
    `?t=abyss` deep link measures, and photographs, as a room part-way between the
    one it is leaving and the one it is entering, and every element that reads a
-   token lands at a different point of that same stalled fade. The 暗房 / 影棚
+   token lands at a different point of that same stalled fade. The 黑盒 / 白厅
    buttons came out with studio's and noir's ink on abyss's blue.
+
+ *  (`styles.css` now kills the token transition itself under reduced motion, so
+ *  the stalled fade no longer happens on the page — but the sheet below is kept,
+ *  because a deep link is not the only thing that can land mid-transition.)
  *
  *  Killing transitions is not enough: a stalled transition keeps the in-flight
  *  value, and injecting the sheet after the change cannot un-start it. The only

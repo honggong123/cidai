@@ -223,7 +223,7 @@ let backdrop, backdropIn;
   backdrop.frustumCulled = false;
   scene.add(backdrop);
   /* The room's background is a baked texture with no in-between, and it is the
-     largest single surface in the frame — 暗房 is near black and 影棚 pale grey,
+     largest single surface in the frame — 黑盒 is near black and 白厅 pale grey,
      so cutting the map was the loudest thing in the whole transition. This
      second shell carries the incoming room across instead. Both are BackSide
      with depthWrite off, so the depth buffer never distinguishes them and only
@@ -846,7 +846,7 @@ function setTheme(name, first = false) {
   }
   document.documentElement.dataset.theme = name;
   // the segmented control is styled off a class, not off [data-theme], so it
-  // has to be told. Without this the highlight sits on 影棚 no matter which
+  // has to be told. Without this the highlight sits on 白厅 no matter which
   // room you are actually standing in.
   for (const b of document.querySelectorAll('#theme button')) {
     b.classList.toggle('on', b.dataset.theme === name);
@@ -896,8 +896,8 @@ function setBackdrop(name, first = false) {
 
 /* The room change runs on a clock, not on an exponential decay. A decay drops
    most of its range in the first third of a second: going brighter that is
-   barely noticeable, and going darker it reads as the lights being cut — 影棚
-   to 暗房 came back as "突然变暗" for exactly that reason. This walks the
+   barely noticeable, and going darker it reads as the lights being cut — 白厅
+   to 黑盒 came back as "突然变暗" for exactly that reason. This walks the
    transition linearly instead, eased at both ends, so the room gets dark at a
    rate the eye can follow.
 

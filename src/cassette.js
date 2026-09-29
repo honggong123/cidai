@@ -571,7 +571,7 @@ export function createCassette(labelOpts = {}) {
   const HEAD_END_X = HEAD_STOP_X - 0.55;
   const HEAD_START_X = headX - HEAD_W / 2;
   /* A light that is meant to be seen going out has to be loud enough to be seen
-     at all: on this page the label it crosses is pale and near-white in 影棚, and
+     at all: on this page the label it crosses is pale and near-white in 白厅, and
      an additive band only adds — 0.17 across that paper is a change of about a
      tenth, so most of its fade happened below the threshold of noticing. It is
      additive and has bloom behind it, which is the only way to be brighter than
