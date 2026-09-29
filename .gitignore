@@ -4,3 +4,5 @@ _*.png
 .DS_Store
 Thumbs.db
 assets/
+# tools/_viz.mjs 自己建的插桩副本；正常跑完会删掉，崩了才会留下
+_viz_probe/
