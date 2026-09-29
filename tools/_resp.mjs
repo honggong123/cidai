@@ -150,9 +150,11 @@ if (process.env.RESP_WHEEL) {
 }
 
 /* NOTE FOR ANYONE EDITING THE PROBE BELOW: it is a template literal, so a
-   backtick anywhere inside it — including inside a comment — ends the string and
-   the file stops parsing. That has cost four rounds now. Use plain quotes in the
-   comments, or run node --check after every edit. */
+   backtick anywhere inside it — including inside a comment — ends the string.
+   That has cost five rounds now, and the fifth is the instructive one: the
+   truncated string is *still valid JavaScript*, so node --check passes and the
+   failure only appears when the probe runs (as "x is not a function"). Use plain
+   quotes in the comments, and rely on the tail check below rather than --check. */
 const MEASURE = `(() => {
   const r = (el) => { if (!el) return null; const b = el.getBoundingClientRect();
     return { l: +b.left.toFixed(1), t: +b.top.toFixed(1), r: +b.right.toFixed(1), b: +b.bottom.toFixed(1),
@@ -189,7 +191,13 @@ const MEASURE = `(() => {
   // its content fits is the font-independent way to catch it. */
   const fit = (sel) => { const e = document.querySelector(sel); if (!e) return null;
     return e.scrollWidth - e.clientWidth; };
-  const squeezed = ['.transport', '.deck-right', '.counter', '.track', '.sel', '.pager']
+  // .sel is not one element: the deck has one (the 选带 block) and the plate
+  // has one per rendered record (.row.sel, added by JS, and the plate is
+  // earlier in document order) — so a bare .sel resolves to the selected row
+  // *inside* the plate and every reading it gives is the row against the sheet
+  // it lives on. Constant across widths, which is how it was caught: a real
+  // squeeze moves. Scope it to the deck.
+  const squeezed = ['.transport', '.deck-right', '.counter', '.track', '.deck > .sel', '.pager']
     .map((sel) => [sel, fit(sel)])
     .filter(([, d]) => d !== null && d > 8)
     .map(([sel, d]) => sel + '+ ' + d);
@@ -241,7 +249,7 @@ const MEASURE = `(() => {
     const col = (sel) => { const e = document.querySelector(sel); if (!e) return '-';
       const b = e.getBoundingClientRect(); return e.className.split(' ')[0] + ':' + b.width.toFixed(0); };
     return {
-      cols: ['.sel', '.pager', '.deck-right', '.transport'].map(col).join(' '),
+      cols: ['.deck > .sel', '.pager', '.deck-right', '.transport'].map(col).join(' '),
       counterHTML: c ? c.outerHTML.slice(0, 240) : '-',
       counterKids: c ? [...c.children].map((k) => k.tagName + '.' + (k.className || '-')
         + ':' + k.getBoundingClientRect().width.toFixed(1) + 'x' + k.getBoundingClientRect().height.toFixed(1)).join(' ') : '-',
@@ -307,13 +315,20 @@ const MEASURE = `(() => {
     transportOverSheet: +overlap(r(transport), r(sheet)).toFixed(0),
     // the deck is a transparent grid, so its own box overlapping the plate means
     // nothing — what matters is whether a thing that is *drawn* lands on it
-    selOverSheet: +overlap(r(document.querySelector('.sel')), r(sheet)).toFixed(0),
+    selOverSheet: +overlap(r(document.querySelector('.deck > .sel')), r(sheet)).toFixed(0),
     pagerOverSheet: +overlap(r(document.querySelector('.pager')), r(sheet)).toFixed(0),
     nowOverSheet: +overlap(r(now), r(sheet)).toFixed(0),
     navOverTheme: +overlap(r(nav), r(theme)).toFixed(0),
     dossier: r(dossier),
   };
 })()`;
+// A stray backtick truncates MEASURE into something that can still parse, so
+// node --check does not catch it and the failure surfaces later as a nonsense
+// "x is not a function" from inside the probe. Catch it here instead. (An odd
+// number of stray backticks is a SyntaxError at load, which is loud enough.)
+if (!MEASURE.trimEnd().endsWith('})()')) {
+  throw new Error('MEASURE is truncated — a stray backtick inside the probe?');
+}
 
 console.log('  vw   vh  root   scrollW  navRows  deck(y x..r)          sheet(y x..r)         transport(w@x)   now(y)  spill  deck∩sheet');
 const bad = [];
