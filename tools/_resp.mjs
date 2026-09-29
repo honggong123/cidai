@@ -91,6 +91,26 @@ if (!ready) console.log('warning: loader never cleared — the plate may still b
 await evaluate('(async () => { await document.fonts.ready; return document.fonts.size; })()').catch(() => 0);
 const SETTLE = 250;
 
+/* Not every state is reachable by resizing. `--give` retracts the plate from the
+   camera's orbit radius and a retracted plate is narrower, so its text reflows
+   taller — which is exactly the state a ceiling on the plate's height is most
+   likely to be wrong in, and one the sweep below would never visit on its own.
+   So a caller can hand in a prelude, run once after the loader clears and before
+   any width is measured:
+
+     RESP_PRELUDE='(async () => { ... return somethingPrintable })' node tools/_resp.mjs
+
+   It is awaited, so a poll-until-settled loop works. The `state` line of every
+   row then carries the --give it ran under. */
+if (process.env.RESP_PRELUDE) {
+  const out = await evaluate(process.env.RESP_PRELUDE);
+  console.log('prelude → ' + JSON.stringify(out) + '\n');
+}
+
+/* NOTE FOR ANYONE EDITING THE PROBE BELOW: it is a template literal, so a
+   backtick anywhere inside it — including inside a comment — ends the string and
+   the file stops parsing. That has cost four rounds now. Use plain quotes in the
+   comments, or run node --check after every edit. */
 const MEASURE = `(() => {
   const r = (el) => { if (!el) return null; const b = el.getBoundingClientRect();
     return { l: +b.left.toFixed(1), t: +b.top.toFixed(1), r: +b.right.toFixed(1), b: +b.bottom.toFixed(1),
@@ -131,6 +151,32 @@ const MEASURE = `(() => {
     .map((sel) => [sel, fit(sel)])
     .filter(([, d]) => d !== null && d > 8)
     .map(([sel, d]) => sel + '+ ' + d);
+
+  // The plate's ceiling works by making the body scroll, so "is any of the record
+  // unreachable" is a vertical question and the horizontal check above cannot see
+  // it. scrollHeight - clientHeight is how much is behind the scroll; the last
+  // row's own bottom is what a reader would actually have to reach.
+  //
+  // The last row only means something when nothing between it and the body clips
+  // it on purpose. The fold collapses a max-height:0 wrapper, and everything
+  // inside still reports a rect while being deliberately hidden — so a row is
+  // only counted as stranded if no clipping ancestor actually cuts it off.
+  const db = document.querySelector('.dbody');
+  const cutOff = (el) => {
+    const b = el.getBoundingClientRect().bottom;
+    for (let n = el.parentElement; n && n !== db; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (cs.overflow === 'visible' && cs.overflowY === 'visible') continue;
+      if (b > n.getBoundingClientRect().bottom + 1) return true;
+    }
+    return false;
+  };
+  const dbRows = db ? [...db.querySelectorAll('*')].filter((e) => e.getBoundingClientRect().height > 2) : [];
+  const dbLastEl = dbRows.length
+    ? dbRows.reduce((a, b) => (a.getBoundingClientRect().bottom >= b.getBoundingClientRect().bottom ? a : b))
+    : null;
+  const dbLast = dbLastEl ? dbLastEl.getBoundingClientRect().bottom : null;
+  const dbLastHidden = dbLastEl ? cutOff(dbLastEl) : false;
 
   // when something is squeezed, the shape of the thing that gave way is the
   // whole diagnosis — so carry it, rather than re-running and hoping to catch
@@ -185,6 +231,16 @@ const MEASURE = `(() => {
     counter: r(document.querySelector('.counter')),
     track: r(document.querySelector('.track')),
     squeezed, diag,
+    // how much of the record sits behind the body's scroll, and whether the body
+    // can actually be scrolled (an overflow:auto that never engages, or a
+    // centring flex parent that clips the start edge, both look fine here)
+    dbodyOver: db ? db.scrollHeight - db.clientHeight : null,
+    dbodyOverflowY: db ? getComputedStyle(db).overflowY : '-',
+    // the last row is below the body's visible box by this much — reachable only
+    // if the body scrolls
+    dbodyLastPast: db && dbLast !== null ? +(dbLast - db.getBoundingClientRect().bottom).toFixed(1) : null,
+    dbodyLastHidden: dbLastHidden,
+    dbodyCanScroll: db ? db.scrollTop : null,
     dbodyMax: document.querySelector('.dbody')
       ? getComputedStyle(document.querySelector('.dbody')).maxHeight : '-',
     // 100vh as the layout actually resolves it, plus which guard queries match —
@@ -226,6 +282,12 @@ for (const [w, h] of WIDTHS) {
   if (m.spill.length) flags.push('spill ' + m.spill.join(' '));
   if (m.navRows > 1) flags.push(`nav wrapped (${m.navRows} rows)`);
   if (m.squeezed.length) flags.push('squeezed ' + m.squeezed.join(' '));
+  // content that hangs past the body with nothing to scroll means the ceiling
+  // clipped the record instead of letting the reader reach it — unless something
+  // in between is hiding it on purpose (the fold)
+  if (m.dbodyLastPast > 2 && m.dbodyOver <= 1 && !m.dbodyLastHidden) {
+    flags.push(`body content past the box but not scrollable (${m.dbodyLastPast}px)`);
+  }
   if (drift) flags.push('UNSTABLE — two reads of the same width disagree, re-run');
   if (m.deckOverSheet > 0) flags.push(`deck∩sheet ${m.deckOverSheet}px²`);
   if (m.transportOverSheet > 0) flags.push(`transport∩sheet ${m.transportOverSheet}px²`);
@@ -255,7 +317,9 @@ for (const [w, h] of WIDTHS) {
     '  dbody.max=' + m.dbodyMax + '  vh100=' + m.vh100 + '  mq=' + m.mq +
     '\n        transport: h=' + m.transport.h +
     '  counter=' + (m.counter ? `${m.counter.w}x${m.counter.h}` : '-') +
-    '  track=' + (m.track ? `${m.track.w}x${m.track.h}` : '-') + drift
+    '  track=' + (m.track ? `${m.track.w}x${m.track.h}` : '-') + drift +
+    '\n        dbody: over=' + m.dbodyOver + ' overflowY=' + m.dbodyOverflowY +
+    ' lastPast=' + m.dbodyLastPast + ' hiddenByAncestor=' + m.dbodyLastHidden
   );
   if (m.diag) console.log('        diag: ' + JSON.stringify(m.diag));
 }
