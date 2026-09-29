@@ -71,7 +71,7 @@ if (!(await free(CDP))) {
 await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
 console.log(`serving ${ROOT}  →  http://127.0.0.1:${PORT}/`);
 
-const profile = await mkdtemp(join(tmpdir(), 'ohm-dev-'));
+const profile = await mkdtemp(join(tmpdir(), 'lux-dev-'));
 const chrome = spawn(CHROME, [
   '--headless=new',
   '--use-angle=swiftshader',
