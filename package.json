@@ -1,8 +1,8 @@
 {
-  "name": "lingbao",
+  "name": "nahida",
   "version": "1.0.0",
   "private": true,
-  "description": "灵宝 —— 会唱歌的精灵：程序化生成的三维场景（单文件 HTML，零外部资源）",
+  "description": "纳西妲 —— 会唱歌的精灵：程序化生成的三维角色与场景（单文件 HTML，零外部资源）",
   "dependencies": {
     "esbuild": "^0.28.2",
     "three": "^0.180.0"

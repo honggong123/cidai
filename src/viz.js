@@ -50,6 +50,12 @@ const MEDIA_TRIM = 0.62;
    kick and short enough to catch the next one. */
 const BLOOM_FOLLOW = 2, BLOOM_SWING = 0.55, BLOOM_MIN = 0.85, BLOOM_MAX = 1.30;
 
+/* The same quantity the bloom rides, exposed on its own 0..1 scale, because the
+   spirit needs to move on the *beat* rather than on the level and should not
+   have to re-derive it from a multiplier whose range it does not know. One
+   gain, in one place, for both. */
+const PULSE_GAIN = 3.2;
+
 /** `bars` is the four <i> inside #now .eq, in band order — low to high. */
 export function createViz(bars) {
   const lv = new Float32Array(4);       // smoothed — what the picture sees
@@ -131,5 +137,8 @@ export function createViz(bars) {
     /** what the bloom should be multiplied by this frame, 1 being the room's
         own value — see main.js's applyTheme() */
     get beat() { return beat; },
+    /** how far the low end is above its own slow average, 0..1 — the beat, not
+        the level. The spirit's nod reads this. */
+    get pulse() { return Math.max(0, Math.min(1, (lv[0] - avg) * PULSE_GAIN)); },
   };
 }

@@ -65,6 +65,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 await send('Emulation.setDeviceMetricsOverride', { width: +w, height: +h, deviceScaleFactor: +dpr, mobile: false });
 await send('Page.enable');
 await send('Runtime.enable');
+/* Headless Chrome reports `prefers-reduced-motion: reduce`, main.js reads that
+   once at load into a module constant, and her clock is then handed `dt = 0` —
+   stopped on purpose. Without this override every screenshot of her is the rest
+   pose, which is fine for the silhouette and a false negative for anything that
+   moves. It has to be *before* the navigation: `reduce` is a constant, not a
+   live query. */
+await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
 await send('Page.navigate', { url });
 
 // the sheet is what everything else waits on: nothing is drawn before it exists

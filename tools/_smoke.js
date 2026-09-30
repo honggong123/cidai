@@ -40,13 +40,37 @@
     hud: txt('.hud-l'),
     themes: [...document.querySelectorAll('[data-theme]')].map((b) => b.dataset.theme),
     bodyClasses: [...document.body.classList],
+    // the plate: one introduction, and a list of things to ask her to do. Read
+    // as text rather than as counts, because the interesting failure is not a
+    // missing row — it is a row that survived the rewrite with the old wording
+    plate: {
+      crumb: txt('.crumb-id'),
+      cn: txt('#file-cn'),
+      en: txt('#file-en'),
+      specRows: document.querySelectorAll('#file-spec li').length,
+      refHead: txt('.ref-h'),
+      moves: [...document.querySelectorAll('#ref-list .row')].map((r) => r.textContent.trim()),
+      tip: txt('.ref-tip'),
+      access: txt('#access-label'),
+      selNum: `${txt('#sel-i')}/${txt('#sel-n')}`,
+      deckMicro: txt('.sel .micro'),
+      ticks: document.querySelectorAll('#cols .tick').length,
+    },
     // the tape's own markup must be gone, not merely hidden — a leftover node
     // would still be focusable and still be read out
     tapeNodesLeft: document.querySelectorAll('#btn-explode,#btn-flip,[data-act="explode"],[data-act="flip"]').length,
-    spiritImgDecoded: await (async () => {
-      const im = new Image();
-      im.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
-      try { await im.decode(); return true; } catch { return false; }
+    // ...and so must the 2D sprite. This used to decode a 1x1 GIF, which proved
+    // nothing about the page and even less after the sprite was replaced by a
+    // model. What is worth asserting now is that the model is *there* and
+    // answering: `__spirit` is a read-only hook (see main.js) and `bob` is a
+    // number only once `update` has run at least one frame.
+    spiritHook: (() => {
+      const s = window.__spirit;
+      if (!s) return 'missing';
+      return typeof s.bob === 'number' && typeof s.aimX === 'number' ? 'live' : 'inert';
     })(),
+    // no <img> and no <canvas> that is not the renderer: the deliverable draws
+    // her out of primitives, so a decoded bitmap would be a leftover asset
+    bitmapNodes: document.querySelectorAll('img, canvas:not(#gl)').length,
   });
 })()

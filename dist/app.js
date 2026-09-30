@@ -12776,665 +12776,6 @@
       return data;
     }
   };
-  var InterleavedBuffer = class {
-    /**
-     * Constructs a new interleaved buffer.
-     *
-     * @param {TypedArray} array - A typed array with a shared buffer storing attribute data.
-     * @param {number} stride - The number of typed-array elements per vertex.
-     */
-    constructor(array, stride) {
-      this.isInterleavedBuffer = true;
-      this.array = array;
-      this.stride = stride;
-      this.count = array !== void 0 ? array.length / stride : 0;
-      this.usage = StaticDrawUsage;
-      this.updateRanges = [];
-      this.version = 0;
-      this.uuid = generateUUID();
-    }
-    /**
-     * A callback function that is executed after the renderer has transferred the attribute array
-     * data to the GPU.
-     */
-    onUploadCallback() {
-    }
-    /**
-     * Flag to indicate that this attribute has changed and should be re-sent to
-     * the GPU. Set this to `true` when you modify the value of the array.
-     *
-     * @type {number}
-     * @default false
-     * @param {boolean} value
-     */
-    set needsUpdate(value) {
-      if (value === true) this.version++;
-    }
-    /**
-     * Sets the usage of this interleaved buffer.
-     *
-     * @param {(StaticDrawUsage|DynamicDrawUsage|StreamDrawUsage|StaticReadUsage|DynamicReadUsage|StreamReadUsage|StaticCopyUsage|DynamicCopyUsage|StreamCopyUsage)} value - The usage to set.
-     * @return {InterleavedBuffer} A reference to this interleaved buffer.
-     */
-    setUsage(value) {
-      this.usage = value;
-      return this;
-    }
-    /**
-     * Adds a range of data in the data array to be updated on the GPU.
-     *
-     * @param {number} start - Position at which to start update.
-     * @param {number} count - The number of components to update.
-     */
-    addUpdateRange(start, count) {
-      this.updateRanges.push({ start, count });
-    }
-    /**
-     * Clears the update ranges.
-     */
-    clearUpdateRanges() {
-      this.updateRanges.length = 0;
-    }
-    /**
-     * Copies the values of the given interleaved buffer to this instance.
-     *
-     * @param {InterleavedBuffer} source - The interleaved buffer to copy.
-     * @return {InterleavedBuffer} A reference to this instance.
-     */
-    copy(source) {
-      this.array = new source.array.constructor(source.array);
-      this.count = source.count;
-      this.stride = source.stride;
-      this.usage = source.usage;
-      return this;
-    }
-    /**
-     * Copies a vector from the given interleaved buffer to this one. The start
-     * and destination position in the attribute buffers are represented by the
-     * given indices.
-     *
-     * @param {number} index1 - The destination index into this interleaved buffer.
-     * @param {InterleavedBuffer} interleavedBuffer - The interleaved buffer to copy from.
-     * @param {number} index2 - The source index into the given interleaved buffer.
-     * @return {InterleavedBuffer} A reference to this instance.
-     */
-    copyAt(index1, interleavedBuffer, index2) {
-      index1 *= this.stride;
-      index2 *= interleavedBuffer.stride;
-      for (let i = 0, l = this.stride; i < l; i++) {
-        this.array[index1 + i] = interleavedBuffer.array[index2 + i];
-      }
-      return this;
-    }
-    /**
-     * Sets the given array data in the interleaved buffer.
-     *
-     * @param {(TypedArray|Array)} value - The array data to set.
-     * @param {number} [offset=0] - The offset in this interleaved buffer's array.
-     * @return {InterleavedBuffer} A reference to this instance.
-     */
-    set(value, offset = 0) {
-      this.array.set(value, offset);
-      return this;
-    }
-    /**
-     * Returns a new interleaved buffer with copied values from this instance.
-     *
-     * @param {Object} [data] - An object with shared array buffers that allows to retain shared structures.
-     * @return {InterleavedBuffer} A clone of this instance.
-     */
-    clone(data) {
-      if (data.arrayBuffers === void 0) {
-        data.arrayBuffers = {};
-      }
-      if (this.array.buffer._uuid === void 0) {
-        this.array.buffer._uuid = generateUUID();
-      }
-      if (data.arrayBuffers[this.array.buffer._uuid] === void 0) {
-        data.arrayBuffers[this.array.buffer._uuid] = this.array.slice(0).buffer;
-      }
-      const array = new this.array.constructor(data.arrayBuffers[this.array.buffer._uuid]);
-      const ib = new this.constructor(array, this.stride);
-      ib.setUsage(this.usage);
-      return ib;
-    }
-    /**
-     * Sets the given callback function that is executed after the Renderer has transferred
-     * the array data to the GPU. Can be used to perform clean-up operations after
-     * the upload when data are not needed anymore on the CPU side.
-     *
-     * @param {Function} callback - The `onUpload()` callback.
-     * @return {InterleavedBuffer} A reference to this instance.
-     */
-    onUpload(callback) {
-      this.onUploadCallback = callback;
-      return this;
-    }
-    /**
-     * Serializes the interleaved buffer into JSON.
-     *
-     * @param {Object} [data] - An optional value holding meta information about the serialization.
-     * @return {Object} A JSON object representing the serialized interleaved buffer.
-     */
-    toJSON(data) {
-      if (data.arrayBuffers === void 0) {
-        data.arrayBuffers = {};
-      }
-      if (this.array.buffer._uuid === void 0) {
-        this.array.buffer._uuid = generateUUID();
-      }
-      if (data.arrayBuffers[this.array.buffer._uuid] === void 0) {
-        data.arrayBuffers[this.array.buffer._uuid] = Array.from(new Uint32Array(this.array.buffer));
-      }
-      return {
-        uuid: this.uuid,
-        buffer: this.array.buffer._uuid,
-        type: this.array.constructor.name,
-        stride: this.stride
-      };
-    }
-  };
-  var _vector$7 = /* @__PURE__ */ new Vector3();
-  var InterleavedBufferAttribute = class _InterleavedBufferAttribute {
-    /**
-     * Constructs a new interleaved buffer attribute.
-     *
-     * @param {InterleavedBuffer} interleavedBuffer - The buffer holding the interleaved data.
-     * @param {number} itemSize - The item size.
-     * @param {number} offset - The attribute offset into the buffer.
-     * @param {boolean} [normalized=false] - Whether the data are normalized or not.
-     */
-    constructor(interleavedBuffer, itemSize, offset, normalized = false) {
-      this.isInterleavedBufferAttribute = true;
-      this.name = "";
-      this.data = interleavedBuffer;
-      this.itemSize = itemSize;
-      this.offset = offset;
-      this.normalized = normalized;
-    }
-    /**
-     * The item count of this buffer attribute.
-     *
-     * @type {number}
-     * @readonly
-     */
-    get count() {
-      return this.data.count;
-    }
-    /**
-     * The array holding the interleaved buffer attribute data.
-     *
-     * @type {TypedArray}
-     */
-    get array() {
-      return this.data.array;
-    }
-    /**
-     * Flag to indicate that this attribute has changed and should be re-sent to
-     * the GPU. Set this to `true` when you modify the value of the array.
-     *
-     * @type {number}
-     * @default false
-     * @param {boolean} value
-     */
-    set needsUpdate(value) {
-      this.data.needsUpdate = value;
-    }
-    /**
-     * Applies the given 4x4 matrix to the given attribute. Only works with
-     * item size `3`.
-     *
-     * @param {Matrix4} m - The matrix to apply.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    applyMatrix4(m) {
-      for (let i = 0, l = this.data.count; i < l; i++) {
-        _vector$7.fromBufferAttribute(this, i);
-        _vector$7.applyMatrix4(m);
-        this.setXYZ(i, _vector$7.x, _vector$7.y, _vector$7.z);
-      }
-      return this;
-    }
-    /**
-     * Applies the given 3x3 normal matrix to the given attribute. Only works with
-     * item size `3`.
-     *
-     * @param {Matrix3} m - The normal matrix to apply.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    applyNormalMatrix(m) {
-      for (let i = 0, l = this.count; i < l; i++) {
-        _vector$7.fromBufferAttribute(this, i);
-        _vector$7.applyNormalMatrix(m);
-        this.setXYZ(i, _vector$7.x, _vector$7.y, _vector$7.z);
-      }
-      return this;
-    }
-    /**
-     * Applies the given 4x4 matrix to the given attribute. Only works with
-     * item size `3` and with direction vectors.
-     *
-     * @param {Matrix4} m - The matrix to apply.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    transformDirection(m) {
-      for (let i = 0, l = this.count; i < l; i++) {
-        _vector$7.fromBufferAttribute(this, i);
-        _vector$7.transformDirection(m);
-        this.setXYZ(i, _vector$7.x, _vector$7.y, _vector$7.z);
-      }
-      return this;
-    }
-    /**
-     * Returns the given component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @param {number} component - The component index.
-     * @return {number} The returned value.
-     */
-    getComponent(index, component) {
-      let value = this.array[index * this.data.stride + this.offset + component];
-      if (this.normalized) value = denormalize(value, this.array);
-      return value;
-    }
-    /**
-     * Sets the given value to the given component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @param {number} component - The component index.
-     * @param {number} value - The value to set.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    setComponent(index, component, value) {
-      if (this.normalized) value = normalize(value, this.array);
-      this.data.array[index * this.data.stride + this.offset + component] = value;
-      return this;
-    }
-    /**
-     * Sets the x component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @param {number} x - The value to set.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    setX(index, x) {
-      if (this.normalized) x = normalize(x, this.array);
-      this.data.array[index * this.data.stride + this.offset] = x;
-      return this;
-    }
-    /**
-     * Sets the y component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @param {number} y - The value to set.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    setY(index, y) {
-      if (this.normalized) y = normalize(y, this.array);
-      this.data.array[index * this.data.stride + this.offset + 1] = y;
-      return this;
-    }
-    /**
-     * Sets the z component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @param {number} z - The value to set.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    setZ(index, z) {
-      if (this.normalized) z = normalize(z, this.array);
-      this.data.array[index * this.data.stride + this.offset + 2] = z;
-      return this;
-    }
-    /**
-     * Sets the w component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @param {number} w - The value to set.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    setW(index, w) {
-      if (this.normalized) w = normalize(w, this.array);
-      this.data.array[index * this.data.stride + this.offset + 3] = w;
-      return this;
-    }
-    /**
-     * Returns the x component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @return {number} The x component.
-     */
-    getX(index) {
-      let x = this.data.array[index * this.data.stride + this.offset];
-      if (this.normalized) x = denormalize(x, this.array);
-      return x;
-    }
-    /**
-     * Returns the y component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @return {number} The y component.
-     */
-    getY(index) {
-      let y = this.data.array[index * this.data.stride + this.offset + 1];
-      if (this.normalized) y = denormalize(y, this.array);
-      return y;
-    }
-    /**
-     * Returns the z component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @return {number} The z component.
-     */
-    getZ(index) {
-      let z = this.data.array[index * this.data.stride + this.offset + 2];
-      if (this.normalized) z = denormalize(z, this.array);
-      return z;
-    }
-    /**
-     * Returns the w component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @return {number} The w component.
-     */
-    getW(index) {
-      let w = this.data.array[index * this.data.stride + this.offset + 3];
-      if (this.normalized) w = denormalize(w, this.array);
-      return w;
-    }
-    /**
-     * Sets the x and y component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @param {number} x - The value for the x component to set.
-     * @param {number} y - The value for the y component to set.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    setXY(index, x, y) {
-      index = index * this.data.stride + this.offset;
-      if (this.normalized) {
-        x = normalize(x, this.array);
-        y = normalize(y, this.array);
-      }
-      this.data.array[index + 0] = x;
-      this.data.array[index + 1] = y;
-      return this;
-    }
-    /**
-     * Sets the x, y and z component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @param {number} x - The value for the x component to set.
-     * @param {number} y - The value for the y component to set.
-     * @param {number} z - The value for the z component to set.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    setXYZ(index, x, y, z) {
-      index = index * this.data.stride + this.offset;
-      if (this.normalized) {
-        x = normalize(x, this.array);
-        y = normalize(y, this.array);
-        z = normalize(z, this.array);
-      }
-      this.data.array[index + 0] = x;
-      this.data.array[index + 1] = y;
-      this.data.array[index + 2] = z;
-      return this;
-    }
-    /**
-     * Sets the x, y, z and w component of the vector at the given index.
-     *
-     * @param {number} index - The index into the buffer attribute.
-     * @param {number} x - The value for the x component to set.
-     * @param {number} y - The value for the y component to set.
-     * @param {number} z - The value for the z component to set.
-     * @param {number} w - The value for the w component to set.
-     * @return {InterleavedBufferAttribute} A reference to this instance.
-     */
-    setXYZW(index, x, y, z, w) {
-      index = index * this.data.stride + this.offset;
-      if (this.normalized) {
-        x = normalize(x, this.array);
-        y = normalize(y, this.array);
-        z = normalize(z, this.array);
-        w = normalize(w, this.array);
-      }
-      this.data.array[index + 0] = x;
-      this.data.array[index + 1] = y;
-      this.data.array[index + 2] = z;
-      this.data.array[index + 3] = w;
-      return this;
-    }
-    /**
-     * Returns a new buffer attribute with copied values from this instance.
-     *
-     * If no parameter is provided, cloning an interleaved buffer attribute will de-interleave buffer data.
-     *
-     * @param {Object} [data] - An object with interleaved buffers that allows to retain the interleaved property.
-     * @return {BufferAttribute|InterleavedBufferAttribute} A clone of this instance.
-     */
-    clone(data) {
-      if (data === void 0) {
-        console.log("THREE.InterleavedBufferAttribute.clone(): Cloning an interleaved buffer attribute will de-interleave buffer data.");
-        const array = [];
-        for (let i = 0; i < this.count; i++) {
-          const index = i * this.data.stride + this.offset;
-          for (let j = 0; j < this.itemSize; j++) {
-            array.push(this.data.array[index + j]);
-          }
-        }
-        return new BufferAttribute(new this.array.constructor(array), this.itemSize, this.normalized);
-      } else {
-        if (data.interleavedBuffers === void 0) {
-          data.interleavedBuffers = {};
-        }
-        if (data.interleavedBuffers[this.data.uuid] === void 0) {
-          data.interleavedBuffers[this.data.uuid] = this.data.clone(data);
-        }
-        return new _InterleavedBufferAttribute(data.interleavedBuffers[this.data.uuid], this.itemSize, this.offset, this.normalized);
-      }
-    }
-    /**
-     * Serializes the buffer attribute into JSON.
-     *
-     * If no parameter is provided, cloning an interleaved buffer attribute will de-interleave buffer data.
-     *
-     * @param {Object} [data] - An optional value holding meta information about the serialization.
-     * @return {Object} A JSON object representing the serialized buffer attribute.
-     */
-    toJSON(data) {
-      if (data === void 0) {
-        console.log("THREE.InterleavedBufferAttribute.toJSON(): Serializing an interleaved buffer attribute will de-interleave buffer data.");
-        const array = [];
-        for (let i = 0; i < this.count; i++) {
-          const index = i * this.data.stride + this.offset;
-          for (let j = 0; j < this.itemSize; j++) {
-            array.push(this.data.array[index + j]);
-          }
-        }
-        return {
-          itemSize: this.itemSize,
-          type: this.array.constructor.name,
-          array,
-          normalized: this.normalized
-        };
-      } else {
-        if (data.interleavedBuffers === void 0) {
-          data.interleavedBuffers = {};
-        }
-        if (data.interleavedBuffers[this.data.uuid] === void 0) {
-          data.interleavedBuffers[this.data.uuid] = this.data.toJSON(data);
-        }
-        return {
-          isInterleavedBufferAttribute: true,
-          itemSize: this.itemSize,
-          data: this.data.uuid,
-          offset: this.offset,
-          normalized: this.normalized
-        };
-      }
-    }
-  };
-  var SpriteMaterial = class extends Material {
-    /**
-     * Constructs a new sprite material.
-     *
-     * @param {Object} [parameters] - An object with one or more properties
-     * defining the material's appearance. Any property of the material
-     * (including any property from inherited materials) can be passed
-     * in here. Color values can be passed any type of value accepted
-     * by {@link Color#set}.
-     */
-    constructor(parameters) {
-      super();
-      this.isSpriteMaterial = true;
-      this.type = "SpriteMaterial";
-      this.color = new Color(16777215);
-      this.map = null;
-      this.alphaMap = null;
-      this.rotation = 0;
-      this.sizeAttenuation = true;
-      this.transparent = true;
-      this.fog = true;
-      this.setValues(parameters);
-    }
-    copy(source) {
-      super.copy(source);
-      this.color.copy(source.color);
-      this.map = source.map;
-      this.alphaMap = source.alphaMap;
-      this.rotation = source.rotation;
-      this.sizeAttenuation = source.sizeAttenuation;
-      this.fog = source.fog;
-      return this;
-    }
-  };
-  var _geometry;
-  var _intersectPoint = /* @__PURE__ */ new Vector3();
-  var _worldScale = /* @__PURE__ */ new Vector3();
-  var _mvPosition = /* @__PURE__ */ new Vector3();
-  var _alignedPosition = /* @__PURE__ */ new Vector2();
-  var _rotatedPosition = /* @__PURE__ */ new Vector2();
-  var _viewWorldMatrix = /* @__PURE__ */ new Matrix4();
-  var _vA = /* @__PURE__ */ new Vector3();
-  var _vB = /* @__PURE__ */ new Vector3();
-  var _vC = /* @__PURE__ */ new Vector3();
-  var _uvA = /* @__PURE__ */ new Vector2();
-  var _uvB = /* @__PURE__ */ new Vector2();
-  var _uvC = /* @__PURE__ */ new Vector2();
-  var Sprite = class extends Object3D {
-    /**
-     * Constructs a new sprite.
-     *
-     * @param {(SpriteMaterial|SpriteNodeMaterial)} [material] - The sprite material.
-     */
-    constructor(material = new SpriteMaterial()) {
-      super();
-      this.isSprite = true;
-      this.type = "Sprite";
-      if (_geometry === void 0) {
-        _geometry = new BufferGeometry();
-        const float32Array = new Float32Array([
-          -0.5,
-          -0.5,
-          0,
-          0,
-          0,
-          0.5,
-          -0.5,
-          0,
-          1,
-          0,
-          0.5,
-          0.5,
-          0,
-          1,
-          1,
-          -0.5,
-          0.5,
-          0,
-          0,
-          1
-        ]);
-        const interleavedBuffer = new InterleavedBuffer(float32Array, 5);
-        _geometry.setIndex([0, 1, 2, 0, 2, 3]);
-        _geometry.setAttribute("position", new InterleavedBufferAttribute(interleavedBuffer, 3, 0, false));
-        _geometry.setAttribute("uv", new InterleavedBufferAttribute(interleavedBuffer, 2, 3, false));
-      }
-      this.geometry = _geometry;
-      this.material = material;
-      this.center = new Vector2(0.5, 0.5);
-      this.count = 1;
-    }
-    /**
-     * Computes intersection points between a casted ray and this sprite.
-     *
-     * @param {Raycaster} raycaster - The raycaster.
-     * @param {Array<Object>} intersects - The target array that holds the intersection points.
-     */
-    raycast(raycaster2, intersects2) {
-      if (raycaster2.camera === null) {
-        console.error('THREE.Sprite: "Raycaster.camera" needs to be set in order to raycast against sprites.');
-      }
-      _worldScale.setFromMatrixScale(this.matrixWorld);
-      _viewWorldMatrix.copy(raycaster2.camera.matrixWorld);
-      this.modelViewMatrix.multiplyMatrices(raycaster2.camera.matrixWorldInverse, this.matrixWorld);
-      _mvPosition.setFromMatrixPosition(this.modelViewMatrix);
-      if (raycaster2.camera.isPerspectiveCamera && this.material.sizeAttenuation === false) {
-        _worldScale.multiplyScalar(-_mvPosition.z);
-      }
-      const rotation = this.material.rotation;
-      let sin, cos;
-      if (rotation !== 0) {
-        cos = Math.cos(rotation);
-        sin = Math.sin(rotation);
-      }
-      const center = this.center;
-      transformVertex(_vA.set(-0.5, -0.5, 0), _mvPosition, center, _worldScale, sin, cos);
-      transformVertex(_vB.set(0.5, -0.5, 0), _mvPosition, center, _worldScale, sin, cos);
-      transformVertex(_vC.set(0.5, 0.5, 0), _mvPosition, center, _worldScale, sin, cos);
-      _uvA.set(0, 0);
-      _uvB.set(1, 0);
-      _uvC.set(1, 1);
-      let intersect2 = raycaster2.ray.intersectTriangle(_vA, _vB, _vC, false, _intersectPoint);
-      if (intersect2 === null) {
-        transformVertex(_vB.set(-0.5, 0.5, 0), _mvPosition, center, _worldScale, sin, cos);
-        _uvB.set(0, 1);
-        intersect2 = raycaster2.ray.intersectTriangle(_vA, _vC, _vB, false, _intersectPoint);
-        if (intersect2 === null) {
-          return;
-        }
-      }
-      const distance = raycaster2.ray.origin.distanceTo(_intersectPoint);
-      if (distance < raycaster2.near || distance > raycaster2.far) return;
-      intersects2.push({
-        distance,
-        point: _intersectPoint.clone(),
-        uv: Triangle.getInterpolation(_intersectPoint, _vA, _vB, _vC, _uvA, _uvB, _uvC, new Vector2()),
-        face: null,
-        object: this
-      });
-    }
-    copy(source, recursive) {
-      super.copy(source, recursive);
-      if (source.center !== void 0) this.center.copy(source.center);
-      this.material = source.material;
-      return this;
-    }
-  };
-  function transformVertex(vertexPosition, mvPosition, center, scale, sin, cos) {
-    _alignedPosition.subVectors(vertexPosition, center).addScalar(0.5).multiply(scale);
-    if (sin !== void 0) {
-      _rotatedPosition.x = cos * _alignedPosition.x - sin * _alignedPosition.y;
-      _rotatedPosition.y = sin * _alignedPosition.x + cos * _alignedPosition.y;
-    } else {
-      _rotatedPosition.copy(_alignedPosition);
-    }
-    vertexPosition.copy(mvPosition);
-    vertexPosition.x += _rotatedPosition.x;
-    vertexPosition.y += _rotatedPosition.y;
-    vertexPosition.applyMatrix4(_viewWorldMatrix);
-  }
   var DataTexture = class extends Texture {
     /**
      * Constructs a new data texture.
@@ -14096,6 +13437,126 @@
       super.copy(source);
       this.sourceTexture = source.sourceTexture;
       return this;
+    }
+  };
+  var CapsuleGeometry = class _CapsuleGeometry extends BufferGeometry {
+    /**
+     * Constructs a new capsule geometry.
+     *
+     * @param {number} [radius=1] - Radius of the capsule.
+     * @param {number} [height=1] - Height of the middle section.
+     * @param {number} [capSegments=4] - Number of curve segments used to build each cap.
+     * @param {number} [radialSegments=8] - Number of segmented faces around the circumference of the capsule. Must be an integer >= 3.
+     * @param {number} [heightSegments=1] - Number of rows of faces along the height of the middle section. Must be an integer >= 1.
+     */
+    constructor(radius = 1, height = 1, capSegments = 4, radialSegments = 8, heightSegments = 1) {
+      super();
+      this.type = "CapsuleGeometry";
+      this.parameters = {
+        radius,
+        height,
+        capSegments,
+        radialSegments,
+        heightSegments
+      };
+      height = Math.max(0, height);
+      capSegments = Math.max(1, Math.floor(capSegments));
+      radialSegments = Math.max(3, Math.floor(radialSegments));
+      heightSegments = Math.max(1, Math.floor(heightSegments));
+      const indices = [];
+      const vertices = [];
+      const normals = [];
+      const uvs = [];
+      const halfHeight = height / 2;
+      const capArcLength = Math.PI / 2 * radius;
+      const cylinderPartLength = height;
+      const totalArcLength = 2 * capArcLength + cylinderPartLength;
+      const numVerticalSegments = capSegments * 2 + heightSegments;
+      const verticesPerRow = radialSegments + 1;
+      const normal = new Vector3();
+      const vertex2 = new Vector3();
+      for (let iy = 0; iy <= numVerticalSegments; iy++) {
+        let currentArcLength = 0;
+        let profileY = 0;
+        let profileRadius = 0;
+        let normalYComponent = 0;
+        if (iy <= capSegments) {
+          const segmentProgress = iy / capSegments;
+          const angle = segmentProgress * Math.PI / 2;
+          profileY = -halfHeight - radius * Math.cos(angle);
+          profileRadius = radius * Math.sin(angle);
+          normalYComponent = -radius * Math.cos(angle);
+          currentArcLength = segmentProgress * capArcLength;
+        } else if (iy <= capSegments + heightSegments) {
+          const segmentProgress = (iy - capSegments) / heightSegments;
+          profileY = -halfHeight + segmentProgress * height;
+          profileRadius = radius;
+          normalYComponent = 0;
+          currentArcLength = capArcLength + segmentProgress * cylinderPartLength;
+        } else {
+          const segmentProgress = (iy - capSegments - heightSegments) / capSegments;
+          const angle = segmentProgress * Math.PI / 2;
+          profileY = halfHeight + radius * Math.sin(angle);
+          profileRadius = radius * Math.cos(angle);
+          normalYComponent = radius * Math.sin(angle);
+          currentArcLength = capArcLength + cylinderPartLength + segmentProgress * capArcLength;
+        }
+        const v = Math.max(0, Math.min(1, currentArcLength / totalArcLength));
+        let uOffset = 0;
+        if (iy === 0) {
+          uOffset = 0.5 / radialSegments;
+        } else if (iy === numVerticalSegments) {
+          uOffset = -0.5 / radialSegments;
+        }
+        for (let ix = 0; ix <= radialSegments; ix++) {
+          const u = ix / radialSegments;
+          const theta = u * Math.PI * 2;
+          const sinTheta = Math.sin(theta);
+          const cosTheta = Math.cos(theta);
+          vertex2.x = -profileRadius * cosTheta;
+          vertex2.y = profileY;
+          vertex2.z = profileRadius * sinTheta;
+          vertices.push(vertex2.x, vertex2.y, vertex2.z);
+          normal.set(
+            -profileRadius * cosTheta,
+            normalYComponent,
+            profileRadius * sinTheta
+          );
+          normal.normalize();
+          normals.push(normal.x, normal.y, normal.z);
+          uvs.push(u + uOffset, v);
+        }
+        if (iy > 0) {
+          const prevIndexRow = (iy - 1) * verticesPerRow;
+          for (let ix = 0; ix < radialSegments; ix++) {
+            const i1 = prevIndexRow + ix;
+            const i2 = prevIndexRow + ix + 1;
+            const i3 = iy * verticesPerRow + ix;
+            const i4 = iy * verticesPerRow + ix + 1;
+            indices.push(i1, i2, i3);
+            indices.push(i2, i4, i3);
+          }
+        }
+      }
+      this.setIndex(indices);
+      this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+      this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+      this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+    }
+    copy(source) {
+      super.copy(source);
+      this.parameters = Object.assign({}, source.parameters);
+      return this;
+    }
+    /**
+     * Factory method for creating an instance of this class from the given
+     * JSON object.
+     *
+     * @param {Object} data - A JSON object representing the serialized geometry.
+     * @return {CapsuleGeometry} A new instance.
+     */
+    static fromJSON(data) {
+      return new _CapsuleGeometry(data.radius, data.height, data.capSegments, data.radialSegments, data.heightSegments);
     }
   };
   var CircleGeometry = class _CircleGeometry extends BufferGeometry {
@@ -16880,6 +16341,114 @@
       return new _PlaneGeometry(data.width, data.height, data.widthSegments, data.heightSegments);
     }
   };
+  var ShapeGeometry = class _ShapeGeometry extends BufferGeometry {
+    /**
+     * Constructs a new shape geometry.
+     *
+     * @param {Shape|Array<Shape>} [shapes] - A shape or an array of shapes.
+     * @param {number} [curveSegments=12] - Number of segments per shape.
+     */
+    constructor(shapes = new Shape([new Vector2(0, 0.5), new Vector2(-0.5, -0.5), new Vector2(0.5, -0.5)]), curveSegments = 12) {
+      super();
+      this.type = "ShapeGeometry";
+      this.parameters = {
+        shapes,
+        curveSegments
+      };
+      const indices = [];
+      const vertices = [];
+      const normals = [];
+      const uvs = [];
+      let groupStart = 0;
+      let groupCount = 0;
+      if (Array.isArray(shapes) === false) {
+        addShape(shapes);
+      } else {
+        for (let i = 0; i < shapes.length; i++) {
+          addShape(shapes[i]);
+          this.addGroup(groupStart, groupCount, i);
+          groupStart += groupCount;
+          groupCount = 0;
+        }
+      }
+      this.setIndex(indices);
+      this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+      this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+      this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+      function addShape(shape) {
+        const indexOffset = vertices.length / 3;
+        const points = shape.extractPoints(curveSegments);
+        let shapeVertices = points.shape;
+        const shapeHoles = points.holes;
+        if (ShapeUtils.isClockWise(shapeVertices) === false) {
+          shapeVertices = shapeVertices.reverse();
+        }
+        for (let i = 0, l = shapeHoles.length; i < l; i++) {
+          const shapeHole = shapeHoles[i];
+          if (ShapeUtils.isClockWise(shapeHole) === true) {
+            shapeHoles[i] = shapeHole.reverse();
+          }
+        }
+        const faces = ShapeUtils.triangulateShape(shapeVertices, shapeHoles);
+        for (let i = 0, l = shapeHoles.length; i < l; i++) {
+          const shapeHole = shapeHoles[i];
+          shapeVertices = shapeVertices.concat(shapeHole);
+        }
+        for (let i = 0, l = shapeVertices.length; i < l; i++) {
+          const vertex2 = shapeVertices[i];
+          vertices.push(vertex2.x, vertex2.y, 0);
+          normals.push(0, 0, 1);
+          uvs.push(vertex2.x, vertex2.y);
+        }
+        for (let i = 0, l = faces.length; i < l; i++) {
+          const face = faces[i];
+          const a = face[0] + indexOffset;
+          const b = face[1] + indexOffset;
+          const c = face[2] + indexOffset;
+          indices.push(a, b, c);
+          groupCount += 3;
+        }
+      }
+    }
+    copy(source) {
+      super.copy(source);
+      this.parameters = Object.assign({}, source.parameters);
+      return this;
+    }
+    toJSON() {
+      const data = super.toJSON();
+      const shapes = this.parameters.shapes;
+      return toJSON(shapes, data);
+    }
+    /**
+     * Factory method for creating an instance of this class from the given
+     * JSON object.
+     *
+     * @param {Object} data - A JSON object representing the serialized geometry.
+     * @param {Array<Shape>} shapes - An array of shapes.
+     * @return {ShapeGeometry} A new instance.
+     */
+    static fromJSON(data, shapes) {
+      const geometryShapes = [];
+      for (let j = 0, jl = data.shapes.length; j < jl; j++) {
+        const shape = shapes[data.shapes[j]];
+        geometryShapes.push(shape);
+      }
+      return new _ShapeGeometry(geometryShapes, data.curveSegments);
+    }
+  };
+  function toJSON(shapes, data) {
+    data.shapes = [];
+    if (Array.isArray(shapes)) {
+      for (let i = 0, l = shapes.length; i < l; i++) {
+        const shape = shapes[i];
+        data.shapes.push(shape.uuid);
+      }
+    } else {
+      data.shapes.push(shapes.uuid);
+    }
+    return data;
+  }
   var SphereGeometry = class _SphereGeometry extends BufferGeometry {
     /**
      * Constructs a new sphere geometry.
@@ -18136,63 +17705,6 @@
     }
   };
   VectorKeyframeTrack.prototype.ValueTypeName = "vector";
-  var Cache = {
-    /**
-     * Whether caching is enabled or not.
-     *
-     * @static
-     * @type {boolean}
-     * @default false
-     */
-    enabled: false,
-    /**
-     * A dictionary that holds cached files.
-     *
-     * @static
-     * @type {Object<string,Object>}
-     */
-    files: {},
-    /**
-     * Adds a cache entry with a key to reference the file. If this key already
-     * holds a file, it is overwritten.
-     *
-     * @static
-     * @param {string} key - The key to reference the cached file.
-     * @param {Object} file -  The file to be cached.
-     */
-    add: function(key, file) {
-      if (this.enabled === false) return;
-      this.files[key] = file;
-    },
-    /**
-     * Gets the cached value for the given key.
-     *
-     * @static
-     * @param {string} key - The key to reference the cached file.
-     * @return {Object|undefined} The cached file. If the key does not exist `undefined` is returned.
-     */
-    get: function(key) {
-      if (this.enabled === false) return;
-      return this.files[key];
-    },
-    /**
-     * Removes the cached file associated with the given key.
-     *
-     * @static
-     * @param {string} key - The key to reference the cached file.
-     */
-    remove: function(key) {
-      delete this.files[key];
-    },
-    /**
-     * Remove all values from the cache.
-     *
-     * @static
-     */
-    clear: function() {
-      this.files = {};
-    }
-  };
   var LoadingManager = class {
     /**
      * Constructs a new loading manager.
@@ -18393,126 +17905,6 @@
     }
   };
   Loader.DEFAULT_MATERIAL_NAME = "__DEFAULT";
-  var _loading = /* @__PURE__ */ new WeakMap();
-  var ImageLoader = class extends Loader {
-    /**
-     * Constructs a new image loader.
-     *
-     * @param {LoadingManager} [manager] - The loading manager.
-     */
-    constructor(manager) {
-      super(manager);
-    }
-    /**
-     * Starts loading from the given URL and passes the loaded image
-     * to the `onLoad()` callback. The method also returns a new `Image` object which can
-     * directly be used for texture creation. If you do it this way, the texture
-     * may pop up in your scene once the respective loading process is finished.
-     *
-     * @param {string} url - The path/URL of the file to be loaded. This can also be a data URI.
-     * @param {function(Image)} onLoad - Executed when the loading process has been finished.
-     * @param {onProgressCallback} onProgress - Unsupported in this loader.
-     * @param {onErrorCallback} onError - Executed when errors occur.
-     * @return {Image} The image.
-     */
-    load(url, onLoad, onProgress, onError) {
-      if (this.path !== void 0) url = this.path + url;
-      url = this.manager.resolveURL(url);
-      const scope = this;
-      const cached = Cache.get(`image:${url}`);
-      if (cached !== void 0) {
-        if (cached.complete === true) {
-          scope.manager.itemStart(url);
-          setTimeout(function() {
-            if (onLoad) onLoad(cached);
-            scope.manager.itemEnd(url);
-          }, 0);
-        } else {
-          let arr = _loading.get(cached);
-          if (arr === void 0) {
-            arr = [];
-            _loading.set(cached, arr);
-          }
-          arr.push({ onLoad, onError });
-        }
-        return cached;
-      }
-      const image = createElementNS("img");
-      function onImageLoad() {
-        removeEventListeners();
-        if (onLoad) onLoad(this);
-        const callbacks = _loading.get(this) || [];
-        for (let i = 0; i < callbacks.length; i++) {
-          const callback = callbacks[i];
-          if (callback.onLoad) callback.onLoad(this);
-        }
-        _loading.delete(this);
-        scope.manager.itemEnd(url);
-      }
-      function onImageError(event) {
-        removeEventListeners();
-        if (onError) onError(event);
-        Cache.remove(`image:${url}`);
-        const callbacks = _loading.get(this) || [];
-        for (let i = 0; i < callbacks.length; i++) {
-          const callback = callbacks[i];
-          if (callback.onError) callback.onError(event);
-        }
-        _loading.delete(this);
-        scope.manager.itemError(url);
-        scope.manager.itemEnd(url);
-      }
-      function removeEventListeners() {
-        image.removeEventListener("load", onImageLoad, false);
-        image.removeEventListener("error", onImageError, false);
-      }
-      image.addEventListener("load", onImageLoad, false);
-      image.addEventListener("error", onImageError, false);
-      if (url.slice(0, 5) !== "data:") {
-        if (this.crossOrigin !== void 0) image.crossOrigin = this.crossOrigin;
-      }
-      Cache.add(`image:${url}`, image);
-      scope.manager.itemStart(url);
-      image.src = url;
-      return image;
-    }
-  };
-  var TextureLoader = class extends Loader {
-    /**
-     * Constructs a new texture loader.
-     *
-     * @param {LoadingManager} [manager] - The loading manager.
-     */
-    constructor(manager) {
-      super(manager);
-    }
-    /**
-     * Starts loading from the given URL and pass the fully loaded texture
-     * to the `onLoad()` callback. The method also returns a new texture object which can
-     * directly be used for material creation. If you do it this way, the texture
-     * may pop up in your scene once the respective loading process is finished.
-     *
-     * @param {string} url - The path/URL of the file to be loaded. This can also be a data URI.
-     * @param {function(Texture)} onLoad - Executed when the loading process has been finished.
-     * @param {onProgressCallback} onProgress - Unsupported in this loader.
-     * @param {onErrorCallback} onError - Executed when errors occur.
-     * @return {Texture} The texture.
-     */
-    load(url, onLoad, onProgress, onError) {
-      const texture = new Texture();
-      const loader = new ImageLoader(this.manager);
-      loader.setCrossOrigin(this.crossOrigin);
-      loader.setPath(this.path);
-      loader.load(url, function(image) {
-        texture.image = image;
-        texture.needsUpdate = true;
-        if (onLoad !== void 0) {
-          onLoad(texture);
-        }
-      }, onProgress, onError);
-      return texture;
-    }
-  };
   var Light = class extends Object3D {
     /**
      * Constructs a new light.
@@ -25104,8 +24496,8 @@
             currentColorMask = colorMask;
           }
         },
-        setLocked: function(lock) {
-          locked = lock;
+        setLocked: function(lock2) {
+          locked = lock2;
         },
         setClear: function(r, g, b, a, premultipliedAlpha) {
           if (premultipliedAlpha === true) {
@@ -25197,8 +24589,8 @@
             currentDepthFunc = depthFunc;
           }
         },
-        setLocked: function(lock) {
-          locked = lock;
+        setLocked: function(lock2) {
+          locked = lock2;
         },
         setClear: function(depth) {
           if (currentDepthClear !== depth) {
@@ -25260,8 +24652,8 @@
             currentStencilZPass = stencilZPass;
           }
         },
-        setLocked: function(lock) {
-          locked = lock;
+        setLocked: function(lock2) {
+          locked = lock2;
         },
         setClear: function(stencil) {
           if (currentStencilClear !== stencil) {
@@ -32416,7 +31808,7 @@ void main() {
     const RG = D.guide.r;
     const HT = D.tTape / 2;
     const TURN = Math.PI * 2;
-    const C = [{ x: -D.hub.x, z: D.hub.z }, { x: D.hub.x, z: D.hub.z }];
+    const C2 = [{ x: -D.hub.x, z: D.hub.z }, { x: D.hub.x, z: D.hub.z }];
     const G = [{ x: -D.guide.x, z: D.guide.z }, { x: D.guide.x, z: D.guide.z }];
     function tangentAngle(c, r, g, side, rg = RG + HT) {
       const dx = g.x - c.x, dz = g.z - c.z, L = Math.hypot(dx, dz);
@@ -32428,8 +31820,8 @@ void main() {
     const SAMPLES = SEG.p * 2 + SEG.l * 2 + SEG.g * 2 + SEG.m + 1;
     const pts = new Float32Array(SAMPLES * 2);
     function fillPath(rL, rR) {
-      const a1 = tangentAngle(C[0], rL - HT, G[0], -1);
-      const a2 = tangentAngle(C[1], rR - HT, G[1], 1);
+      const a1 = tangentAngle(C2[0], rL - HT, G[0], -1);
+      const a2 = tangentAngle(C2[1], rR - HT, G[1], 1);
       let k = 0;
       const arc = (cx, cz, r, from, to, steps, skip) => {
         for (let i = skip ? 1 : 0; i <= steps; i++) {
@@ -32447,10 +31839,10 @@ void main() {
       };
       const FRONT = Math.PI / 2;
       const gR = RG + HT;
-      arc(C[0].x, C[0].z, rL - HT, a1 + TURN, a1, SEG.p, false);
+      arc(C2[0].x, C2[0].z, rL - HT, a1 + TURN, a1, SEG.p, false);
       line(
-        C[0].x + Math.cos(a1) * (rL - HT),
-        C[0].z + Math.sin(a1) * (rL - HT),
+        C2[0].x + Math.cos(a1) * (rL - HT),
+        C2[0].z + Math.sin(a1) * (rL - HT),
         G[0].x + Math.cos(a1) * gR,
         G[0].z + Math.sin(a1) * gR,
         SEG.l
@@ -32461,11 +31853,11 @@ void main() {
       line(
         G[1].x + Math.cos(a2) * gR,
         G[1].z + Math.sin(a2) * gR,
-        C[1].x + Math.cos(a2) * (rR - HT),
-        C[1].z + Math.sin(a2) * (rR - HT),
+        C2[1].x + Math.cos(a2) * (rR - HT),
+        C2[1].z + Math.sin(a2) * (rR - HT),
         SEG.l
       );
-      arc(C[1].x, C[1].z, rR - HT, a2, a2 - TURN, SEG.p, true);
+      arc(C2[1].x, C2[1].z, rR - HT, a2, a2 - TURN, SEG.p, true);
     }
     const HEAD_I = SEG.p + SEG.l + SEG.g + SEG.m / 2;
     const ribbon = new Ribbon(SAMPLES, D.tapeW / 2, D.tTape / 2, HEAD_I);
@@ -33029,7 +32421,7 @@ void main() {
       this.setAttribute("uv", new Float32BufferAttribute([0, 2, 0, 0, 2, 0], 2));
     }
   };
-  var _geometry2 = new FullscreenTriangleGeometry();
+  var _geometry = new FullscreenTriangleGeometry();
   var FullScreenQuad = class {
     /**
      * Constructs a new full screen quad.
@@ -33037,7 +32429,7 @@ void main() {
      * @param {?Material} material - The material to render te full screen quad with.
      */
     constructor(material) {
-      this._mesh = new Mesh(_geometry2, material);
+      this._mesh = new Mesh(_geometry, material);
     }
     /**
      * Frees the GPU-related resources allocated by this instance. Call this
@@ -34722,15 +34114,15 @@ void main() {
         const hiss = ctx.createBufferSource();
         hiss.buffer = this._noise(ctx, 3);
         hiss.loop = true;
-        const hp = ctx.createBiquadFilter();
-        hp.type = "highpass";
-        hp.frequency.value = 1600;
+        const hp2 = ctx.createBiquadFilter();
+        hp2.type = "highpass";
+        hp2.frequency.value = 1600;
         const lp = ctx.createBiquadFilter();
         lp.type = "lowpass";
         lp.frequency.value = 7200;
         this.hissGain = ctx.createGain();
         this.hissGain.gain.value = 0.34;
-        hiss.connect(hp).connect(lp).connect(this.hissGain).connect(this.master);
+        hiss.connect(hp2).connect(lp).connect(this.hissGain).connect(this.master);
         const hum = ctx.createOscillator();
         hum.type = "sawtooth";
         hum.frequency.value = 49.5;
@@ -35160,7 +34552,7 @@ void main() {
     const hpC = 1 - Math.exp(-2 * Math.PI * 1500 / SR);
     const duckCoef = 1 - Math.exp(-1 / (0.055 * SR));
     kicks.sort((a, b) => a - b);
-    let lp = 0, hp = 0, duck = 1, ki = 0, lfoPh = 0;
+    let lp = 0, hp2 = 0, duck = 1, ki = 0, lfoPh = 0;
     for (let i = 0; i < N; i++) {
       dl[i] = bus[i];
       lfoPh += lfoInc;
@@ -35184,8 +34576,8 @@ void main() {
       }
       duck += (1 - duck) * duckCoef;
       v *= duck * 0.84;
-      hp += hpC * (v - hp);
-      const side = (v - hp) * 0.16;
+      hp2 += hpC * (v - hp2);
+      const side = (v - hp2) * 0.16;
       outL[i] = v + side;
       outR[i] = v - side;
     }
@@ -35280,7 +34672,7 @@ void main() {
       id: "A",
       cn: "A \u9762",
       /* what gets printed on the label for this side */
-      label: { title: "\u4F4E\u6E29\u88C5\u914D", artist: ARTIST, album: "\u7075\u5B9D\u6F14\u793A\u66F2 \xB7 A \u9762" },
+      label: { title: "\u4F4E\u6E29\u88C5\u914D", artist: ARTIST, album: "\u7EB3\u897F\u59B2\u6F14\u793A\u66F2 \xB7 A \u9762" },
       spec: {
         dur: 60,
         bpm: 92,
@@ -35293,7 +34685,7 @@ void main() {
     {
       id: "B",
       cn: "B \u9762",
-      label: { title: "\u6DF1\u6C34\u533A", artist: ARTIST, album: "\u7075\u5B9D\u6F14\u793A\u66F2 \xB7 B \u9762" },
+      label: { title: "\u6DF1\u6C34\u533A", artist: ARTIST, album: "\u7EB3\u897F\u59B2\u6F14\u793A\u66F2 \xB7 B \u9762" },
       spec: {
         dur: 60,
         bpm: 76,
@@ -35338,6 +34730,7 @@ void main() {
   var BLOOM_SWING = 0.55;
   var BLOOM_MIN = 0.85;
   var BLOOM_MAX = 1.3;
+  var PULSE_GAIN = 3.2;
   function createViz(bars) {
     const lv = new Float32Array(4);
     const raw = new Float32Array(4);
@@ -35413,90 +34806,1098 @@ void main() {
           own value — see main.js's applyTheme() */
       get beat() {
         return beat;
+      },
+      /** how far the low end is above its own slow average, 0..1 — the beat, not
+          the level. The spirit's nod reads this. */
+      get pulse() {
+        return Math.max(0, Math.min(1, (lv[0] - avg) * PULSE_GAIN));
       }
     };
   }
 
-  // src/spirit.js
-  var RIM_D = 0.09;
-  function createSpirit({ url, height = 6.5, x = 0, y = 0, z = 0 }) {
+  // src/nahida.js
+  var NOMINAL = 6.4;
+  var TAU = Math.PI * 2;
+  var C = {
+    hair: 15920878,
+    hairDark: 14867931,
+    hairTip: 11125976,
+    skin: 16114391,
+    skinDark: 14268584,
+    shirt: 16184559,
+    shirtDark: 14078665,
+    collar: 4810831,
+    collarLit: 7312471,
+    skirt: 16184559,
+    skirtInner: 9087100,
+    capeTop: 9416302,
+    capeBot: 10470620,
+    cream: 15261130,
+    silver: 14212322,
+    shoe: 16118766,
+    sole: 15263194,
+    ink: 2763551,
+    leaf: 7312471,
+    leafLit: 11849108,
+    leafDeep: 5464626,
+    gold: 14271625
+  };
+  function leafShape(len = 1, wid = 0.4, wide = 0.44) {
+    const s = new Shape();
+    s.moveTo(0, 0);
+    s.bezierCurveTo(wid, len * wide * 0.5, wid, len * (wide + (1 - wide) * 0.62), 0, len);
+    s.bezierCurveTo(-wid, len * (wide + (1 - wide) * 0.62), -wid, len * wide * 0.5, 0, 0);
+    return s;
+  }
+  function leafMesh(len, wid, mat, { curve = 0.18, seg = 12, arcR = 0 } = {}) {
+    const g = new ShapeGeometry(leafShape(len, wid), seg);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i);
+      let y = p.getY(i);
+      const curl = -curve * 0.35 * (x / wid) * (x / wid);
+      if (arcR > 0) {
+        const chord = arcR * Math.sin(len / arcR);
+        y *= chord / len;
+        p.setY(i, y);
+        p.setZ(i, -(arcR - Math.sqrt(Math.max(arcR * arcR - y * y, 1e-6))) + curl);
+      } else {
+        p.setZ(i, -curve * (y / len) * (y / len) * len + curl);
+      }
+    }
+    g.computeVertexNormals();
+    const m = new Mesh(g, mat);
+    m.castShadow = true;
+    return m;
+  }
+  function plate(shape, thick, mat, { bevel = 0.022, seg = 10 } = {}) {
+    const g = new ExtrudeGeometry(shape, {
+      depth: thick,
+      bevelEnabled: true,
+      bevelSize: bevel,
+      bevelThickness: bevel,
+      bevelSegments: 2,
+      curveSegments: seg
+    });
+    g.translate(0, 0, -thick / 2);
+    const m = new Mesh(g, mat);
+    m.castShadow = true;
+    return m;
+  }
+  function limb(a, b, r0, r1, mat, seg = 10) {
+    const dir = new Vector3().subVectors(b, a);
+    const len = dir.length();
+    const g = new CylinderGeometry(r1, r0, len, seg, 1, false);
+    const m = new Mesh(g, mat);
+    m.position.copy(a).addScaledVector(dir, 0.5);
+    m.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), dir.normalize());
+    m.castShadow = true;
+    return m;
+  }
+  function ball(r, mat, sx = 1, sy = 1, sz = 1, seg = 18) {
+    const m = new Mesh(new SphereGeometry(r, seg, Math.round(seg * 0.72)), mat);
+    m.scale.set(sx, sy, sz);
+    m.castShadow = true;
+    return m;
+  }
+  function pleatedSkirt({ rTop, rBot, yTop, yBot, folds = 22, depth = 0.085, rows = 7 }) {
+    const cols = folds * 2;
+    const pos = [], uv = [], idx = [];
+    for (let i = 0; i <= rows; i++) {
+      const t2 = i / rows;
+      const y = lerp2(yTop, yBot, t2);
+      const rBase = lerp2(rTop, rBot, Math.pow(t2, 0.86));
+      for (let j = 0; j <= cols; j++) {
+        const a = j / cols * TAU;
+        const r = rBase - (j % 2 ? depth : 0) * (0.3 + 0.7 * t2);
+        pos.push(Math.sin(a) * r, y, Math.cos(a) * r);
+        uv.push(j / cols, t2);
+      }
+    }
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        const a = i * (cols + 1) + j, b = a + cols + 1;
+        idx.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    const g = new BufferGeometry();
+    g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+    g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  }
+  function lock(curve, {
+    segs = 44,
+    rad = 0.22,
+    cols = 14,
+    prof = null,
+    taper = 0,
+    flat = 1,
+    deep = 1,
+    capA = 1,
+    capB = 1,
+    capSeg = 3,
+    out = null
+  } = {}) {
+    const fr = curve.computeFrenetFrames(segs, false);
+    const radAt = (t2) => rad * (prof ? prof(t2) : 0.88 + 0.12 * Math.sin(Math.PI * t2)) * (1 - taper * t2);
+    const frameAt = (i, p) => {
+      const tan = fr.tangents[i];
+      if (!out) return { t: tan, n: fr.normals[i], b: fr.binormals[i] };
+      const o = out === "radial" ? p.clone() : out.clone();
+      o.addScaledVector(tan, -o.dot(tan));
+      if (o.lengthSq() < 1e-8) return { t: tan, n: fr.normals[i], b: fr.binormals[i] };
+      o.normalize();
+      return { t: tan, n: o, b: new Vector3().crossVectors(tan, o).normalize() };
+    };
+    const rings = [];
+    const p0 = curve.getPoint(0), r0 = radAt(0);
+    const f0 = frameAt(0, p0);
+    if (capA > 0) {
+      for (let k = capSeg; k >= 1; k--) {
+        const th = k / capSeg * (Math.PI / 2);
+        rings.push({
+          c: p0.clone().addScaledVector(f0.t, -r0 * Math.sin(th) * capA),
+          n: f0.n,
+          b: f0.b,
+          r: r0 * Math.cos(th),
+          ref: p0,
+          pole: k === capSeg ? f0.t.clone().negate() : null
+        });
+      }
+    }
+    for (let i = 0; i <= segs; i++) {
+      const p = curve.getPoint(i / segs);
+      const f = frameAt(i, p);
+      rings.push({ c: p, n: f.n, b: f.b, r: radAt(i / segs), ref: null, pole: null });
+    }
+    const p1 = curve.getPoint(1), r1 = radAt(1);
+    const f1 = frameAt(segs, p1);
+    if (capB > 0) {
+      for (let k = 1; k <= capSeg; k++) {
+        const th = k / capSeg * (Math.PI / 2);
+        rings.push({
+          c: p1.clone().addScaledVector(f1.t, r1 * Math.sin(th) * capB),
+          n: f1.n,
+          b: f1.b,
+          r: r1 * Math.cos(th),
+          ref: p1,
+          pole: k === capSeg ? f1.t.clone() : null
+        });
+      }
+    }
+    const pos = [], nrm = [], uv = [], idx = [];
+    for (let i = 0; i < rings.length; i++) {
+      const R = rings[i];
+      for (let j = 0; j <= cols; j++) {
+        const a = j / cols * TAU;
+        const ox = Math.cos(a) * R.r * deep, oy = Math.sin(a) * R.r * flat;
+        const px2 = R.c.x + R.n.x * ox + R.b.x * oy;
+        const py2 = R.c.y + R.n.y * ox + R.b.y * oy;
+        const pz2 = R.c.z + R.n.z * ox + R.b.z * oy;
+        pos.push(px2, py2, pz2);
+        if (R.pole) {
+          nrm.push(R.pole.x, R.pole.y, R.pole.z);
+        } else {
+          const ref = R.ref || R.c;
+          const nx = px2 - ref.x, ny = py2 - ref.y, nz = pz2 - ref.z;
+          const L = Math.hypot(nx, ny, nz) || 1;
+          nrm.push(nx / L, ny / L, nz / L);
+        }
+        uv.push(j / cols, i / (rings.length - 1));
+      }
+    }
+    for (let i = 0; i < rings.length - 1; i++) {
+      for (let j = 0; j < cols; j++) {
+        const a = i * (cols + 1) + j, b = a + cols + 1;
+        idx.push(a, a + 1, b, b, a + 1, b + 1);
+      }
+    }
+    const g = new BufferGeometry();
+    g.setAttribute("position", new Float32BufferAttribute(pos, 3));
+    g.setAttribute("normal", new Float32BufferAttribute(nrm, 3));
+    g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    return g;
+  }
+  function hp(yaw, lat, r = HAIR_R) {
+    return new Vector3(
+      Math.sin(yaw) * Math.cos(lat) * r,
+      Math.sin(lat) * r,
+      Math.cos(yaw) * Math.cos(lat) * r
+    );
+  }
+  function ropeStrand(curve, segs, r, turns, phase) {
+    const fr = curve.computeFrenetFrames(segs, false);
+    const pts = [];
+    for (let i = 0; i <= segs; i++) {
+      const t2 = i / segs;
+      const p = curve.getPoint(t2);
+      const a = t2 * turns * TAU + phase;
+      p.addScaledVector(fr.normals[i], Math.cos(a) * r * 0.6);
+      p.addScaledVector(fr.binormals[i], Math.sin(a) * r * 0.6);
+      pts.push(p);
+    }
+    return new CatmullRomCurve3(pts);
+  }
+  function tipPaint(geom, vAt, amount, hex) {
+    const p = geom.attributes.position;
+    const arr = new Float32Array(p.count * 3);
+    const a = new Color(C.hair), b = new Color(hex), tmp2 = new Color();
+    for (let i = 0; i < p.count; i++) {
+      const t2 = clamp2((vAt(i) - (1 - amount)) / Math.max(amount, 1e-4), 0, 1);
+      tmp2.copy(a).lerp(b, t2 * t2 * (3 - 2 * t2));
+      arr[i * 3] = tmp2.r;
+      arr[i * 3 + 1] = tmp2.g;
+      arr[i * 3 + 2] = tmp2.b;
+    }
+    geom.setAttribute("color", new BufferAttribute(arr, 3));
+  }
+  var DOWN = new Vector3(0, -1, 0);
+  var EYE_W = 256;
+  var EYE_H = 292;
+  function star(g, x, y, R, r) {
+    g.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 4;
+      const rr = i % 2 ? r : R;
+      const px2 = x + Math.cos(a) * rr, py2 = y + Math.sin(a) * rr;
+      if (i) g.lineTo(px2, py2);
+      else g.moveTo(px2, py2);
+    }
+    g.closePath();
+    g.fill();
+  }
+  function eyeCanvas(open) {
+    const c = document.createElement("canvas");
+    c.width = EYE_W;
+    c.height = EYE_H;
+    const g = c.getContext("2d");
+    g.strokeStyle = "#8d9377";
+    g.lineWidth = 12;
+    g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(58, 58);
+    g.quadraticCurveTo(128, 26, 198, 54);
+    g.stroke();
+    if (!open) {
+      g.strokeStyle = "#3a3d2c";
+      g.lineWidth = 12;
+      g.beginPath();
+      g.moveTo(52, 168);
+      g.quadraticCurveTo(128, 214, 204, 162);
+      g.stroke();
+      return c;
+    }
+    const cx = 128, cy = 172;
+    g.fillStyle = "#33362a";
+    g.beginPath();
+    g.moveTo(30, 168);
+    g.bezierCurveTo(44, 84, 96, 52, 130, 52);
+    g.bezierCurveTo(176, 52, 220, 92, 228, 168);
+    g.bezierCurveTo(196, 236, 66, 240, 30, 168);
+    g.closePath();
+    g.fill();
+    const ir = g.createLinearGradient(0, cy - 84, 0, cy + 84);
+    ir.addColorStop(0, "#4d7b3d");
+    ir.addColorStop(0.52, "#8fbf6a");
+    ir.addColorStop(1, "#e4f2c6");
+    g.fillStyle = ir;
+    g.beginPath();
+    g.ellipse(cx, cy, 86, 90, 0, 0, TAU);
+    g.fill();
+    g.strokeStyle = "rgba(45,80,38,0.80)";
+    g.lineWidth = 9;
+    g.beginPath();
+    g.ellipse(cx, cy, 83, 87, 0, 0, TAU);
+    g.stroke();
+    const pupil = (R, r, fill) => {
+      g.fillStyle = fill;
+      star(g, cx, cy, R, r);
+    };
+    pupil(70, 23, "#2f5b33");
+    pupil(58, 18, "#8fc46a");
+    pupil(34, 10, "rgba(246,252,232,0.95)");
+    g.fillStyle = "rgba(255,255,255,0.55)";
+    g.beginPath();
+    g.arc(cx - 48, cy - 54, 15, 0, TAU);
+    g.fill();
+    g.strokeStyle = "rgba(238,236,232,0.75)";
+    g.lineWidth = 7;
+    g.beginPath();
+    g.moveTo(66, 214);
+    g.quadraticCurveTo(128, 236, 192, 210);
+    g.stroke();
+    return c;
+  }
+  function mouthCanvas(open) {
+    const c = document.createElement("canvas");
+    c.width = 160;
+    c.height = 120;
+    const g = c.getContext("2d");
+    g.strokeStyle = "#4a3a30";
+    g.fillStyle = "#8c4a48";
+    if (!open) {
+      g.lineWidth = 14;
+      g.lineCap = "round";
+      g.beginPath();
+      g.moveTo(44, 46);
+      g.quadraticCurveTo(80, 78, 116, 44);
+      g.stroke();
+      return c;
+    }
+    g.beginPath();
+    g.ellipse(80, 60, 34, 30, 0, 0, TAU);
+    g.fill();
+    g.fillStyle = "#c2706c";
+    g.beginPath();
+    g.ellipse(80, 76, 22, 12, 0, 0, TAU);
+    g.fill();
+    return c;
+  }
+  function blushCanvas() {
+    const c = document.createElement("canvas");
+    c.width = c.height = 128;
+    const g = c.getContext("2d");
+    const r = g.createRadialGradient(64, 64, 4, 64, 64, 62);
+    r.addColorStop(0, "rgba(233,132,124,0.86)");
+    r.addColorStop(0.55, "rgba(233,140,130,0.46)");
+    r.addColorStop(1, "rgba(233,140,130,0)");
+    g.fillStyle = r;
+    g.fillRect(0, 0, 128, 128);
+    return c;
+  }
+  function capeCanvas() {
+    const c = document.createElement("canvas");
+    c.width = 64;
+    c.height = 256;
+    const g = c.getContext("2d");
+    const grad = g.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, "#8fae6e");
+    grad.addColorStop(0.55, "#8cb59a");
+    grad.addColorStop(1, "#9fc4dc");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 256);
+    return c;
+  }
+  function canvasTex(canvas3, { flipY = true, repeat = null, offset = null } = {}) {
+    const t2 = new CanvasTexture(canvas3);
+    t2.colorSpace = SRGBColorSpace;
+    t2.flipY = flipY;
+    t2.anisotropy = 4;
+    if (repeat) t2.repeat.set(repeat[0], repeat[1]);
+    if (offset) t2.offset.set(offset[0], offset[1]);
+    return t2;
+  }
+  function patch(radius, phiMid, thetaMid, halfW, halfH, segW = 16, segH = 14) {
+    const g = new SphereGeometry(
+      radius,
+      segW,
+      segH,
+      phiMid - halfW,
+      halfW * 2,
+      thetaMid - halfH,
+      halfH * 2
+    );
+    return new Mesh(g, null);
+  }
+  function createNahida({ height = NOMINAL, x = 0, y = 0, z = 0 } = {}) {
     const root = new Group();
     root.position.set(x, y, z);
-    const base = { w: height, h: height };
-    const loaded = { ok: true };
-    const st = { t: 0, sing: 0, hover: 0, lift: 0 };
-    const apply = (k) => {
-      const w = base.w * k, h = base.h * k;
-      sprite.scale.set(w, h, 1);
-      const rw = w + RIM_D * 2, rh = h + RIM_D * 2;
-      rim.scale.set(rw, rh, 1);
-      rim.center.set(0.5, RIM_D / rh);
+    root.scale.setScalar(height / NOMINAL);
+    const materials = [];
+    const M = (opt) => {
+      const m = new MeshStandardMaterial({ toneMapped: true, ...opt });
+      materials.push(m);
+      return m;
     };
-    const texture = new TextureLoader().load(
-      url,
-      (t2) => {
-        const img = t2.image;
-        if (!img || !img.width) return;
-        base.w = height * (img.width / img.height);
-        base.h = height;
-        apply(1);
-      },
-      void 0,
-      () => {
-        loaded.ok = false;
-      }
+    const matSkin = M({ color: C.skin, roughness: 0.74, metalness: 0 });
+    const matSkinDark = M({ color: C.skinDark, roughness: 0.78, metalness: 0 });
+    const HAIR_FILL = { roughness: 0.58, metalness: 0.02, emissive: 4736578, emissiveIntensity: 0.45 };
+    const matHair = M({ color: C.hair, ...HAIR_FILL });
+    const matHairDark = M({ color: C.hairDark, ...HAIR_FILL });
+    const matHairTip = M({ color: 16777215, ...HAIR_FILL, vertexColors: true });
+    const matShirt = M({ color: C.shirt, roughness: 0.72, metalness: 0 });
+    const matShirtBoth = M({ color: C.shirt, roughness: 0.72, metalness: 0, side: DoubleSide });
+    const matShirtDark = M({ color: C.shirtDark, roughness: 0.76, metalness: 0 });
+    const matCollar = M({ color: C.collar, roughness: 0.66, metalness: 0 });
+    const matSkirt = M({ color: C.skirt, roughness: 0.78, metalness: 0, side: DoubleSide });
+    const matSkirtInner = M({ color: C.skirtInner, roughness: 0.8, metalness: 0, side: DoubleSide });
+    const matCape = M({ color: 16777215, roughness: 0.8, metalness: 0, side: DoubleSide, map: canvasTex(capeCanvas()) });
+    const matSilver = M({ color: C.silver, roughness: 0.35, metalness: 0.55 });
+    const matShoeWhite = M({ color: C.shoe, roughness: 0.5, metalness: 0.05 });
+    const matLeaf = M({ color: C.leaf, roughness: 0.62, metalness: 0, side: DoubleSide });
+    const matLeafLit = M({ color: C.leafLit, roughness: 0.66, metalness: 0, side: DoubleSide });
+    const matLeafDeep = M({ color: C.leafDeep, roughness: 0.6, metalness: 0, side: DoubleSide });
+    const matGold = M({ color: C.gold, roughness: 0.34, metalness: 0.28 });
+    const leafMats = [matLeaf, matLeafLit, matLeafDeep];
+    for (const m of leafMats) m.emissiveIntensity = 0.08;
+    const HEAD_R = 0.95, HEAD_Y = 4.96;
+    const HAIR_R2 = 1.01;
+    const NECK_Y = 3.78;
+    const SHOULDER_Y = 3.66, SHOULDER_X = 0.5;
+    const head = new Group();
+    head.position.y = HEAD_Y;
+    root.add(head);
+    const skull = ball(HEAD_R, matSkin, 1, 1.03, 0.97, 30);
+    head.add(skull);
+    const jaw = ball(HEAD_R * 0.72, matSkin, 1, 0.86, 1.02, 20);
+    jaw.position.set(0, -HEAD_R * 0.44, 0.04);
+    head.add(jaw);
+    function earShape() {
+      const s = new Shape();
+      s.moveTo(0, 0);
+      s.bezierCurveTo(0.125, 0.03, 0.15, 0.2, 0.1, 0.34);
+      s.bezierCurveTo(0.068, 0.43, 0.03, 0.5, -0.01, 0.5);
+      s.bezierCurveTo(-0.062, 0.49, -0.108, 0.31, -0.115, 0.16);
+      s.bezierCurveTo(-0.12, 0.05, -0.07, -0.015, 0, 0);
+      s.closePath();
+      return s;
+    }
+    const EAR_TILT = 0.42;
+    const UP = new Vector3(0, 1, 0);
+    for (const side of [-1, 1]) {
+      const base = hp(side * 1.15, -0.1, 0.9);
+      const growth = base.clone().normalize().multiplyScalar(Math.cos(EAR_TILT)).addScaledVector(UP, Math.sin(EAR_TILT)).normalize();
+      const nrm = new Vector3(side * 0.42, 0.06, 0.9);
+      nrm.addScaledVector(growth, -nrm.dot(growth)).normalize();
+      const width = new Vector3().crossVectors(growth, nrm).normalize();
+      const e = plate(earShape(), 0.055, matSkin, { bevel: 0.022 });
+      e.position.copy(base);
+      e.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(width, growth, nrm));
+      head.add(e);
+    }
+    const FRONT = Math.PI / 2;
+    const EYE_YAW = 0.34, EYE_TH = Math.PI / 2 + 0.3;
+    const eyeHalfW = 0.315, eyeHalfH = 0.359;
+    const eyeTexOpen = canvasTex(eyeCanvas(true));
+    const eyeTexShut = canvasTex(eyeCanvas(false));
+    const eyes = [];
+    for (const side of [-1, 1]) {
+      const mat = new MeshBasicMaterial({ map: eyeTexOpen, transparent: true, toneMapped: true });
+      const e = patch(HEAD_R * 1.004, FRONT + side * EYE_YAW, EYE_TH, eyeHalfW, eyeHalfH);
+      e.material = mat;
+      e.renderOrder = 2;
+      head.add(e);
+      eyes.push({ mesh: e, mat });
+    }
+    const blush = [];
+    for (const side of [-1, 1]) {
+      const mat = new MeshBasicMaterial({
+        map: canvasTex(blushCanvas()),
+        transparent: true,
+        opacity: 0.75,
+        depthWrite: false,
+        toneMapped: true
+      });
+      const b = patch(HEAD_R * 1.003, FRONT + side * 0.6, Math.PI / 2 + 0.5, 0.17, 0.13, 10, 8);
+      b.material = mat;
+      b.renderOrder = 2;
+      head.add(b);
+      blush.push(b);
+    }
+    const mouthMatShut = new MeshBasicMaterial({
+      map: canvasTex(mouthCanvas(false)),
+      transparent: true,
+      depthWrite: false,
+      toneMapped: true
+    });
+    const mouthMatOpen = new MeshBasicMaterial({
+      map: canvasTex(mouthCanvas(true)),
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      toneMapped: true
+    });
+    const mouth = patch(HEAD_R * 1.006, FRONT, Math.PI / 2 + 0.68, 0.2, 0.13, 14, 12);
+    mouth.material = mouthMatShut;
+    mouth.renderOrder = 3;
+    head.add(mouth);
+    const mouth2 = patch(HEAD_R * 1.007, FRONT, Math.PI / 2 + 0.68, 0.2, 0.13, 14, 12);
+    mouth2.material = mouthMatOpen;
+    mouth2.renderOrder = 3;
+    head.add(mouth2);
+    const hair = new Group();
+    head.add(hair);
+    const cap = new Mesh(
+      new SphereGeometry(HAIR_R2 * 1.004, 30, 20, 0, TAU, 0, Math.PI * 0.4),
+      matHair
     );
-    texture.colorSpace = SRGBColorSpace;
-    texture.anisotropy = 4;
-    const material = new SpriteMaterial({
-      map: texture,
-      transparent: true,
-      depthWrite: false,
-      toneMapped: true
+    cap.castShadow = true;
+    cap.scale.set(1, 1.09, 1);
+    hair.add(cap);
+    const back = new Mesh(
+      new SphereGeometry(HAIR_R2, 30, 18, FRONT + 0.78, TAU - 1.56, Math.PI * 0.26, Math.PI * 0.52),
+      matHair
+    );
+    back.castShadow = true;
+    hair.add(back);
+    const forehead = new Mesh(
+      new SphereGeometry(HAIR_R2 * 0.97, 30, 16, FRONT - 0.8, 1.6, Math.PI * 0.28, Math.PI * 0.225),
+      matHairDark
+    );
+    forehead.castShadow = true;
+    hair.add(forehead);
+    const nape = ball(HAIR_R2 * 0.94, matHair, 1, 0.72, 1);
+    nape.position.set(0, -HAIR_R2 * 0.52, -HAIR_R2 * 0.34);
+    hair.add(nape);
+    const bangs = new Group();
+    hair.add(bangs);
+    const WIDE = 1.28, DEEP = 0.55;
+    const FR = HAIR_R2 + 5e-3;
+    const FRINGE = [
+      // yaw at the root, yaw at the tip, latitude at the root, at the tip, radius
+      [0, 0.02, 0.92, -0.28, 0.165],
+      // centre: ends between the eyes
+      [-0.22, -0.88, 0.84, -0.2, 0.215],
+      [0.22, 0.88, 0.84, -0.2, 0.215],
+      [-0.54, -1.32, 0.74, -0.16, 0.195],
+      [0.54, 1.32, 0.74, -0.16, 0.195]
+    ];
+    for (const [yawR, yawT, latR, latT, rad] of FRINGE) {
+      const pts = [];
+      for (let i = 0; i <= 4; i++) {
+        const u = i / 4;
+        const yaw = yawR + (yawT - yawR) * Math.pow(u, 1.4);
+        const lat = latR + (latT - latR) * Math.pow(u, 0.8);
+        pts.push(hp(yaw, lat, FR));
+      }
+      const m = new Mesh(lock(new CatmullRomCurve3(pts), {
+        segs: 30,
+        rad,
+        cols: 18,
+        flat: WIDE,
+        deep: DEEP,
+        taper: 0.34,
+        capA: 0.9,
+        capB: 1,
+        out: "radial"
+      }), matHair);
+      m.castShadow = true;
+      bangs.add(m);
+    }
+    for (const side of [-1, 1]) {
+      const pts = [];
+      for (let i = 0; i <= 5; i++) {
+        const u = i / 5;
+        pts.push(hp(side * (0.82 + 0.2 * u * u), 0.7 - 1.7 * Math.pow(u, 0.92), FR));
+      }
+      const g = lock(new CatmullRomCurve3(pts), {
+        segs: 34,
+        rad: 0.165,
+        cols: 16,
+        flat: 1.15,
+        deep: 0.55,
+        taper: 0.26,
+        capA: 0.9,
+        capB: 1,
+        out: "radial"
+      });
+      tipPaint(g, (i) => g.attributes.uv.getY(i), 0.32, C.hairTip);
+      const m = new Mesh(g, matHairTip);
+      m.castShadow = true;
+      hair.add(m);
+    }
+    for (const side of [-1, 1]) {
+      const pts = [
+        hp(side * 1.16, 0.22, HAIR_R2 + 0.02),
+        hp(side * 1.25, 0, HAIR_R2 + 0.022),
+        hp(side * 1.34, -0.22, HAIR_R2 + 0.024)
+      ];
+      hair.add(new Mesh(lock(new CatmullRomCurve3(pts), {
+        segs: 16,
+        rad: 0.105,
+        cols: 12,
+        flat: 1.1,
+        deep: 0.55,
+        taper: 0.3,
+        capA: 0.9,
+        capB: 1,
+        out: "radial"
+      }), matHairDark));
+    }
+    const tailPivot = new Group();
+    tailPivot.position.set(HAIR_R2 * 0.73, HAIR_R2 * 0.58, -HAIR_R2 * 0.38);
+    hair.add(tailPivot);
+    const tailCurve = new CatmullRomCurve3([
+      new Vector3(0, 0, 0),
+      new Vector3(0.1, 0.22, -0.13),
+      new Vector3(0.22, -0.22, -0.21),
+      new Vector3(0.3, -0.86, -0.18),
+      new Vector3(0.28, -1.5, -0.06),
+      new Vector3(0.18, -2.06, 0.08),
+      new Vector3(0.06, -2.44, 0.18)
+    ]);
+    const tailGeom = lock(tailCurve, {
+      segs: 40,
+      rad: 0.315,
+      cols: 16,
+      flat: 0.92,
+      prof: (t2) => 0.94 + 0.06 * Math.sin(Math.PI * t2),
+      taper: 0.42,
+      capA: 0.8,
+      capB: 1.15
     });
-    const sprite = new Sprite(material);
-    sprite.center.set(0.5, 0);
-    sprite.scale.set(base.w, base.h, 1);
-    root.add(sprite);
-    const rimMaterial = new SpriteMaterial({
-      map: texture,
-      transparent: true,
-      depthWrite: false,
-      toneMapped: true
+    tipPaint(tailGeom, (i) => tailGeom.attributes.uv.getY(i), 0.58, C.hairTip);
+    const tail = new Mesh(tailGeom, matHairTip);
+    tail.castShadow = true;
+    tailPivot.add(tail);
+    const ridgeGeom = lock(ropeStrand(tailCurve, 44, 0.52, 2.3, 0), {
+      segs: 64,
+      rad: 0.082,
+      cols: 10,
+      flat: 0.9,
+      taper: 0.3,
+      capA: 0,
+      capB: 1
     });
-    const rim = new Sprite(rimMaterial);
-    rim.renderOrder = -1;
-    root.add(rim);
-    apply(1);
+    tipPaint(ridgeGeom, (i) => ridgeGeom.attributes.uv.getY(i), 0.52, C.hairTip);
+    const ridge = new Mesh(ridgeGeom, matHairTip);
+    ridge.castShadow = true;
+    tailPivot.add(ridge);
+    for (const [side, off, sc] of [[1, 0.72, 1], [-1, 0.62, 0.78]]) {
+      const pts = [];
+      for (let i = 0; i <= 6; i++) {
+        const t2 = 0.16 + 0.8 * (i / 6);
+        const p = tailCurve.getPoint(t2).clone();
+        const q = tailCurve.getPoint(Math.min(1, t2 + 0.02));
+        const tang = q.sub(tailCurve.getPoint(Math.max(0, t2 - 0.02))).normalize();
+        const side3 = new Vector3(0, 1, 0).cross(tang).normalize();
+        p.addScaledVector(side3, side * 0.3 * sc * (0.4 + 0.6 * (i / 6)));
+        pts.push(p);
+      }
+      const g = lock(new CatmullRomCurve3(pts), {
+        segs: 26,
+        rad: 0.075 * sc,
+        cols: 10,
+        flat: 1,
+        taper: 0.45,
+        capA: 0.9,
+        capB: 1
+      });
+      tipPaint(g, (i) => g.attributes.uv.getY(i), 0.55, C.hairTip);
+      const m = new Mesh(g, matHairTip);
+      m.castShadow = true;
+      tailPivot.add(m);
+    }
+    const braidCurve = new CatmullRomCurve3([
+      new Vector3(-0.3, 0.94, 0.2),
+      // over the crown, just off centre
+      new Vector3(-0.72, 0.74, 0.29),
+      new Vector3(-0.98, 0.22, 0.23),
+      new Vector3(-1.01, -0.32, 0.07),
+      new Vector3(-0.86, -0.78, -0.1)
+    ]);
+    for (const phase of [0, Math.PI]) {
+      const g = lock(ropeStrand(braidCurve, 34, 0.15, 3, phase), {
+        segs: 62,
+        rad: 0.086,
+        cols: 10,
+        flat: 1,
+        taper: 0.32,
+        capA: 0.8,
+        capB: 1
+      });
+      tipPaint(g, (i) => g.attributes.uv.getY(i), 0.42, C.hairTip);
+      const m = new Mesh(g, matHairTip);
+      m.castShadow = true;
+      hair.add(m);
+    }
+    const crown = new Group();
+    crown.position.set(HAIR_R2 * 0.74, HAIR_R2 * 0.6, -HAIR_R2 * 0.38);
+    hair.add(crown);
+    for (const side of [-1, 1]) {
+      const wing = leafMesh(0.3, 0.2, matShirtBoth, { curve: 0.16 });
+      wing.rotation.set(-0.55, side * 0.5, side * 2.25);
+      wing.position.set(side * 0.09, 0.02, 0.02);
+      crown.add(wing);
+      const tail2 = leafMesh(0.26, 0.09, matShirtBoth, { curve: 0.3 });
+      tail2.rotation.set(-0.2, side * 0.25, side * 0.55 + 0.35);
+      tail2.position.set(side * 0.07, -0.16, 0.03);
+      crown.add(tail2);
+    }
+    const knot = ball(0.085, matShirtBoth, 1.15, 1, 0.7, 12);
+    knot.position.set(0, 0.02, 0.03);
+    crown.add(knot);
+    const ring = new Mesh(new TorusGeometry(0.115, 0.026, 6, 16), matGold);
+    ring.rotation.set(1.15, 0, 0);
+    ring.position.set(0, -0.1, 0.05);
+    crown.add(ring);
+    const clip = new Group();
+    clip.position.set(-HAIR_R2 * 0.9, HAIR_R2 * 0.06, -0.06);
+    clip.rotation.set(0, -0.5, 0.35);
+    hair.add(clip);
+    for (const [rot, len, mat] of [[-0.5, 0.34, matLeafDeep], [0.35, 0.28, matLeaf]]) {
+      const lf = leafMesh(len, 0.19, mat, { curve: 0.2 });
+      lf.rotation.set(-0.4, 0, rot);
+      clip.add(lf);
+    }
+    const body = new Group();
+    root.add(body);
+    const neck = limb(new Vector3(0, NECK_Y - 0.28, 0), new Vector3(0, NECK_Y + 0.24, 0), 0.24, 0.21, matSkin);
+    body.add(neck);
+    const bodiceProfile = [
+      [0.44, 2.4],
+      [0.5, 2.6],
+      [0.48, 2.8],
+      [0.53, 3.02],
+      [0.62, 3.24],
+      [0.6, 3.44],
+      [0.42, 3.62],
+      [0.24, 3.74]
+    ].map(([r, yy]) => new Vector2(r, yy));
+    const bodice = new Mesh(new LatheGeometry(bodiceProfile, 26), matShirt);
+    bodice.castShadow = true;
+    body.add(bodice);
+    function shirtR(y2) {
+      const p = bodiceProfile;
+      if (y2 <= p[0].y) return p[0].x;
+      for (let i = 1; i < p.length; i++) {
+        if (y2 <= p[i].y) {
+          const k = (y2 - p[i - 1].y) / (p[i].y - p[i - 1].y);
+          return lerp2(p[i - 1].x, p[i].x, k);
+        }
+      }
+      return p[p.length - 1].x;
+    }
+    const collarBand = new Mesh(
+      new CylinderGeometry(0.25, 0.32, 0.2, 22, 1, true),
+      matCollar
+    );
+    collarBand.position.y = 3.72;
+    body.add(collarBand);
+    const gem = ball(0.085, matLeaf, 1, 1.25, 0.7, 12);
+    gem.position.set(0, 3.5, shirtR(3.5) + 0.05);
+    body.add(gem);
+    const gemSet = new Mesh(new TorusGeometry(0.078, 0.02, 6, 14), matGold);
+    gemSet.rotation.x = 0.28;
+    gemSet.position.set(0, 3.5, shirtR(3.5) + 0.048);
+    body.add(gemSet);
+    for (const side of [-1, 1]) {
+      const ep = leafMesh(0.46, 0.3, matLeaf, { curve: 0.26 });
+      ep.position.set(side * 0.34, 3.62, 0.08);
+      ep.rotation.set(-0.55, side * 0.15, side * -1.3);
+      body.add(ep);
+    }
+    const skirt = new Mesh(pleatedSkirt({
+      rTop: 0.5,
+      rBot: 1.26,
+      yTop: 2.46,
+      yBot: 1.5,
+      folds: 14,
+      depth: 0.115,
+      rows: 8
+    }), matSkirt);
+    skirt.castShadow = true;
+    body.add(skirt);
+    const lining = new Mesh(
+      new CylinderGeometry(1.29, 1.12, 0.26, 30, 1, true),
+      matSkirtInner
+    );
+    lining.position.y = 1.44;
+    body.add(lining);
+    const waist = new Mesh(new CylinderGeometry(0.545, 0.525, 0.1, 26, 1, true), matCollar);
+    waist.position.y = 2.45;
+    body.add(waist);
+    for (const side of [-1, 1]) {
+      const g = new PlaneGeometry(0.95, 1.9, 6, 12);
+      const p = g.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const x2 = p.getX(i), y2 = p.getY(i);
+        const t2 = 1 - (y2 + 0.95) / 1.9;
+        const flare = 1 + 0.75 * t2 * t2;
+        p.setX(i, x2 * flare);
+        p.setZ(i, -0.3 * t2 * t2 - 0.12 * (x2 / 0.39) * (x2 / 0.39) * t2);
+        p.setY(i, y2 - 0.2 * t2 * t2);
+      }
+      g.computeVertexNormals();
+      const cape = new Mesh(g, matCape);
+      cape.position.set(side * 0.4, 2.62, -0.4);
+      cape.rotation.set(0.16, side * 0.3, side * 0.34);
+      cape.castShadow = true;
+      body.add(cape);
+      const mount = leafMesh(0.3, 0.2, matLeaf, { curve: 0.24 });
+      mount.position.set(side * 0.36, 3.52, -0.18);
+      mount.rotation.set(-1.9, 0, side * -0.9);
+      body.add(mount);
+    }
+    const arms = [];
+    for (const side of [-1, 1]) {
+      const pivot = new Group();
+      pivot.position.set(side * SHOULDER_X, SHOULDER_Y, 0);
+      body.add(pivot);
+      const upper = limb(new Vector3(0, 0, 0), new Vector3(side * 0.09, -0.6, 0.05), 0.135, 0.115, matSkin);
+      pivot.add(upper);
+      const sleeve = limb(new Vector3(0, 0.06, 0), new Vector3(side * 0.05, -0.32, 0.03), 0.215, 0.165, matShirt);
+      pivot.add(sleeve);
+      const cuff = new Mesh(new TorusGeometry(0.172, 0.036, 8, 18), matShirt);
+      cuff.rotation.x = Math.PI / 2;
+      cuff.position.set(side * 0.05, -0.32, 0.03);
+      pivot.add(cuff);
+      const fore = new Group();
+      fore.position.set(side * 0.09, -0.6, 0.05);
+      pivot.add(fore);
+      const lower = limb(new Vector3(0, 0, 0), new Vector3(side * 0.05, -0.54, 0.08), 0.115, 0.095, matSkin);
+      fore.add(lower);
+      const hand = ball(0.14, matSkin, 1, 1.1, 0.85, 12);
+      hand.position.set(side * 0.05, -0.6, 0.09);
+      fore.add(hand);
+      const bangle = new Mesh(new TorusGeometry(0.128, 0.04, 8, 18), matSilver);
+      bangle.rotation.x = Math.PI / 2;
+      bangle.position.set(side * 0.04, -0.46, 0.07);
+      fore.add(bangle);
+      arms.push({ pivot, fore, side });
+    }
+    const legs = [];
+    for (const side of [-1, 1]) {
+      const pivot = new Group();
+      pivot.position.set(side * 0.22, 1.32, 0);
+      body.add(pivot);
+      const shin = limb(new Vector3(0, 0, 0), new Vector3(side * 0.02, -1.08, 0.03), 0.165, 0.135, matSkin);
+      pivot.add(shin);
+      const foot = ball(0.175, matSkin, 0.94, 0.62, 1.72, 14);
+      foot.position.set(side * 0.02, -1.14, 0.15);
+      pivot.add(foot);
+      const strap = new Mesh(new BoxGeometry(0.3, 0.055, 0.18), matShoeWhite);
+      strap.position.set(side * 0.02, -1.07, 0.13);
+      strap.castShadow = true;
+      pivot.add(strap);
+      const anklet = new Mesh(new TorusGeometry(0.142, 0.028, 8, 16), matGold);
+      anklet.rotation.x = Math.PI / 2;
+      anklet.position.set(side * 0.02, -0.96, 0.03);
+      pivot.add(anklet);
+      legs.push({ pivot, side });
+    }
+    const auraUniforms = {
+      uColor: { value: new Color(C.leafLit) },
+      uOpacity: { value: 0.4 }
+    };
+    const aura = new Mesh(
+      new SphereGeometry(HAIR_R2 * 1.07, 26, 20),
+      new ShaderMaterial({
+        uniforms: auraUniforms,
+        vertexShader: `
+        varying vec3 vN;
+        varying vec3 vV;
+        void main() {
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vN = normalize(mat3(modelMatrix) * normal);
+          vV = normalize(cameraPosition - wp.xyz);
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }`,
+        fragmentShader: `
+        uniform vec3 uColor;
+        uniform float uOpacity;
+        varying vec3 vN;
+        varying vec3 vV;
+        void main() {
+          float f = 1.0 - abs(dot(normalize(vN), normalize(vV)));
+          /* The floor is the whole difference between a contour and a hairline.
+             A bare fresnel is ~1 at the silhouette and ~0 a few pixels inside,
+             so what it draws is a one-pixel line -- measured: a dip of 13 levels
+             at 0.62 opacity, i.e. invisible in a white hall, and it took a
+             deliberately absurd setting (power 1.0, shell 1.30, opacity 0.95) to
+             prove the shader was even running. Lifting the floor to 0.70 makes
+             the shell render at nearly constant alpha, so the visible annulus is
+             a BAND whose width is the shell's radius and whose contrast is
+             uOpacity alone. Two numbers, two separate jobs.
+             (No backticks in here: this comment lives inside a JS template
+             literal, and one backtick ends the string. node --check does not
+             catch it -- the truncation still parses. esbuild does.) */
+          f = 0.70 + 0.30 * pow(clamp(f, 0.0, 1.0), 2.0);
+          gl_FragColor = vec4(uColor, f * uOpacity);
+          #include <tonemapping_fragment>
+          #include <colorspace_fragment>
+        }`,
+        transparent: true,
+        blending: NormalBlending,
+        side: BackSide,
+        depthWrite: false
+      })
+    );
+    aura.position.y = HEAD_Y;
+    aura.scale.set(1, 1.1, 1);
+    aura.renderOrder = -1;
+    root.add(aura);
+    const hit = new Mesh(
+      new CapsuleGeometry(1.15, 3.6, 6, 14),
+      new MeshBasicMaterial({ visible: false })
+    );
+    hit.position.y = 3.3;
+    hit.scale.set(1, 1, 0.92);
+    root.add(hit);
+    const st = {
+      t: 0,
+      sing: 0,
+      hover: 0,
+      lift: 0,
+      aim: 0,
+      aimX: 0,
+      aimY: 0,
+      beat: 0,
+      sway: 0,
+      blink: 0,
+      nextBlink: 2.2,
+      act: null,
+      // { name, t, dur }
+      tailSway: 0,
+      tailSwayV: 0
+    };
+    const ACTIONS = {
+      // name: [duration, how it drives the pose]
+      nod: [1.15, (p) => ({ headPitch: Math.sin(p * Math.PI * 1.6) * 0.3 })],
+      wave: [1.85, (p) => {
+        const up = smoothstep2(0, 0.18, p) * (1 - smoothstep2(0.84, 1, p));
+        const w = Math.sin(p * Math.PI * 5.2) * up;
+        return { armR: up, armRWave: w, headTilt: w * 0.1 };
+      }],
+      spin: [1.6, (p) => ({
+        spin: easeInOut(p) * Math.PI * 2,
+        hop: Math.sin(p * Math.PI) * 0.42
+      })],
+      jump: [1.25, (p) => ({
+        // crouch, launch, float, land — an asymmetric arc, not a sine
+        hop: p < 0.22 ? -0.3 * Math.sin(p / 0.22 * Math.PI * 0.5) : Math.sin((p - 0.22) / 0.78 * Math.PI) * 1.05,
+        armsUp: p < 0.22 ? 0 : smoothstep2(0.22, 0.4, p) * (1 - smoothstep2(0.72, 1, p))
+      })],
+      salute: [1.5, (p) => ({
+        // hand to the brow, hold, and a small bow on the way out
+        armR: smoothstep2(0, 0.22, p) * (1 - smoothstep2(0.76, 1, p)),
+        armRBend: -1.5,
+        bow: Math.sin(smoothstep2(0.3, 0.7, p) * Math.PI) * 0.16
+      })]
+    };
+    function easeInOut(p) {
+      return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    }
     return {
       root,
-      sprite,
-      material,
-      texture,
-      rim,
-      rimMaterial,
-      get ready() {
-        return loaded.ok;
+      hit,
+      aura,
+      materials,
+      head,
+      crown,
+      /* Two read-only numbers, and the only reason they are on the outside is
+         `tools/_sing.mjs`. It has to answer "is she singing, and does that move
+         her more" from outside a closure, and the honest way to do that is to read
+         the numbers `update` writes rather than to infer them from the picture —
+         the picture is what burned this project once already (the probe used to
+         measure her hover footprint, which was a proxy for her scale while she was
+         a billboard and stopped meaning anything the day she became a solid).
+         Nothing on the page reads these. */
+      get sing() {
+        return st.sing;
       },
-      /** `singing` and `hovered` are the caller's states; the easing lives here */
-      update(dt, singing, hovered) {
+      get bob() {
+        return st.bob;
+      },
+      ready: true,
+      /** a one-shot; re-pressing the same one restarts it, which is what a button
+          you can hit twice should do */
+      play(name) {
+        const a = ACTIONS[name];
+        if (!a) return false;
+        st.act = { name, t: 0, dur: a[0] };
+        return true;
+      },
+      get action() {
+        return st.act ? st.act.name : null;
+      },
+      /* A room has exactly two ways in to her, and they are the two the 2D version
+         had. `rim` / `rimOp` drive the aura — the same numbers, the same meaning,
+         a different machine (see the header). `tint` lands on the *leaf* accents
+         only, at a whisper: it is what stops her green reading as a sticker on a
+         white plate in 晴室 and as a lamp in 夜巢, without recolouring the
+         character herself. Nothing else about her is per-room, and that is
+         deliberate — a figure whose skin changes colour with the wallpaper is a
+         swatch, not a person. */
+      setRoom(rim, rimOpacity, tint, k) {
+        auraUniforms.uColor.value.lerp(rim, k);
+        auraUniforms.uOpacity.value = lerp2(auraUniforms.uOpacity.value, rimOpacity, k);
+        for (const m of leafMats) m.emissive.lerp(tint, k);
+      },
+      /* `aimX` / `aimY` are the pointer's offset from her on screen, -1..1;
+         `beat` is the audio envelope, 0..1; `beatOn` gates it so a silent page
+         does not sway to a level that happens to be non-zero. */
+      update(dt, { singing = false, hovered = false, aimX = 0, aimY = 0, beat = 0, beatOn = false } = {}) {
         st.t += dt;
         st.sing = damp2(st.sing, singing ? 1 : 0, 3, dt);
         st.hover = damp2(st.hover, hovered ? 1 : 0, 9, dt);
-        st.lift = damp2(st.lift, hovered ? 0.22 : 0, 7, dt);
+        st.lift = damp2(st.lift, hovered ? 0.24 : 0, 7, dt);
+        st.aim = damp2(st.aim, aimX || aimY ? 1 : 0, 4, dt);
+        st.aimX = damp2(st.aimX, clamp2(aimX, -1, 1), 5.5, dt);
+        st.aimY = damp2(st.aimY, clamp2(aimY, -1, 1), 5.5, dt);
+        st.beat = damp2(st.beat, beatOn ? clamp2(beat, 0, 1) : 0, 12, dt);
         const s = st.sing;
+        let o = {};
+        if (st.act) {
+          st.act.t += dt;
+          const p = clamp2(st.act.t / st.act.dur, 0, 1);
+          o = ACTIONS[st.act.name][1](p) || {};
+          if (p >= 1) st.act = null;
+        }
+        st.nextBlink -= dt;
+        if (st.nextBlink <= 0) {
+          st.blink = 0.13;
+          st.nextBlink = 2.4 + Math.random() * 3.6;
+        }
+        if (st.blink > 0) {
+          st.blink -= dt;
+          const shut = st.blink > 0 && st.blink < 0.13;
+          for (const e of eyes) e.mat.map = shut ? eyeTexShut : eyeTexOpen;
+        }
+        const openAmt = s * (0.2 + 0.8 * st.beat);
+        mouthMatOpen.opacity = openAmt;
+        mouthMatShut.opacity = 1 - openAmt * 0.72;
+        mouth.visible = mouthMatShut.opacity > 0.02;
         const speed = 1.05 + s * 1.45;
-        const bob = Math.sin(st.t * speed) * (0.09 + s * 0.26);
-        const breath = 1 + Math.sin(st.t * speed * 1.34) * (0.017 + s * 0.042);
-        const lean = Math.sin(st.t * speed * 0.61) * (0.5 + s * 1.5);
+        const bob = Math.sin(st.t * speed) * (0.075 + s * 0.2) + (o.hop || 0);
+        st.bob = bob;
+        const breath = 1 + Math.sin(st.t * speed * 1.34) * (0.014 + s * 0.03);
+        const idleLean = Math.sin(st.t * speed * 0.61) * (0.5 + s * 1.6);
+        const headYaw = st.aimX * 0.42 * st.aim + (o.headYaw || 0);
+        const headPitch = -st.aimY * 0.24 * st.aim + (o.headPitch || 0) + st.beat * 0.085 + (o.bow || 0);
+        const bodyYaw = st.aimX * 0.2 * st.aim + (o.spin || 0);
+        head.rotation.y = headYaw;
+        head.rotation.x = headPitch;
+        head.rotation.z = (idleLean + (o.headTilt || 0)) * Math.PI / 180;
+        body.rotation.y = bodyYaw;
+        body.scale.set(breath, 1 + (breath - 1) * 0.5, breath);
         root.position.y = y + bob + st.lift;
-        material.rotation = lean * Math.PI / 180;
-        apply(breath * (1 + st.hover * 0.035));
+        const drive = (o.spin ? 1.6 : 0) + st.aimX * st.aim * 0.5 + Math.sin(st.t * speed) * 0.22;
+        st.tailSwayV += (drive - st.tailSway) * 9 * dt;
+        st.tailSwayV *= Math.exp(-3.2 * dt);
+        st.tailSway += st.tailSwayV * dt * 6;
+        tailPivot.rotation.z = st.tailSway * 0.42;
+        tailPivot.rotation.x = -st.tailSway * 0.24 + st.beat * 0.06;
+        for (const a of arms) {
+          const isR = a.side > 0;
+          const idle = 0.16 + s * 0.3;
+          const up = isR ? o.armR || 0 : 0;
+          a.pivot.rotation.z = a.side * (idle + up * 2);
+          a.pivot.rotation.x = -s * 0.16 + (o.armsUp || 0) * -0.9;
+          a.fore.rotation.z = a.side * (-0.22 - s * 0.2) + (isR ? (o.armRWave || 0) * 0.5 + (o.armRBend || 0) * 0.4 : 0);
+          a.fore.rotation.x = -0.3 - s * 0.3;
+        }
+        for (const l of legs) {
+          l.pivot.rotation.x = 0.12 - s * 0.1 + (o.hop ? clamp2(o.hop, -1, 1) * -0.5 : 0);
+        }
+        crown.rotation.z = Math.sin(st.t * 6.2) * 0.02 + st.beat * 0.07 + st.aimX * 0.06;
+        crown.rotation.x = -st.beat * 0.06;
+        aura.scale.set(breath * 1, 1.1 * breath, breath);
+        aura.position.y = HEAD_Y + bob * 0.4;
       },
       dispose() {
-        texture.dispose();
-        material.dispose();
-        rimMaterial.dispose();
+        root.traverse((o) => {
+          if (o.geometry) o.geometry.dispose();
+        });
+        for (const m of materials) m.dispose();
+        aura.material.dispose();
+        hit.geometry.dispose();
+        hit.material.dispose();
+        eyeTexOpen.dispose();
+        eyeTexShut.dispose();
       }
     };
   }
@@ -35637,7 +36038,7 @@ void main() {
       shadowOp: 0.18,
       pool: 16777215,
       poolOp: 0.03,
-      spirit: { tint: 14605010, rim: 2763551, rimOp: 0.42 },
+      spirit: { tint: 14605010, rim: 2763551, rimOp: 0.26 },
       // the room the page opens in, so this is the one glare nobody should be
       // able to notice: a hint of a streak on the speculars and nothing else
       glare: { tint: [0.92, 0.95, 1], strength: 0.06, stride: 8e-3, threshold: 0.66 }
@@ -35671,7 +36072,7 @@ void main() {
       shadowOp: 0.22,
       pool: 6277352,
       poolOp: 0.06,
-      spirit: { tint: 14871280, rim: 3029562, rimOp: 0.38 },
+      spirit: { tint: 14871280, rim: 3029562, rimOp: 0.24 },
       glare: { tint: [0.62, 0.84, 1], strength: 0.22, stride: 0.011, threshold: 0.55 }
     }
   };
@@ -35986,7 +36387,7 @@ void main() {
     swap.meta = null;
     if (swap.dur > 0) {
       cas.st.duration = swap.dur;
-      swapText(brandCode, "SP\u2014" + tapeMinutes(swap.dur));
+      swapText(brandCode, "ND\u2014" + tapeMinutes(swap.dur));
     }
     setNowChip();
     flashAdd(null);
@@ -36036,7 +36437,7 @@ void main() {
     cas.commitLabel();
     for (const t2 of staged.old) t2.dispose();
     cas.warmLabel(false);
-    swapText(brandCode, "SP\u2014" + T.minutes);
+    swapText(brandCode, "ND\u2014" + T.minutes);
     setNowChip();
     swap.dur = 0;
   }
@@ -36075,11 +36476,11 @@ void main() {
       if (Q.get("f") === "1") setFlip(true, true);
       if (Q.get("x") === "1") setExplode(true, true);
     }
-    if (Q.has("r")) {
-      const r = RECORDS.findIndex((x) => x.no === Q.get("r").padStart(2, "0"));
+    if (Q.has("m")) {
+      const r = MOVES.findIndex((x) => x.no === Q.get("m").padStart(2, "0"));
       if (r >= 0) {
         ri = r;
-        readRecord(true, camera2);
+        doMove(true, camera2);
       }
     }
     if (Q.get("p") === "1") togglePlay(true);
@@ -36264,11 +36665,7 @@ void main() {
     if (composer?.ao) composer.ao.strength = to(composer.ao.strength, T.ao ?? 1);
     poolMat.color.lerp(T.cPool, k);
     poolMat.opacity = to(poolMat.opacity, T.poolOp);
-    if (spirit) {
-      spirit.material.color.lerp(T.cTint, k);
-      spirit.rimMaterial.color.lerp(T.cRim, k);
-      spirit.rimMaterial.opacity = to(spirit.rimMaterial.opacity, T.spirit.rimOp);
-    }
+    if (spirit) spirit.setRoom(T.cRim, T.spirit.rimOp, T.cTint, k);
     if (backdropIn.visible) {
       const bm = backdropIn.material;
       bm.opacity = to(bm.opacity, 1);
@@ -36386,14 +36783,41 @@ void main() {
       currentName = side.url;
       audioEl.src = TRACK.src;
       audioEl.load();
-      swapText(brandCode, "SP\u2014" + TRACK.minutes);
+      swapText(brandCode, "ND\u2014" + TRACK.minutes);
     });
     await step("\u6B63\u5728\u5EFA\u7ACB\u51E0\u4F55\u4F53", 12, () => {
       cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: TRACK.minutes });
       scene.add(cas.root);
       cas.root.visible = TAPE_ON;
-      spirit = createSpirit({ url: "assets/spirit-cut.webp", height: SPIRIT_H, y: FLOOR_Y });
+      spirit = createNahida({ height: SPIRIT_H, y: FLOOR_Y });
       scene.add(spirit.root);
+      {
+        const T = THEMES[themeName];
+        spirit.setRoom(T.cRim, T.spirit.rimOp, T.cTint, 1);
+      }
+      Object.defineProperty(window, "__spirit", {
+        configurable: true,
+        value: {
+          get sing() {
+            return spirit ? spirit.sing : null;
+          },
+          get bob() {
+            return spirit ? spirit.bob : null;
+          },
+          get action() {
+            return spirit ? spirit.action : null;
+          },
+          get aimX() {
+            return spiritAim.x;
+          },
+          get aimY() {
+            return spiritAim.y;
+          },
+          get hover() {
+            return spiritHover;
+          }
+        }
+      });
       rig = createRig(scene);
       renderer.shadowMap.autoUpdate = false;
       renderer.shadowMap.needsUpdate = true;
@@ -36446,8 +36870,8 @@ void main() {
       if (renderer.compileAsync) await renderer.compileAsync(scene, camera);
       else renderer.compile(scene, camera);
       for (const [o, src] of restore) o.material = src;
-      for (const R of RECORDS) {
-        applyFocus(R.key);
+      for (const M of MOVES) {
+        applyFocus(M.key ?? null);
         composer.composer.render();
       }
       applyFocus(null);
@@ -36511,112 +36935,64 @@ void main() {
   var exploded = false;
   var flipped = false;
   var autoRotate = false;
-  var RECORDS = [
-    {
-      no: "00",
-      cn: "\u7075\u5B9D",
-      en: "\u58F0\u4E4B\u7CBE\u7075 \xB7 I \u578B",
-      note: "\u7D20\u767D\u7684\u5934\u53D1\uFF0C\u9752\u7EFF\u7684\u53F6\u51A0\uFF0C\u8863\u4E0A\u843D\u7740\u4E00\u6574\u7247\u53F6\u8109\u3002\u5979\u7AD9\u5728\u58F0\u573A\u6B63\u4E2D\uFF0C\u628A\u6B63\u5728\u54CD\u7684\u90A3\u4E00\u6BB5\u5531\u6210\u770B\u5F97\u89C1\u7684\u6837\u5B50\u3002",
-      spec: [
-        ["\u672C\u4F53", "\u58F0\u4E4B\u7CBE\u7075 \xB7 I \u578B"],
-        ["\u4F53\u9AD8", "6.40"],
-        ["\u7D20\u767D", "#EBE9E9"],
-        ["\u9752\u7EFF", "#6F9457"],
-        ["\u63CF\u8FB9", "#2A2B1F"]
-      ],
-      act: "\u5524\u9192\u7075\u5B9D",
-      key: null,
-      view: { theta: 0.62, phi: 1.03, radius: 33 },
-      viewName: "\u7B49\u8F74\u673A\u4F4D",
-      viewEn: "\u7B49\u89D2\u6295\u5F71"
-    },
+  var PROFILE = {
+    no: "00",
+    cn: "\u7EB3\u897F\u59B2",
+    en: "Nahida \xB7 \u5C0F\u5409\u7965\u8349\u738B",
+    spec: [
+      ["\u672C\u4F53", "\u8349\u5143\u7D20 \xB7 \u7CBE\u7075"],
+      ["\u522B\u79F0", "\u5C0F\u5409\u7965\u8349\u738B"],
+      ["\u4F53\u9AD8", "6.40"],
+      ["\u88D9\u767D", "#F6F4EF"],
+      ["\u9886\u7EFF", "#49684F"],
+      ["\u53D1\u68A2\u84DD", "#A9C4D8"]
+    ]
+  };
+  var MOVES = [
     {
       no: "01",
-      cn: "\u7075\u53D1",
-      en: "\u7D20\u767D\u77ED\u53D1 \xB7 \u4FA7\u8FAB",
-      note: "\u9F50\u8033\u7684\u7D20\u767D\u77ED\u53D1\uFF0C\u4E00\u4FA7\u7F16\u6210\u7EC6\u8FAB\u76D8\u8FC7\u989D\u89D2\u3002\u53D1\u68A2\u8DDF\u7740\u547C\u5438\u52A8\uFF0C\u52A8\u5F97\u6BD4\u4EBA\u6162\u534A\u62CD\u3002",
-      spec: [
-        ["\u53D1\u8272", "#EBE9E9"],
-        ["\u6697\u90E8", "#A4A5A1"],
-        ["\u5F62\u5236", "\u9F50\u8033 \xB7 \u4FA7\u8FAB"],
-        ["\u54CD\u5E94", "\u6EDE\u540E\u534A\u62CD"]
-      ],
-      act: "\u8BFB\u53D6\u7075\u53D1",
-      key: null,
-      view: { theta: 0.72, phi: 1.34, radius: 24 },
-      viewName: "\u4E13\u7528\u673A\u4F4D",
-      viewEn: "\u4FA7\u524D\u65B9"
+      k: "nod",
+      cn: "\u70B9\u5934",
+      en: "Nod",
+      view: { theta: 0.24, phi: 1.24, radius: 25 },
+      viewName: "\u8FD1\u666F\u673A\u4F4D",
+      viewEn: "\u6B63\u9762\u8FD1\u666F"
     },
     {
       no: "02",
-      cn: "\u7075\u51A0",
-      en: "\u4E09\u51FA\u590D\u53F6 \xB7 \u53F6\u51A0",
-      note: "\u4E00\u7247\u4E09\u51FA\u590D\u53F6\u659C\u7C2A\u5728\u53F3\u9B13\uFF0C\u53F6\u7F18\u538B\u6DF1\u7EFF\u63CF\u8FB9\uFF1B\u5DE6\u4FA7\u53E6\u6709\u4E00\u652F\u7EC6\u85E4\u987A\u7740\u53D1\u6D41\u76D8\u4E0A\u53BB\u3002",
-      spec: [
-        ["\u6750\u6599", "\u5E38\u7EFF\u53F6"],
-        ["\u5F62\u5236", "\u4E09\u51FA\u590D\u53F6"],
-        ["\u53F6\u9762", "#6F9457"],
-        ["\u53F6\u80CC", "#536232"],
-        ["\u63CF\u8FB9", "#4C5031"]
-      ],
-      act: "\u8BFB\u53D6\u7075\u51A0",
-      key: null,
-      view: { theta: 0.88, phi: 1.3, radius: 21 },
-      viewName: "\u4E13\u7528\u673A\u4F4D",
-      viewEn: "\u51A0\u90E8"
+      k: "wave",
+      cn: "\u6325\u624B",
+      en: "Wave",
+      view: { theta: 0.06, phi: 1.3, radius: 30 },
+      viewName: "\u6B63\u89C6\u673A\u4F4D",
+      viewEn: "\u6B63\u7ACB\u9762"
     },
     {
       no: "03",
-      cn: "\u7075\u77B3",
-      en: "\u56DB\u53F6\u8349\u77B3",
-      note: "\u9752\u7EFF\u7684\u77B3\u4EC1\u91CC\u5404\u5D4C\u4E00\u679A\u56DB\u53F6\u8349\uFF0C\u8FB9\u7F18\u538B\u4E00\u5708\u6DF1\u7EFF\u3002\u5979\u770B\u8FC7\u6765\u7684\u65F6\u5019\uFF0C\u90A3\u4E24\u679A\u8349\u662F\u8F6C\u7684\u3002",
-      spec: [
-        ["\u77B3\u8272", "#6F9457"],
-        ["\u7EB9\u6837", "\u56DB\u53F6\u8349"],
-        ["\u9AD8\u5149", "#EBE9E9"],
-        ["\u63CF\u8FB9", "#374923"]
-      ],
-      act: "\u8BFB\u53D6\u7075\u77B3",
-      key: null,
-      view: { theta: 0.5, phi: 1.42, radius: 20.5 },
-      viewName: "\u4E13\u7528\u673A\u4F4D",
-      viewEn: "\u9762\u90E8"
+      k: "spin",
+      cn: "\u8F6C\u4E2A\u5708",
+      en: "Twirl",
+      view: { theta: 0.62, phi: 1.16, radius: 32 },
+      viewName: "\u73AF\u7ED5\u673A\u4F4D",
+      viewEn: "\u7B49\u89D2\u6295\u5F71"
     },
     {
       no: "04",
-      cn: "\u7075\u8863",
-      en: "\u53F6\u8109\u7EB9\u6837 \xB7 \u5C42\u53E0\u88D9",
-      note: "\u7D20\u767D\u5E95\u4E0A\u4E00\u5C42\u6D45\u9752\u53F6\u8109\uFF0C\u80F8\u524D\u4E00\u6392\u6DF1\u7EFF\u5B9D\u77F3\u6263\u3002\u88D9\u6446\u5206\u4E09\u5C42\uFF0C\u6BCF\u5C42\u6BD4\u4E0A\u4E00\u5C42\u591A\u4E00\u7247\u53F6\u3002",
-      spec: [
-        ["\u5E95\u8272", "#EBE9E9"],
-        ["\u53F6\u7EB9", "#B4CD94"],
-        ["\u5B9D\u77F3", "#536232"],
-        ["\u5C42\u6B21", "\u4E09\u5C42 \xB7 \u9010\u5C42\u52A0\u53F6"],
-        ["\u8170\u5E26", "\u7EC6\u91D1\u7EBF"]
-      ],
-      act: "\u8BFB\u53D6\u7075\u8863",
-      key: null,
-      view: { theta: 1.05, phi: 1.46, radius: 22 },
-      viewName: "\u4E13\u7528\u673A\u4F4D",
-      viewEn: "\u6B63\u9762\u5168\u8EAB"
+      k: "jump",
+      cn: "\u8DF3\u4E00\u8DF3",
+      en: "Hop",
+      view: { theta: 0.16, phi: 1.34, radius: 31 },
+      viewName: "\u5168\u8EAB\u673A\u4F4D",
+      viewEn: "\u4F4E\u673A\u4F4D"
     },
     {
       no: "05",
-      cn: "\u7075\u8776",
-      en: "\u4F34\u98DE\u9752\u8776",
-      note: "\u56DB\u53EA\u9752\u8776\u7ED5\u7740\u5979\u98DE\uFF0C\u79BB\u5F97\u6700\u8FD1\u7684\u90A3\u53EA\u603B\u5728\u6362\u3002\u5B83\u4EEC\u4E0D\u5403\u4E0D\u559D\uFF0C\u53EA\u542C\u8C03\u5B50\u8D77\u843D\u3002",
-      spec: [
-        ["\u6570\u91CF", "\u56DB\u53EA"],
-        ["\u7FC5\u8272", "#B4CD94"],
-        ["\u7FC5\u8109", "#6F9457"],
-        ["\u4E60\u6027", "\u968F\u97F3\u9AD8\u5347\u964D"],
-        ["\u79BB\u573A", "\u97F3\u4E50\u505C\u5373\u6563"]
-      ],
-      act: "\u8BFB\u53D6\u7075\u8776",
-      key: null,
-      view: { theta: 0.3, phi: 1.38, radius: 27 },
-      viewName: "\u4E13\u7528\u673A\u4F4D",
-      viewEn: "\u4FA7\u540E\u65B9"
+      k: "salute",
+      cn: "\u656C\u793C",
+      en: "Salute",
+      view: { theta: 0.44, phi: 1.3, radius: 27 },
+      viewName: "\u534A\u8EAB\u673A\u4F4D",
+      viewEn: "\u4FA7\u524D\u65B9"
     }
   ];
   var VANTAGES = [
@@ -36628,7 +37004,7 @@ void main() {
   var ri = 0;
   var vi = 0;
   var savedVi = 0;
-  var cur = () => RECORDS[ri];
+  var cur = () => MOVES[ri];
   var MACRO = VANTAGES.findIndex((v) => v.k === "detail");
   var D2 = {
     colCn: $("#col-cn"),
@@ -36655,13 +37031,13 @@ void main() {
     fold: $("#btn-fold")
   };
   D2.colN.textContent = String(VANTAGES.length).padStart(2, "0");
-  D2.selN.textContent = RECORDS[RECORDS.length - 1].no;
+  D2.selN.textContent = MOVES[MOVES.length - 1].no;
   var refRows = [];
   var ticks = [];
-  for (let i = 0; i < RECORDS.length; i++) {
-    const r = RECORDS[i];
+  for (let i = 0; i < MOVES.length; i++) {
+    const m = MOVES[i];
     const pick = () => {
-      if (i === ri) readRecord();
+      if (i === ri) doMove();
       else {
         ri = i;
         render(true);
@@ -36669,7 +37045,7 @@ void main() {
     };
     const b = document.createElement("button");
     b.className = "row";
-    b.innerHTML = `<span class="rn">${r.no}</span><span class="rt">${r.cn}</span><i class="rd"></i>`;
+    b.innerHTML = `<span class="rn">${m.no}</span><span class="rt">${m.cn}</span><i class="rd"></i>`;
     b.addEventListener("click", pick);
     const li = document.createElement("li");
     li.appendChild(b);
@@ -36677,8 +37053,8 @@ void main() {
     refRows.push(b);
     const t2 = document.createElement("button");
     t2.className = "tick";
-    t2.title = `${r.no} \xB7 ${r.cn}`;
-    t2.setAttribute("aria-label", `${r.no} ${r.cn}`);
+    t2.title = `${m.no} \xB7 ${m.cn}`;
+    t2.setAttribute("aria-label", `${m.no} ${m.cn}`);
     t2.addEventListener("click", pick);
     D2.cols.appendChild(t2);
     ticks.push(t2);
@@ -36979,19 +37355,19 @@ void main() {
     paintNo();
   }
   function render(bump = false) {
-    const R = cur();
+    const M = cur();
     const docH = D2.doc.getBoundingClientRect().height;
-    swapText(D2.colCn, R.cn);
-    setFileNo(R.no);
-    D2.fileCn.textContent = R.cn;
-    D2.fileEn.textContent = R.en;
-    D2.fileNote.textContent = R.note;
-    setRoll(D2.selI, R.no);
-    swapText(D2.accessLabel, R.act);
-    D2.access.classList.toggle("done", live(R, ri));
-    if (D2.fileSpec.dataset.no !== R.no) {
-      D2.fileSpec.dataset.no = R.no;
-      D2.fileSpec.replaceChildren(...R.spec.map(([k, v], i) => {
+    swapText(D2.colCn, PROFILE.cn);
+    setFileNo(PROFILE.no);
+    D2.fileCn.textContent = PROFILE.cn;
+    D2.fileEn.textContent = PROFILE.en;
+    D2.fileNote.textContent = PROFILE.note;
+    setRoll(D2.selI, M.no);
+    swapText(D2.accessLabel, `\u8BA9\u5979${M.cn}`);
+    D2.access.classList.toggle("done", live(M, ri));
+    if (D2.fileSpec.dataset.no !== PROFILE.no) {
+      D2.fileSpec.dataset.no = PROFILE.no;
+      D2.fileSpec.replaceChildren(...PROFILE.spec.map(([k, v], i) => {
         const li = document.createElement("li");
         li.style.setProperty("--i", i);
         li.innerHTML = `<span>${k}</span><b>${v}</b>`;
@@ -37001,27 +37377,29 @@ void main() {
     D2.dossier.classList.toggle("tight", vi === MACRO);
     const V = vi >= 0 ? VANTAGES[vi] : null;
     setRoll(D2.colI, V ? String(vi + 1).padStart(2, "0") : "--");
-    swapText(D2.colCn2, V ? V.cn : R.viewName);
-    swapText(D2.colEn, V ? V.en : R.viewEn);
-    for (let i = 0; i < RECORDS.length; i++) {
-      const l = live(RECORDS[i], i);
-      refRows[i].className = "row" + (i === ri ? " sel" : "") + (l ? " done" : "");
+    swapText(D2.colCn2, V ? V.cn : M.viewName);
+    swapText(D2.colEn, V ? V.en : M.viewEn);
+    for (let i = 0; i < MOVES.length; i++) {
+      const l = live(MOVES[i], i);
+      refRows[i].classList.toggle("sel", i === ri);
+      refRows[i].classList.toggle("done", l);
       ticks[i].className = "tick" + (i === ri ? " on" : "") + (l ? " done" : "");
     }
     syncIndexSel();
     if (bump) swapIn(docH);
   }
-  function readRecord(instant = false, moveCam = true) {
-    const R = cur();
+  function doMove(instant = false, moveCam = true) {
+    const M = cur();
     homeArmed = false;
-    applyFocus(R.key);
-    exploded = !!R.key;
-    cas.setExplode(exploded);
-    if (instant || reduce) cas.st.explode = cas.st.explodeTarget;
-    setPressed("#btn-explode", exploded);
+    if (spirit) spirit.play(M.k);
+    syncMoveButtons();
+    applyFocus(null);
+    exploded = false;
+    cas.setExplode(false);
+    setPressed("#btn-explode", false);
     if (moveCam) {
       vi = -1;
-      orbit.setPreset(R.view, instant);
+      orbit.setPreset(M.view, instant);
       if (!instant && orbit.tween) orbit.tween.dur = 1.6;
     }
     syncViewShift();
@@ -37031,8 +37409,8 @@ void main() {
     render(true);
     if (instant) snapFileNo();
   }
-  function moveRecord(d) {
-    ri = (ri + d + RECORDS.length) % RECORDS.length;
+  function stepMove(d) {
+    ri = (ri + d + MOVES.length) % MOVES.length;
     audio.tick();
     render(true);
   }
@@ -37081,22 +37459,26 @@ void main() {
   var indexCols = $("#index-cols");
   var indexOpen = false;
   function buildIndex() {
-    indexCols.replaceChildren(...RECORDS.map((R, x) => {
+    indexCols.replaceChildren(...MOVES.map((M, x) => {
       const d = document.createElement("div");
       d.className = "icol" + (x === ri ? " on" : "");
       d.style.setProperty("--i", x);
       const h = document.createElement("button");
       h.className = "icol-h";
-      h.innerHTML = `<span>${R.no} ${R.cn}</span><em>${R.en}</em>`;
+      h.innerHTML = `<span>${M.no} ${M.cn}</span><em>${M.en}</em>`;
       h.addEventListener("click", () => {
         ri = x;
         closeIndex();
-        readRecord();
+        doMove();
       });
       d.appendChild(h);
       const ul = document.createElement("ul");
       ul.className = "spec";
-      ul.replaceChildren(...R.spec.map(([k, v]) => {
+      ul.replaceChildren(...[
+        ["\u673A\u4F4D", M.viewName],
+        ["\u8DDD\u79BB", M.view.radius.toFixed(1)],
+        ["\u4FEF\u4EF0", M.view.phi.toFixed(2)]
+      ].map(([k, v]) => {
         const li = document.createElement("li");
         li.innerHTML = `<span>${k}</span><b>${v}</b>`;
         return li;
@@ -37430,27 +37812,60 @@ void main() {
       document.body.classList.add("moved");
     }
   });
-  $("#btn-access").addEventListener("click", () => readRecord());
+  $("#btn-access").addEventListener("click", () => doMove());
   $("#btn-index").addEventListener("click", toggleIndex);
   $("#index-close").addEventListener("click", closeIndex);
   $("#btn-reinit").addEventListener("click", reinit);
   var raycaster = new Raycaster();
   var pickNdc = new Vector2();
+  var headNdc = new Vector3();
   var spiritHover = false;
   var tapFrom = null;
   var lastTap = 0;
+  var spiritAim = { x: 0, y: 0 };
+  var AIM_GAIN = 1.45;
   function overSpirit(e) {
     if (!spirit) return false;
     pickNdc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     raycaster.setFromCamera(pickNdc, camera);
-    return raycaster.intersectObject(spirit.sprite, false).length > 0;
+    return raycaster.intersectObject(spirit.hit, false).length > 0;
+  }
+  function aimAt(e) {
+    if (!spirit) return;
+    pickNdc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+    spirit.head.getWorldPosition(headNdc);
+    headNdc.project(camera);
+    spiritAim.x = clamp2((pickNdc.x - headNdc.x) * AIM_GAIN, -1, 1);
+    spiritAim.y = clamp2((pickNdc.y - headNdc.y) * AIM_GAIN, -1, 1);
   }
   canvas2.addEventListener("pointermove", (e) => {
+    aimAt(e);
     const hit = overSpirit(e);
     if (hit === spiritHover) return;
     spiritHover = hit;
     document.body.classList.toggle("over-spirit", hit);
   });
+  canvas2.addEventListener("pointerleave", () => {
+    spiritAim.x = 0;
+    spiritAim.y = 0;
+    if (!spiritHover) return;
+    spiritHover = false;
+    document.body.classList.remove("over-spirit");
+  });
+  var GREETINGS = ["nod", "wave", "salute"];
+  var greetI = 0;
+  function greet() {
+    if (!spirit) return;
+    spirit.play(GREETINGS[greetI++ % GREETINGS.length]);
+    syncMoveButtons();
+  }
+  var litMove = null;
+  function syncMoveButtons() {
+    const a = spirit ? spirit.action : null;
+    if (a === litMove) return;
+    litMove = a;
+    for (let i = 0; i < MOVES.length; i++) refRows[i].classList.toggle("playing", MOVES[i].k === a);
+  }
   canvas2.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
     tapFrom = { x: e.clientX, y: e.clientY, t: performance.now() };
@@ -37465,8 +37880,8 @@ void main() {
     if (now - lastTap < 320) return;
     lastTap = now;
     if (!overSpirit(e)) return;
-    togglePlay();
     audio.tick();
+    greet();
     render();
   });
   canvas2.addEventListener("pointercancel", () => {
@@ -37582,8 +37997,8 @@ void main() {
   for (const b of document.querySelectorAll(".pk")) {
     b.addEventListener("click", () => {
       const a = b.dataset.act;
-      if (a === "prev-file") moveRecord(-1);
-      else if (a === "next-file") moveRecord(1);
+      if (a === "prev-file") stepMove(-1);
+      else if (a === "next-file") stepMove(1);
       else if (a === "prev-col") setVantage(vi - 1);
       else setVantage(vi + 1);
       b.classList.add("flash");
@@ -37612,18 +38027,18 @@ void main() {
     if (k === "Enter") {
       e.preventDefault();
       if (indexOpen) closeIndex();
-      readRecord();
+      doMove();
       return;
     }
     if (e.target?.type === "range") return;
     if (k === "ArrowUp") {
       e.preventDefault();
-      moveRecord(-1);
+      stepMove(-1);
       return;
     }
     if (k === "ArrowDown") {
       e.preventDefault();
-      moveRecord(1);
+      stepMove(1);
       return;
     }
     if (k === "ArrowLeft") {
@@ -37862,7 +38277,15 @@ void main() {
     cas.root.position.y = intro.y + bob - swap.press;
     cas.root.rotation.z = intro.tilt + (reduce ? 0 : Math.sin(t * 0.42) * 8e-3);
     cas.root.rotation.x = reduce ? 0 : Math.sin(t * 0.33 + 1.2) * 6e-3;
-    spirit.update(reduce ? 0 : dt, sheSings, spiritHover);
+    spirit.update(reduce ? 0 : dt, {
+      singing: sheSings,
+      hovered: spiritHover,
+      aimX: spiritAim.x,
+      aimY: spiritAim.y,
+      beat: viz.pulse,
+      beatOn: !reduce && vizOn() && musicLive
+    });
+    syncMoveButtons();
     if (!reduce) {
       driftDust(dt * (1 + 0.6 * lv[0]), t);
     }
@@ -37883,7 +38306,7 @@ void main() {
     }
     syncPanelGive();
     syncPanelFold();
-    const subject = TAPE_ON ? cas.root : spirit.root;
+    const subject = TAPE_ON ? cas.root : spirit.hit;
     subject.getWorldPosition(subjectPos).project(camera);
     grade.uniforms.uCenter.value.set(subjectPos.x * 0.5 + 0.5, subjectPos.y * 0.5 + 0.5);
     watchPerf(dt);
@@ -37910,7 +38333,7 @@ void main() {
       setRoll(clockEl, cs);
       syncNowTrack();
       const audioLive = audioOk() && !audioEl.paused && !audioEl.ended;
-      const title = audioLive ? `\u266A ${fmt(audioEl.currentTime)} \xB7 ${TRACK.title}` : `${TRACK.title} \u2014 \u7075\u5B9D`;
+      const title = audioLive ? `\u266A ${fmt(audioEl.currentTime)} \xB7 ${TRACK.title}` : `${TRACK.title} \u2014 \u7EB3\u897F\u59B2`;
       if (title !== lastTitle) {
         lastTitle = title;
         document.title = title;

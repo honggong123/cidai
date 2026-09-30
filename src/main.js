@@ -12,14 +12,14 @@ import { TapeAudio } from './audio.js';
 import { readTags, looksLikeAudio } from './tags.js';
 import { SIDES, loadSide as ensureSide, sideOf, trackAt } from './playlist.js';
 import { createViz } from './viz.js';
-import { createSpirit } from './spirit.js';
+import { createNahida } from './nahida.js';
 
 const $ = (s) => document.querySelector(s);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canvas = $('#gl');
 
 /* ============================== the tape is off ==========================
-   The subject of this page is 灵宝 now, and the cassette is kept rather than
+   The subject of this page is 纳西妲 now, and the cassette is kept rather than
    deleted: every part of it, its materials, its two reels' worth of animation
    and its two hundred lines of assembly are still here, one flag away. Nothing
    downstream has to be told the difference beyond this constant, which is why
@@ -202,7 +202,7 @@ const THEMES = {
     },
     floor2: 0xd6d8da, floorMix: 0.30, shadowOp: 0.18,
     pool: 0xffffff, poolOp: 0.03,
-    spirit: { tint: 0xdedad2, rim: 0x2a2b1f, rimOp: 0.42 },
+    spirit: { tint: 0xdedad2, rim: 0x2a2b1f, rimOp: 0.26 },
     // the room the page opens in, so this is the one glare nobody should be
     // able to notice: a hint of a streak on the speculars and nothing else
     glare: { tint: [0.92, 0.95, 1.0], strength: 0.06, stride: 0.008, threshold: 0.66 },
@@ -224,7 +224,7 @@ const THEMES = {
     },
     floor2: 0xc2ced8, floorMix: 0.34, shadowOp: 0.22,
     pool: 0x5fc8e8, poolOp: 0.06,
-    spirit: { tint: 0xe2eaf0, rim: 0x2e3a3a, rimOp: 0.38 },
+    spirit: { tint: 0xe2eaf0, rim: 0x2e3a3a, rimOp: 0.24 },
     glare: { tint: [0.62, 0.84, 1.0], strength: 0.22, stride: 0.011, threshold: 0.55 },
   },
 };
@@ -635,7 +635,7 @@ function settleSwap() {
   // was, and the card keeps the '--' it was printed with
   if (swap.dur > 0) {
     cas.st.duration = swap.dur;
-    swapText(brandCode, 'SP—' + tapeMinutes(swap.dur));
+    swapText(brandCode, 'ND—' + tapeMinutes(swap.dur));
   }
   setNowChip();
   flashAdd(null);
@@ -690,7 +690,7 @@ function reinitTrack() {
   cas.commitLabel();
   for (const t of staged.old) t.dispose();
   cas.warmLabel(false);
-  swapText(brandCode, 'SP—' + T.minutes);
+  swapText(brandCode, 'ND—' + T.minutes);
   setNowChip();
   swap.dur = 0;
 }
@@ -767,15 +767,15 @@ function applyQuery(camera = true) {
     if (Q.get('f') === '1') setFlip(true, true);
     if (Q.get('x') === '1') setExplode(true, true);
   }
-  // ?r=03 opens that record: the id, not the index, so a link keeps working
-  if (Q.has('r')) {
-    const r = RECORDS.findIndex((x) => x.no === Q.get('r').padStart(2, '0'));
-    if (r >= 0) { ri = r; readRecord(true, camera); }
+  // ?m=03 opens on that move: the id, not the index, so a link keeps working
+  if (Q.has('m')) {
+    const r = MOVES.findIndex((x) => x.no === Q.get('m').padStart(2, '0'));
+    if (r >= 0) { ri = r; doMove(true, camera); }
   }
   if (Q.get('p') === '1') togglePlay(true);
   if (Q.get('spin') === '1') setAuto(true);
   else if (Q.get('spin') === '0') setAuto(false);
-  render();          // 'v' and 'r' both move state the panel has to reflect
+  render();          // 'v' and 'm' both move state the panel has to reflect
 }
 
 /* ============================== annotations ============================= */
@@ -1037,22 +1037,17 @@ function applyTheme(dt, instant = false) {
   if (composer?.ao) composer.ao.strength = to(composer.ao.strength, T.ao ?? 1);
   poolMat.color.lerp(T.cPool, k);
   poolMat.opacity = to(poolMat.opacity, T.poolOp);
-  /* Her grade, and the only one a room has over her. A SpriteMaterial samples no
-     light and no environment — she is a photograph of a drawing, and nothing the
-     rig does reaches her — so two multiplies into `material.color` are the whole
-     of it. Which makes this load-bearing rather than decorative: 74% of her own
-     palette is near-white (see tools/key-spirit.py), and 晴室's wall is the same
-     near-white, so untinted she has no edge to be seen against. The light rooms
-     tint her *down*, the dark one leaves her alone and warms her a touch, and
-     every room walks to its own value over the same 1.4 s the lamps take.
-     The rim is the contour that puts the edge back — see the note in spirit.js
-     for why a cut-out needs one — and its colour is the room's: her own line
-     colour in the galleries, the room's gold in 夜巢. */
-  if (spirit) {
-    spirit.material.color.lerp(T.cTint, k);
-    spirit.rimMaterial.color.lerp(T.cRim, k);
-    spirit.rimMaterial.opacity = to(spirit.rimMaterial.opacity, T.spirit.rimOp);
-  }
+  /* Her grade, and the only one a room has over her. Two numbers, and they mean
+     what they meant when she was a billboard: how much edge this room needs her
+     to have. What changed is the machine. A SpriteMaterial samples no light and
+     no environment — she was a photograph of a drawing — so a multiply into
+     `material.color` was the whole of it. A 3D figure is *lit* by the rig, so
+     tinting her body would be a filter over a photograph of a lit object, which
+     is the one thing this page's lighting is careful never to do. Instead the
+     rim goes where an edge actually belongs on a solid: a fresnel shell around
+     her (`setRoom` in nahida.js), and the `tint` goes onto the leaf accents
+     alone, at a whisper. */
+  if (spirit) spirit.setRoom(T.cRim, T.spirit.rimOp, T.cTint, k);
   // the background crosses over on the same clock as everything else, and once
   // it has arrived the incoming room simply becomes the base. This replaces the
   // shutter dip that used to cover the map swap: there is nothing left to hide,
@@ -1235,7 +1230,7 @@ async function boot() {
     // counter's total.
     audioEl.src = TRACK.src;
     audioEl.load();
-    swapText(brandCode, 'SP—' + TRACK.minutes);
+    swapText(brandCode, 'ND—' + TRACK.minutes);
   });
   await step('正在建立几何体', 12, () => {
     cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: TRACK.minutes });
@@ -1251,8 +1246,44 @@ async function boot() {
        object lying at y ≈ 0 and the camera still looks there, which is what
        leaves her standing in the lower half of the frame with the room's height
        above her — the composition the shell had, kept. */
-    spirit = createSpirit({ url: 'assets/spirit-cut.webp', height: SPIRIT_H, y: FLOOR_Y });
+    /* She is built, not loaded: no mesh file, no texture file, no font — every
+       surface is a primitive or a canvas the page draws at boot (see
+       nahida.js). Which is why this line takes no URL and why the single-file
+       deliverable stayed single-file when she stopped being a billboard. */
+    spirit = createNahida({ height: SPIRIT_H, y: FLOOR_Y });
     scene.add(spirit.root);
+    /* The room she is born into. `applyTheme` already ran while the query string
+       was being read, which is *before* this line, so its `setRoom` found no
+       spirit and did nothing — leaving the aura on the pale placeholder colour.
+       In a white hall that means she glows instead of drawing a contour, and a
+       cold load would disagree with a theme switch. One call here fixes both. */
+    {
+      const T = THEMES[themeName];
+      spirit.setRoom(T.cRim, T.spirit.rimOp, T.cTint, 1);
+    }
+    /* One read-only hook, for the probes. `tools/_sing.mjs` has to ask "is she
+       singing, and does that move her more" from outside a closure, and every
+       number it wants is inside one. It writes nothing, the page never reads it,
+       and it exists because the alternative — inferring it from the picture —
+       already produced one false regression report: the probe measured her hover
+       footprint, which was a faithful proxy for her scale while she was a
+       billboard and became meaningless the day she turned into a solid.
+       `aimX` / `aimY` are here for the same reason `_sing` is: "she looks at the
+       pointer" is a claim about a *sign*, and a sign is exactly the kind of
+       thing that inverts in a refactor without anything on screen looking
+       obviously wrong. `tools/_pick.mjs` puts the pointer left of her and then
+       right of her and reads these. */
+    Object.defineProperty(window, '__spirit', {
+      configurable: true,
+      value: {
+        get sing() { return spirit ? spirit.sing : null; },
+        get bob() { return spirit ? spirit.bob : null; },
+        get action() { return spirit ? spirit.action : null; },
+        get aimX() { return spiritAim.x; },
+        get aimY() { return spiritAim.y; },
+        get hover() { return spiritHover; },
+      },
+    });
     rig = createRig(scene);
     // the shell only breathes slowly, so the shadow map does not need a full
     // re-render every frame — refresh it on alternate frames instead
@@ -1324,10 +1355,12 @@ async function boot() {
     // the spot. Measured: 75 programs after boot, +8 the first time 轮毂 is
     // read, +3 more for 上壳, and nothing at all on the second read of the same
     // record — i.e. they survive once built. So build them here and *use* them:
-    // one real frame per record, behind the loader, and every later click is
-    // free.
-    for (const R of RECORDS) {
-      applyFocus(R.key);
+    // one real frame per entry, behind the loader, and every later click is
+    // free. (This walks MOVES because MOVES is what is left of the record list;
+    // the count only has to be ≥ 1, since what is being kept alive is a program
+    // rather than a record.)
+    for (const M of MOVES) {
+      applyFocus(M.key ?? null);
       composer.composer.render();
     }
     applyFocus(null);
@@ -1422,82 +1455,67 @@ function runIntro() {
    tape simply holds still until something moves it. */
 let exploded = false, flipped = false, autoRotate = false;
 
-/* Six records, one per thing that is actually on her: the whole spirit, and the
-   five features the drawing is made of. A record carries its own sheet and its
-   own framing.
+/* ---------- the introduction: one page, and it does not change ----------
+   The plate used to file her under six headings — the whole spirit and the five
+   features the drawing was made of — one record per part, each with its own
+   sheet and its own framing. That was the right shape for a machine on a
+   plinth. She is not a machine and she does not come apart, so the six have
+   been folded back into the one thing they were all standing in for.
 
-   THE COLOURS ARE SAMPLED, NOT INVENTED. Every hex here came out of
-   `assets/spirit.png` (a histogram over the pixels that are inside her
-   silhouette — see the note in tools/key-spirit.py for how "inside" is decided),
-   so the archive describes the drawing rather than an idea of it:
-     素白 #EBE9E9 · 浅青 #B4CD94 · 青绿 #6F9457 · 苔绿 #536232 · 描边 #2A2B1F
-   The counts are counted the same way (four butterflies, three skirt tiers).
+   THE COLOURS ARE STILL SAMPLED, NOT INVENTED. Every hex below came out of the
+   reference she is keyed to — the official sculpt sheet (`_ref/ref-3d.png`,
+   the wireframe / clay / render triptych): gown white, deep-green collar,
+   cape green-to-blue, hair silver-white going lake-blue at the tips —
+   and `nahida.js` builds her out of the same set, so the archive
+   describes the model rather than an idea of it:
+     裙白 #F6F4EF · 领绿 #49684F · 披风 #8FAE6E→#9FC4DC
+     发梢湖蓝 #A9C4D8 · 描边 #2A2B1F
+   Two of them moved on purpose. The white is a hair cooler than the drawing's
+   #EBE9E9, which was a flat fill meant to be looked at; a lit solid needs a
+   base that is not already sitting on the top of the tone curve, or every
+   highlight clips and she reads as fog. And the greens are cloth greens —
+   deeper, greyer than the artwork's paint, for the same reason. */
+const PROFILE = {
+  no: '00',
+  cn: '纳西妲',
+  en: 'Nahida · 小吉祥草王',
+  spec: [
+    ['本体', '草元素 · 精灵'],
+    ['别称', '小吉祥草王'],
+    ['体高', '6.40'],
+    ['裙白', '#F6F4EF'],
+    ['领绿', '#49684F'],
+    ['发梢蓝', '#A9C4D8'],
+  ],
+};
 
-   WHAT `key` USED TO DO AND WHY IT IS NULL. It named the one part that stayed in
-   its true materials while the rest of the shell dropped back to a ghost, and
-   the framing then flew to that part. With the shell hidden there is nothing to
-   hold solid, so every record is `key: null` — which is also what makes
-   `applyFocus` a no-op and `exploded` permanently false. What is left of a
-   record is its sheet and its `view`, and that is enough: she is a billboard, so
-   the camera cannot orbit round to a feature, it can only come closer.
+/* ---------- the moves ----------
+   Five things she can be asked to do, and the one new part of the page. Each is
+   a small directed shot rather than a bare button: `cn` is what the panel
+   prints, `k` is the clip of the same name in `nahida.js`, and `view` is where
+   the lens goes to watch it. So picking one from the list, from the ticks, from
+   the keyboard, or by clicking her all land in the same three places, and there
+   is no second code path that can drift out of agreement with the first.
 
-   HOW CLOSE IT CAN COME IS A NUMBER, NOT A TASTE. She is 6.40 tall standing on
-   the floor with the lens aimed at y ≈ 0, and the frame at distance r is
-   `2·r·tan(15°)` tall — so at r the top of her head sits `(6.40 − 1.67·sin φ) /
+   HOW CLOSE THE LENS MAY COME IS A NUMBER, NOT A TASTE. She is 6.40 tall
+   standing on the floor with the lens aimed at y ≈ 0, and the frame at distance
+   r is `2·r·tan(15°)` tall — so at r her head sits `(6.40 − 1.67·sin φ) /
    (0.536 r)` of a frame-height above centre, and that has to stay under 0.5. At
    φ ≈ 1.4 (near eye level, where her feet drop the furthest below the aim) the
-   floor is r ≈ 18; every `view` below stays above 20. A tighter close-up would
-   need the aim itself to rise, which is a change to controls.js rather than to a
-   number here. */
-const RECORDS = [
-  {
-    no: '00', cn: '灵宝', en: '声之精灵 · I 型',
-    note: '素白的头发，青绿的叶冠，衣上落着一整片叶脉。她站在声场正中，把正在响的那一段唱成看得见的样子。',
-    spec: [['本体', '声之精灵 · I 型'], ['体高', '6.40'], ['素白', '#EBE9E9'],
-      ['青绿', '#6F9457'], ['描边', '#2A2B1F']],
-    act: '唤醒灵宝', key: null,
-    view: { theta: 0.62, phi: 1.03, radius: 33 }, viewName: '等轴机位', viewEn: '等角投影',
-  },
-  {
-    no: '01', cn: '灵发', en: '素白短发 · 侧辫',
-    note: '齐耳的素白短发，一侧编成细辫盘过额角。发梢跟着呼吸动，动得比人慢半拍。',
-    spec: [['发色', '#EBE9E9'], ['暗部', '#A4A5A1'], ['形制', '齐耳 · 侧辫'],
-      ['响应', '滞后半拍']],
-    act: '读取灵发', key: null,
-    view: { theta: 0.72, phi: 1.34, radius: 24 }, viewName: '专用机位', viewEn: '侧前方',
-  },
-  {
-    no: '02', cn: '灵冠', en: '三出复叶 · 叶冠',
-    note: '一片三出复叶斜簪在右鬓，叶缘压深绿描边；左侧另有一支细藤顺着发流盘上去。',
-    spec: [['材料', '常绿叶'], ['形制', '三出复叶'], ['叶面', '#6F9457'],
-      ['叶背', '#536232'], ['描边', '#4C5031']],
-    act: '读取灵冠', key: null,
-    view: { theta: 0.88, phi: 1.30, radius: 21 }, viewName: '专用机位', viewEn: '冠部',
-  },
-  {
-    no: '03', cn: '灵瞳', en: '四叶草瞳',
-    note: '青绿的瞳仁里各嵌一枚四叶草，边缘压一圈深绿。她看过来的时候，那两枚草是转的。',
-    spec: [['瞳色', '#6F9457'], ['纹样', '四叶草'], ['高光', '#EBE9E9'],
-      ['描边', '#374923']],
-    act: '读取灵瞳', key: null,
-    view: { theta: 0.50, phi: 1.42, radius: 20.5 }, viewName: '专用机位', viewEn: '面部',
-  },
-  {
-    no: '04', cn: '灵衣', en: '叶脉纹样 · 层叠裙',
-    note: '素白底上一层浅青叶脉，胸前一排深绿宝石扣。裙摆分三层，每层比上一层多一片叶。',
-    spec: [['底色', '#EBE9E9'], ['叶纹', '#B4CD94'], ['宝石', '#536232'],
-      ['层次', '三层 · 逐层加叶'], ['腰带', '细金线']],
-    act: '读取灵衣', key: null,
-    view: { theta: 1.05, phi: 1.46, radius: 22 }, viewName: '专用机位', viewEn: '正面全身',
-  },
-  {
-    no: '05', cn: '灵蝶', en: '伴飞青蝶',
-    note: '四只青蝶绕着她飞，离得最近的那只总在换。它们不吃不喝，只听调子起落。',
-    spec: [['数量', '四只'], ['翅色', '#B4CD94'], ['翅脉', '#6F9457'],
-      ['习性', '随音高升降'], ['离场', '音乐停即散']],
-    act: '读取灵蝶', key: null,
-    view: { theta: 0.30, phi: 1.38, radius: 27 }, viewName: '专用机位', viewEn: '侧后方',
-  },
+   floor is r ≈ 18; every `view` below stays above 22. A tighter close-up would
+   need the aim itself to rise, which is a change to controls.js rather than to
+   a number here. */
+const MOVES = [
+  { no: '01', k: 'nod', cn: '点头', en: 'Nod',
+    view: { theta: 0.24, phi: 1.24, radius: 25 }, viewName: '近景机位', viewEn: '正面近景' },
+  { no: '02', k: 'wave', cn: '挥手', en: 'Wave',
+    view: { theta: 0.06, phi: 1.30, radius: 30 }, viewName: '正视机位', viewEn: '正立面' },
+  { no: '03', k: 'spin', cn: '转个圈', en: 'Twirl',
+    view: { theta: 0.62, phi: 1.16, radius: 32 }, viewName: '环绕机位', viewEn: '等角投影' },
+  { no: '04', k: 'jump', cn: '跳一跳', en: 'Hop',
+    view: { theta: 0.16, phi: 1.34, radius: 31 }, viewName: '全身机位', viewEn: '低机位' },
+  { no: '05', k: 'salute', cn: '敬礼', en: 'Salute',
+    view: { theta: 0.44, phi: 1.30, radius: 27 }, viewName: '半身机位', viewEn: '侧前方' },
 ];
 
 /* the camera's four filed vantages, independent of whatever record is open */
@@ -1508,9 +1526,9 @@ const VANTAGES = [
   { k: 'detail', cn: '细节特写', en: '微距', v: { theta: 0.95, phi: 1.14, radius: 21 } },
 ];
 
-let ri = 0, vi = 0;               // record, vantage; vi < 0 means a record's own framing
+let ri = 0, vi = 0;               // move, vantage; vi < 0 means a move's own framing
 let savedVi = 0;                  // the vantage an exploded pull-back stepped away from
-const cur = () => RECORDS[ri];
+const cur = () => MOVES[ri];
 const MACRO = VANTAGES.findIndex((v) => v.k === 'detail');
 
 const D = {
@@ -1525,21 +1543,21 @@ const D = {
   dossier: $('#dossier'), dbody: $('#dbody'), fold: $('#btn-fold'),
 };
 D.colN.textContent = String(VANTAGES.length).padStart(2, '0');
-D.selN.textContent = RECORDS[RECORDS.length - 1].no;
+D.selN.textContent = MOVES[MOVES.length - 1].no;
 
-/* the pick list and the ticks, built once. The records never change — only
-   which of them is live — so `render` only ever toggles their classes, and the
+/* the move list and the ticks, built once. The moves never change — only which
+   of them is selected — so `render` only ever toggles their classes, and the
    markers get to slide instead of being replaced mid-stride. */
 const refRows = [], ticks = [];
-for (let i = 0; i < RECORDS.length; i++) {
-  const r = RECORDS[i];
-  // click selects; clicking the row you already selected reads it, so the
-  // list can be driven end to end without reaching for the button
-  const pick = () => { if (i === ri) readRecord(); else { ri = i; render(true); } };
+for (let i = 0; i < MOVES.length; i++) {
+  const m = MOVES[i];
+  // click selects; clicking the row you already selected does it, so the list
+  // can be driven end to end without reaching for the button
+  const pick = () => { if (i === ri) doMove(); else { ri = i; render(true); } };
 
   const b = document.createElement('button');
   b.className = 'row';
-  b.innerHTML = `<span class="rn">${r.no}</span><span class="rt">${r.cn}</span><i class="rd"></i>`;
+  b.innerHTML = `<span class="rn">${m.no}</span><span class="rt">${m.cn}</span><i class="rd"></i>`;
   b.addEventListener('click', pick);
   const li = document.createElement('li');
   li.appendChild(b);
@@ -1548,8 +1566,8 @@ for (let i = 0; i < RECORDS.length; i++) {
 
   const t = document.createElement('button');
   t.className = 'tick';
-  t.title = `${r.no} · ${r.cn}`;
-  t.setAttribute('aria-label', `${r.no} ${r.cn}`);
+  t.title = `${m.no} · ${m.cn}`;
+  t.setAttribute('aria-label', `${m.no} ${m.cn}`);
   t.addEventListener('click', pick);
   D.cols.appendChild(t);
   ticks.push(t);
@@ -2048,23 +2066,31 @@ function updateFileNo(dt) {
   paintNo();
 }
 
+/* One function writes the plate, and it now has two sources rather than one.
+   `PROFILE` is the half that does not change — who she is, printed once — and
+   `MOVES[ri]` is the half that says what the page is about to do. The profile
+   half is stamped with `dataset.no` the way the spec rows always were, because
+   `render` runs on every arrow press and theme switch and a rebuild would drop
+   hover state; the move half is pure class toggling, so it costs nothing. */
 function render(bump = false) {
-  const R = cur();
+  const M = cur();
   // measured before the sheet is rewritten: swapIn() walks the box from this
   const docH = D.doc.getBoundingClientRect().height;
-  swapText(D.colCn, R.cn);
-  setFileNo(R.no);
-  D.fileCn.textContent = R.cn;
-  D.fileEn.textContent = R.en;
-  D.fileNote.textContent = R.note;
-  setRoll(D.selI, R.no);
-  swapText(D.accessLabel, R.act);
-  D.access.classList.toggle('done', live(R, ri));
-  // only rebuild the spec rows when the record actually changed — render runs
-  // on every arrow press and theme switch, and a rebuild drops hover state
-  if (D.fileSpec.dataset.no !== R.no) {
-    D.fileSpec.dataset.no = R.no;
-    D.fileSpec.replaceChildren(...R.spec.map(([k, v], i) => {
+  swapText(D.colCn, PROFILE.cn);
+  setFileNo(PROFILE.no);
+  D.fileCn.textContent = PROFILE.cn;
+  D.fileEn.textContent = PROFILE.en;
+  D.fileNote.textContent = PROFILE.note;
+  setRoll(D.selI, M.no);
+  // the button names the thing it is about to do, so its label is a function of
+  // the selection rather than of any state
+  swapText(D.accessLabel, `让她${M.cn}`);
+  D.access.classList.toggle('done', live(M, ri));
+  // only rebuild the spec rows once — render runs on every arrow press and
+  // theme switch, and a rebuild drops hover state
+  if (D.fileSpec.dataset.no !== PROFILE.no) {
+    D.fileSpec.dataset.no = PROFILE.no;
+    D.fileSpec.replaceChildren(...PROFILE.spec.map(([k, v], i) => {
       const li = document.createElement('li');
       // the row's index, for the cascade in styles.css: the table arrives in
       // order rather than as one block
@@ -2079,41 +2105,60 @@ function render(bump = false) {
   // is still running under the column, but with the spec table back on screen
   D.dossier.classList.toggle('tight', vi === MACRO);
 
-  // the vantage read-out falls back to the record's own framing, and says so
+  // the vantage read-out falls back to the move's own framing, and says so
   const V = vi >= 0 ? VANTAGES[vi] : null;
   setRoll(D.colI, V ? String(vi + 1).padStart(2, '0') : '--');
-  swapText(D.colCn2, V ? V.cn : R.viewName);
-  swapText(D.colEn, V ? V.en : R.viewEn);
+  swapText(D.colCn2, V ? V.cn : M.viewName);
+  swapText(D.colEn, V ? V.en : M.viewEn);
 
-  // the pick list and the ticks are the same six records at two sizes. Both
+  // the move list and the ticks are the same five moves at two sizes. Both
   // were built once, further up — rebuilding them here would replace the
   // elements, and a fresh element starts already in its final state, so the
   // marker would jump instead of sliding
-  for (let i = 0; i < RECORDS.length; i++) {
-    const l = live(RECORDS[i], i);
-    refRows[i].className = 'row' + (i === ri ? ' sel' : '') + (l ? ' done' : '');
+  for (let i = 0; i < MOVES.length; i++) {
+    const l = live(MOVES[i], i);
+    /* Toggled one class at a time, and that is not style. `className = ...` is
+       shorter and it is exactly what this line used to be — back when a row had
+       two states. It has three now, and this function owns two of them, so
+       writing the whole attribute wipes the third: `.playing`, which belongs to
+       `syncMoveButtons` and is the only one that changes on its own clock.
+       Symptom, measured: `?m=02` opened on the right move, she waved, and the
+       row never lit — `render()` runs on the same frame as, and after,
+       `syncMoveButtons()`, so the class was applied and erased 60 times a
+       second. */
+    refRows[i].classList.toggle('sel', i === ri);
+    refRows[i].classList.toggle('done', l);
     ticks[i].className = 'tick' + (i === ri ? ' on' : '') + (l ? ' done' : '');
   }
   syncIndexSel();
   if (bump) swapIn(docH);
 }
 
-/* Reading is the one action that changes the scene: it opens the shell,
-   isolates the record's part and reframes the camera onto it. Browsing with
-   the arrows only moves the cursor, so nothing jumps while you read. */
-function readRecord(instant = false, moveCam = true) {
-  const R = cur();
-  homeArmed = false;                  // a record ends on its own framing
-  applyFocus(R.key);
-  exploded = !!R.key;
-  cas.setExplode(exploded);
-  if (instant || reduce) cas.st.explode = cas.st.explodeTarget;   // deep links land settled
-  setPressed('#btn-explode', exploded);
+/* Doing a move is the one action that changes the scene: she plays the clip and
+   the lens goes to the framing that clip was staged for. Browsing with the
+   arrows only moves the cursor, so nothing jumps under you while you read.
+
+   Every way in — this button, a row, a tick, the index, ENTER — comes through
+   here, so the clip and the camera can never disagree about which move is
+   running. */
+function doMove(instant = false, moveCam = true) {
+  const M = cur();
+  homeArmed = false;                  // a move ends on its own framing
+  if (spirit) spirit.play(M.k);
+  syncMoveButtons();
+  /* The shell is hidden, so there is nothing left to isolate and nothing to
+     explode: `applyFocus(null)` is a no-op and `exploded` stays false, which is
+     what `live()` reads. The calls are kept rather than deleted so a move and a
+     record leave the page in the same state. */
+  applyFocus(null);
+  exploded = false;
+  cas.setExplode(false);
+  setPressed('#btn-explode', false);
   // with the lens left alone (the intro is driving it) the panel keeps naming
   // the vantage that is actually on screen — the intro lands on VANTAGES[0]
   if (moveCam) {
-    vi = -1;                                 // the record brings its own framing
-    orbit.setPreset(R.view, instant);
+    vi = -1;                                 // the move brings its own framing
+    orbit.setPreset(M.view, instant);
     if (!instant && orbit.tween) orbit.tween.dur = 1.6;
   }
   syncViewShift();
@@ -2123,7 +2168,7 @@ function readRecord(instant = false, moveCam = true) {
   render(true);
   if (instant) snapFileNo();               // a deep link lands settled, cursor included
 }
-function moveRecord(d) { ri = (ri + d + RECORDS.length) % RECORDS.length; audio.tick(); render(true); }
+function stepMove(d) { ri = (ri + d + MOVES.length) % MOVES.length; audio.tick(); render(true); }
 function setVantage(i) {
   // `vi = -1` is a record's own framing: there is no vantage to count from, so
   // the first step lands on the end it is stepping toward — ← goes to the last
@@ -2179,23 +2224,31 @@ function setVolume(v, { unmute = false, flash = true } = {}) {
   audio.setLevel(bedLevel());
   if (flash) showVolume();
 }
-/* ---------- the full index, for when five columns do not fit on screen ---- */
+/* ---------- the full index, for when five columns do not fit on screen ----
+   One card per move rather than one per part. The card's table is the shot's
+   own numbers — where the lens stands and how far — which is the same language
+   the deck's read-out already uses, so the 目录 is a list of shots rather than a
+   second copy of the names. */
 const indexEl = $('#index'), indexCols = $('#index-cols');
 let indexOpen = false;
 function buildIndex() {
-  indexCols.replaceChildren(...RECORDS.map((R, x) => {
+  indexCols.replaceChildren(...MOVES.map((M, x) => {
     const d = document.createElement('div');
     d.className = 'icol' + (x === ri ? ' on' : '');
     // the card's index, for the cascade in styles.css
     d.style.setProperty('--i', x);
     const h = document.createElement('button');
     h.className = 'icol-h';
-    h.innerHTML = `<span>${R.no} ${R.cn}</span><em>${R.en}</em>`;
-    h.addEventListener('click', () => { ri = x; closeIndex(); readRecord(); });
+    h.innerHTML = `<span>${M.no} ${M.cn}</span><em>${M.en}</em>`;
+    h.addEventListener('click', () => { ri = x; closeIndex(); doMove(); });
     d.appendChild(h);
     const ul = document.createElement('ul');
     ul.className = 'spec';
-    ul.replaceChildren(...R.spec.map(([k, v]) => {
+    ul.replaceChildren(...[
+      ['机位', M.viewName],
+      ['距离', M.view.radius.toFixed(1)],
+      ['俯仰', M.view.phi.toFixed(2)],
+    ].map(([k, v]) => {
       const li = document.createElement('li');
       li.innerHTML = `<span>${k}</span><b>${v}</b>`;
       return li;
@@ -2556,10 +2609,10 @@ $('#theme').addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (b) { setTheme(b.dataset.theme); audio.tick(); document.body.classList.add('moved'); }
 });
-// wrapped, not passed by reference: readRecord's first parameter is `instant`,
-// and a listener called with the click event would read that MouseEvent as
-// `true` — snapping the shell open and cutting the camera instead of easing
-$('#btn-access').addEventListener('click', () => readRecord());
+// wrapped, not passed by reference: doMove's first parameter is `instant`, and
+// a listener called with the click event would read that MouseEvent as `true` —
+// snapping the framing and cutting the camera instead of easing
+$('#btn-access').addEventListener('click', () => doMove());
 $('#btn-index').addEventListener('click', toggleIndex);
 $('#index-close').addEventListener('click', closeIndex);
 $('#btn-reinit').addEventListener('click', reinit);
@@ -2593,9 +2646,20 @@ $('#btn-reinit').addEventListener('click', reinit);
    would keep pointing. */
 const raycaster = new THREE.Raycaster();
 const pickNdc = new THREE.Vector2();
+const headNdc = new THREE.Vector3();
 let spiritHover = false;
 let tapFrom = null;
 let lastTap = 0;
+
+/* Where the pointer is *relative to her*, -1..1 on each axis. Deliberately not
+   the pointer's place on the screen: she is not at the screen's centre — the
+   lens looks at y ≈ 0 while she stands on the floor, and orbiting the room
+   slides her sideways — so a fixed centre-to-edge mapping would have her
+   looking the wrong way from three of the four vantages. Projecting her head
+   and taking the difference costs one `project()` per pointermove and is
+   correct from all of them. */
+const spiritAim = { x: 0, y: 0 };
+const AIM_GAIN = 1.45;
 
 /* the canvas is fixed and full-viewport (`canvas#gl`), so the pointer maps to NDC
    without a rect read — and by the same arithmetic controls.js uses for parallax */
@@ -2603,21 +2667,72 @@ function overSpirit(e) {
   if (!spirit) return false;
   pickNdc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   raycaster.setFromCamera(pickNdc, camera);
-  return raycaster.intersectObject(spirit.sprite, false).length > 0;
+  /* one capsule, not twenty meshes: a thin forearm is a patchy target and the
+     real meshes move every frame, so the hit region would wobble under the
+     cursor. See the proxy's note in nahida.js. */
+  return raycaster.intersectObject(spirit.hit, false).length > 0;
+}
+
+function aimAt(e) {
+  if (!spirit) return;
+  pickNdc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  spirit.head.getWorldPosition(headNdc);
+  headNdc.project(camera);
+  spiritAim.x = clamp((pickNdc.x - headNdc.x) * AIM_GAIN, -1, 1);
+  spiritAim.y = clamp((pickNdc.y - headNdc.y) * AIM_GAIN, -1, 1);
 }
 
 canvas.addEventListener('pointermove', (e) => {
+  aimAt(e);
   const hit = overSpirit(e);
   if (hit === spiritHover) return;
   spiritHover = hit;
   document.body.classList.toggle('over-spirit', hit);
 });
 
+/* The pointer leaving the page is not the pointer resting on her. Without this
+   she holds her head turned toward wherever the cursor was last seen, which
+   reads as a bug rather than as attention. */
+canvas.addEventListener('pointerleave', () => {
+  spiritAim.x = 0;
+  spiritAim.y = 0;
+  if (!spiritHover) return;
+  spiritHover = false;
+  document.body.classList.remove('over-spirit');
+});
+
+/* ---------- greeting her, and the interaction panel ----------------------
+   She can be asked to do something from three places — the move list, the ticks
+   in the deck, or by being clicked — so the panel and the model have to agree
+   about what she is doing. They agree by asking *her*: `action` is read back off
+   the model rather than remembered here, so a clip that is interrupted — by
+   another, by a re-press, or by the page losing the clock — cannot leave a row
+   lit for a motion that is over.
+
+   `playing` is a second highlight, not the selection one. Clicking her picks
+   from GREETINGS without touching which move the panel is showing, so the lit
+   row and the selected row are allowed to be different rows. */
+const GREETINGS = ['nod', 'wave', 'salute'];
+let greetI = 0;
+
+function greet() {
+  if (!spirit) return;
+  spirit.play(GREETINGS[greetI++ % GREETINGS.length]);
+  syncMoveButtons();
+}
+
+let litMove = null;
+function syncMoveButtons() {
+  const a = spirit ? spirit.action : null;
+  if (a === litMove) return;            // called every frame; only the edge costs
+  litMove = a;
+  for (let i = 0; i < MOVES.length; i++) refRows[i].classList.toggle('playing', MOVES[i].k === a);
+}
+
 canvas.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;                 // right-drag and middle-drag are not taps
   tapFrom = { x: e.clientX, y: e.clientY, t: performance.now() };
 });
-
 canvas.addEventListener('pointerup', (e) => {
   const from = tapFrom;
   tapFrom = null;
@@ -2628,8 +2743,14 @@ canvas.addEventListener('pointerup', (e) => {
   if (now - lastTap < 320) return;                                     // half of a double-click
   lastTap = now;
   if (!overSpirit(e)) return;
-  togglePlay();
+  /* Clicking her is a greeting, not a transport command. It used to toggle
+     play, which made the one object on the page you would instinctively poke
+     the one object that did not answer — and it gave the transport two controls
+     (this and the button) with no way to tell which you had meant. The tap is
+     still a user gesture, so the WebAudio graph is unlocked here exactly as it
+     was before. */
   audio.tick();
+  greet();
   render();
 });
 // a pointercancel is the browser taking the gesture back — a pinch, a scroll, a
@@ -2760,8 +2881,8 @@ indexEl.addEventListener('click', (e) => { if (e.target === indexEl) closeIndex(
 for (const b of document.querySelectorAll('.pk')) {
   b.addEventListener('click', () => {
     const a = b.dataset.act;
-    if (a === 'prev-file') moveRecord(-1);
-    else if (a === 'next-file') moveRecord(1);
+    if (a === 'prev-file') stepMove(-1);
+    else if (a === 'next-file') stepMove(1);
     else if (a === 'prev-col') setVantage(vi - 1);
     else setVantage(vi + 1);
     b.classList.add('flash');
@@ -2786,17 +2907,17 @@ addEventListener('keydown', (e) => {
   }
   if (k === 'Enter') {
     e.preventDefault();
-    // read with the index still up and the whole scene changes behind an
+    // do it with the index still up and the whole scene changes behind an
     // opaque panel. Close first, exactly like the cards do.
     if (indexOpen) closeIndex();
-    readRecord();
+    doMove();
     return;
   }
   // a focused dial owns its arrows, or the panel would step the vantage out
   // from under the thumb. Escape above still reaches the sheet.
   if (e.target?.type === 'range') return;
-  if (k === 'ArrowUp') { e.preventDefault(); moveRecord(-1); return; }
-  if (k === 'ArrowDown') { e.preventDefault(); moveRecord(1); return; }
+  if (k === 'ArrowUp') { e.preventDefault(); stepMove(-1); return; }
+  if (k === 'ArrowDown') { e.preventDefault(); stepMove(1); return; }
   if (k === 'ArrowLeft') { e.preventDefault(); setVantage(vi - 1); return; }
   if (k === 'ArrowRight') { e.preventDefault(); setVantage(vi + 1); return; }
   if (k === ' ') { e.preventDefault(); togglePlay(); render(); return; }
@@ -3111,8 +3232,21 @@ function loop() {
      slowed. Slowing would still be a moving thing on a page that asked for
      none, and she has a rest pose worth landing on: t = 0 is exactly the frame
      she was modelled at, so the reduced-motion page shows her still, at rest,
-     with nothing to catch mid-motion. */
-  spirit.update(reduce ? 0 : dt, sheSings, spiritHover);
+     with nothing to catch mid-motion.
+
+     Everything she needs arrives in one object rather than as a fourth and
+     fifth positional argument: she has five inputs now (singing, hover, the
+     pointer's two axes, the beat) and a signature of bare booleans would be
+     unreadable at the call site, which is the only place it is ever read. */
+  spirit.update(reduce ? 0 : dt, {
+    singing: sheSings,
+    hovered: spiritHover,
+    aimX: spiritAim.x,
+    aimY: spiritAim.y,
+    beat: viz.pulse,
+    beatOn: !reduce && vizOn() && musicLive,
+  });
+  syncMoveButtons();
   if (!reduce) {
     // the same drift, with more of it while the low end is loud
     driftDust(dt * (1 + 0.6 * lv[0]), t);
@@ -3138,8 +3272,15 @@ function loop() {
   /* The grade's centre — the point the vignette closes around and the defocus
      is aimed at — follows the subject, and the subject is whichever of the two
      is on screen. She bobs, so this is a live point, not a constant: the light
-     has to stay on the thing that is moving. */
-  const subject = TAPE_ON ? cas.root : spirit.root;
+     has to stay on the thing that is moving.
+
+     For her it is the *capsule*, not the root. The root sits on the floor,
+     because that is where the bob is measured from and where the feet belong —
+     and aiming a vignette and a defocus at a pair of ankles puts the sharpest
+     part of the frame under her hem and the softest part on her face. The
+     capsule is already centred on her middle (see nahida.js), so it is the
+     right point and it is already being kept up to date. */
+  const subject = TAPE_ON ? cas.root : spirit.hit;
   subject.getWorldPosition(subjectPos).project(camera);
   grade.uniforms.uCenter.value.set(subjectPos.x * 0.5 + 0.5, subjectPos.y * 0.5 + 0.5);
   watchPerf(dt);
@@ -3176,7 +3317,7 @@ function loop() {
     const audioLive = audioOk() && !audioEl.paused && !audioEl.ended;
     // writing document.title re-titles the native window every time; only do it
     // when the string actually changes
-    const title = audioLive ? `♪ ${fmt(audioEl.currentTime)} · ${TRACK.title}` : `${TRACK.title} — 灵宝`;
+    const title = audioLive ? `♪ ${fmt(audioEl.currentTime)} · ${TRACK.title}` : `${TRACK.title} — 纳西妲`;
     if (title !== lastTitle) { lastTitle = title; document.title = title; }
   }
 

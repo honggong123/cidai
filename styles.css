@@ -300,7 +300,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   font-family: var(--disp);
   font-size: clamp(1.625rem, 3.05vw, 3.125rem); font-weight: 700;
   /* two CJK glyphs, not eight Latin ones: the negative tracking that pulled LUX
-     TAPE into a block squeezes 灵宝 into a smudge, and a two-glyph wordmark wants
+     TAPE into a block squeezes 纳西妲 into a smudge, and a three-glyph wordmark wants
      air between the glyphs instead of less */
   letter-spacing: .04em; line-height: .94;
 }
@@ -523,6 +523,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   background: var(--hair); transform-origin: 0 50%;
 }
 .ref-h::after { background: var(--hair-soft); }
+.ref-h i { font-style: normal; opacity: .55; }
 @keyframes redraw { from { transform: scaleX(0); } }
 .dossier.reprint .fileno::after,
 .dossier.reprint .ref-h::after { animation: redraw .62s var(--e-out) both; }
@@ -699,6 +700,24 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
 .row.done .rd { background: var(--accent); border-color: var(--accent); }
 .row.sel.done .rd { background: var(--accent); box-shadow: 0 0 0 0.0625rem var(--sheet-tint), 0 0 0 0.125rem var(--accent); }
 .row.sel:focus-visible .rd { box-shadow: 0 0 0 0.0625rem var(--sheet-tint), 0 0 0 0.125rem var(--accent); }
+/* A clip is running *right now*. Three states share this one marker and they
+   mean three different things: `.sel` is the row the panel is showing, `.done`
+   is the row the scene is showing, and `.playing` is the row that is moving.
+   Only the last one is transient — the model clears it when the clip ends — so
+   it is allowed to be the loudest, and clicking her can light a row that is
+   neither selected nor done. */
+.row.playing .rt { color: var(--accent); }
+.row.playing .rd {
+  border-color: var(--accent); background: var(--accent);
+  box-shadow: 0 0 0 0.125rem var(--accent-line);
+}
+/* The second way in, said once, below the list rather than as a row of its own:
+   it is a hint and must not be mistaken for another action. */
+.ref-tip {
+  margin-top: 0.8125rem; width: 100%; text-align: right;
+  font-size: var(--fs-label); line-height: 1.72; letter-spacing: var(--tr-body);
+  color: var(--ink-faint); text-wrap: pretty;
+}
 
 /* ============================ now playing ============================== */
 .now {

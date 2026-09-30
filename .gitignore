@@ -6,8 +6,11 @@ Thumbs.db
 # 素材目录：默认只放本地的大件源素材（不进仓库），但随站点发布的图必须例外。
 # 注意不能写成 `assets/` + `!assets/xxx` —— git 不允许父目录被排除后再重新包含
 # 其中的文件，那样写会静默失效、线上 404。
-#   spirit.png      交付的原图（实为 JPEG，黑底无 alpha），只作切图源，运行时不用
-#   spirit-cut.webp 运行时贴的透明图，由 tools/key-spirit.py 生成 —— 必须进仓库
+#   spirit.png      交付的原图（实为 JPEG，黑底无 alpha）。她现在是程序化生成的
+#                   （src/nahida.js），运行时**不再读任何图**；留在这里是因为
+#                   nahida.js 的配色就是从这张图采出来的，它是那份配色的依据。
+#   spirit-cut.webp 由 tools/key-spirit.py 从上面那张切出的透明图。2D 时代她是
+#                   一块 billboard 时运行时贴的就是它；3D 之后已无人引用，暂留。
 assets/*
 !assets/spirit.png
 !assets/spirit-cut.webp

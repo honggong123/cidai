@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>灵宝 — 会唱歌的精灵</title>
+<title>纳西妲 — 会唱歌的精灵</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,9 +15,9 @@
   <!-- ── masthead: the product, and the lights ─────────────────── -->
   <header class="mast">
     <div class="brand">
-      <h1>灵宝</h1>
-      <p class="brand-mid">声之精灵 · I 型 · 会唱歌</p>
-      <p class="brand-end" id="brand-code">SP—01</p>
+      <h1>纳西妲</h1>
+      <p class="brand-mid">小吉祥草王 · 会唱歌</p>
+      <p class="brand-end" id="brand-code">ND—01</p>
     </div>
     <nav class="mast-nav">
       <div class="seg" id="theme">
@@ -28,7 +28,7 @@
       <i class="vr" aria-hidden="true"></i>
       <button class="tb ui-hit" id="btn-index">
         <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7.1" cy="7.1" r="4.6"/><path d="M10.6 10.6 14 14"/></svg>
-        精灵图鉴
+        目录
       </button>
       <i class="vr" aria-hidden="true"></i>
       <button class="tb ui-hit" id="btn-add">
@@ -46,12 +46,17 @@
     </nav>
   </header>
 
-  <!-- ── the record itself: everything in words is printed on one plate ── -->
+  <!-- ── the record itself: everything in words is printed on one plate ──
+       One page, not six. The plate used to file her under a heading per part —
+       灵发, 灵冠, 灵瞳 … — because the thing on the plinth was a machine that
+       came apart. She does not come apart. What is left is what the six were
+       all standing in for: who she is, printed once, and a short list of things
+       you can ask her to do. -->
   <section class="dossier" id="dossier">
     <div class="sheet">
       <p class="crumb">
         <span class="crumb-pre">精灵图鉴<i>/</i>声之档案<i>/</i></span>
-        <span class="crumb-id" id="col-cn">灵宝</span>
+        <span class="crumb-id" id="col-cn">纳西妲</span>
         <button class="fold ui-hit" id="btn-fold" aria-expanded="true" aria-controls="dbody">收起详情</button>
       </p>
       <div class="dbody" id="dbody">
@@ -59,19 +64,20 @@
         <div class="foldwrap">
           <div class="dossier-grid">
             <div class="doc">
-              <p class="doc-cn" id="file-cn">灵宝</p>
-              <p class="doc-en" id="file-en">声之精灵 · I 型</p>
-              <p class="doc-note" id="file-note">素白的头发，青绿的叶冠，衣上落着一整片叶脉。她站在声场正中，把正在响的那一段唱成看得见的样子。</p>
+              <p class="doc-cn" id="file-cn">纳西妲</p>
+              <p class="doc-en" id="file-en">Nahida · 小吉祥草王</p>
+              <p class="doc-note" id="file-note">须弥的草神，人称小吉祥草王。世上所有的智慧她都读过，最大的好奇却留给了梦。素白的长发间簪一片三出复叶，青绿瞳中各嵌一枚四叶草——她说那是替世界收着的运气。音乐响起时，她把正在响的那一段唱成看得见的样子。</p>
               <ul class="spec" id="file-spec"></ul>
             </div>
             <div class="ref">
-              <p class="ref-h">参考区</p>
+              <p class="ref-h">互动<i>/</i>动作</p>
               <ul class="ref-list" id="ref-list"></ul>
+              <p class="ref-tip">也可以直接点她，或把光标停在她身上——她会看过来。</p>
             </div>
           </div>
         </div>
         <button class="access ui-hit" id="btn-access">
-          <span id="access-label">唤醒灵宝</span>
+          <span id="access-label">让她点头</span>
           <svg viewBox="0 0 22 12" aria-hidden="true"><path d="M0 6h19M14.4 1.4 19.4 6l-5 4.6"/></svg>
         </button>
       </div>
@@ -94,17 +100,17 @@
   <!-- ── deck ──────────────────────────────────────────────────── -->
   <footer class="deck">
     <div class="sel">
-      <p class="micro">图鉴 / 选择</p>
-      <p class="sel-num"><b id="sel-i">00</b><i>/</i><span id="sel-n">05</span></p>
+      <p class="micro">动作 / 选择</p>
+      <p class="sel-num"><b id="sel-i">01</b><i>/</i><span id="sel-n">05</span></p>
     </div>
 
     <div class="pager">
       <div class="grp">
-        <button class="pk ui-hit" data-act="prev-file" aria-label="上一条档案">↑</button>
+        <button class="pk ui-hit" data-act="prev-file" aria-label="上一个动作">↑</button>
         <i class="rail" aria-hidden="true"></i>
         <div class="cols" id="cols"></div>
         <i class="rail" aria-hidden="true"></i>
-        <button class="pk ui-hit" data-act="next-file" aria-label="下一条档案">↓</button>
+        <button class="pk ui-hit" data-act="next-file" aria-label="下一个动作">↓</button>
       </div>
       <div class="grp">
         <button class="pk ui-hit" data-act="prev-col" aria-label="上一个机位">←</button>
@@ -141,11 +147,11 @@
 
   <!-- ── hud ───────────────────────────────────────────────────── -->
   <div class="hud">
-    <p class="hud-l"><span class="live" aria-hidden="true"></span>灵宝已就位</p>
+    <p class="hud-l"><span class="live" aria-hidden="true"></span>纳西妲已就位</p>
     <p class="hud-c" id="keys">
-      <span class="kg" data-p="1" data-k="arrowup arrowdown"><kbd>↑</kbd><kbd>↓</kbd><em>图鉴</em></span>
+      <span class="kg" data-p="1" data-k="arrowup arrowdown"><kbd>↑</kbd><kbd>↓</kbd><em>动作</em></span>
       <span class="kg" data-p="1" data-k="arrowleft arrowright"><kbd>←</kbd><kbd>→</kbd><em>机位</em></span>
-      <span class="kg" data-p="1" data-k="enter"><kbd>ENTER</kbd><em>读取</em></span>
+      <span class="kg" data-p="1" data-k="enter"><kbd>ENTER</kbd><em>做一次</em></span>
       <span class="kg" data-p="1" data-k="space"><kbd>SPACE</kbd><em>演唱</em></span>
       <span class="kg" data-p="2" data-k="m"><kbd>M</kbd><em>静音</em></span>
       <span class="kg" data-p="2" data-k="i"><kbd>I</kbd><em>目录</em></span>
@@ -153,14 +159,14 @@
       <span class="kg" data-p="2" data-k=","><kbd>,</kbd><em>设置</em></span>
       <span class="kg" data-p="3" data-k="a"><kbd>A</kbd><em>巡览</em></span>
     </p>
-    <p class="hud-r">灵宝实验室<i>/</i><span id="clock">00:00:00</span></p>
+    <p class="hud-r">净善宫<i>/</i><span id="clock">00:00:00</span></p>
   </div>
 
   <!-- ── the whole index ───────────────────────────────────────── -->
   <div class="index" id="index" hidden>
     <div class="index-in">
       <div class="index-top">
-        <p class="index-h">精灵图鉴<i>/</i><span>这只精灵的全部档案</span></p>
+        <p class="index-h">互动<i>/</i><span>可以让她做的五件事</span></p>
         <button class="tb ui-hit" id="index-close">关闭 ✕</button>
       </div>
       <div class="index-cols" id="index-cols"></div>
@@ -191,7 +197,7 @@
 
 <div class="loader" id="loader">
   <div class="loader-box">
-    <div class="loader-mark"><b>灵宝</b></div>
+    <div class="loader-mark"><b>纳西妲</b></div>
     <div class="loader-bar"><i id="lbar"></i></div>
     <div class="loader-lbl"><span id="llbl">正在初始化</span><em id="lpct">0%</em></div>
   </div>
