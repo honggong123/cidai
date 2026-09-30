@@ -12,10 +12,56 @@ import { TapeAudio } from './audio.js';
 import { readTags, looksLikeAudio } from './tags.js';
 import { SIDES, loadSide as ensureSide, sideOf, trackAt } from './playlist.js';
 import { createViz } from './viz.js';
+import { createSpirit } from './spirit.js';
 
 const $ = (s) => document.querySelector(s);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canvas = $('#gl');
+
+/* ============================== the tape is off ==========================
+   The subject of this page is 灵宝 now, and the cassette is kept rather than
+   deleted: every part of it, its materials, its two reels' worth of animation
+   and its two hundred lines of assembly are still here, one flag away. Nothing
+   downstream has to be told the difference beyond this constant, which is why
+   it is a constant and not a scattering of `false`s.
+
+   What it switches off, and why each one has to be switched off at all:
+   - the shell itself (`cas.root.visible`), which takes the ghost materials with
+     it — a ghost is the *same* mesh wearing a different material, not a second
+     mesh, so there is nothing left over to hide;
+   - the five part labels (ANNOS), which name parts of a shell nobody can see;
+   - the ghost walk (embrace/release), which would otherwise go on swapping
+     materials on invisible meshes and re-compiling shaders for a fade with no
+     audience;
+   - 拆解 and 翻面, whose only referent is the shell's own assembly.
+   The audio, the playlist, the counter, the seek bar and the whole archive are
+   untouched: they never belonged to the tape in the first place. */
+const TAPE_ON = false;
+
+/* She stands where the shell lay, and is sized against it rather than picked:
+   `DIM.H` is how deep the cassette was, and a character who overtopped the
+   object she replaced would read as a change of scale rather than a change of
+   subject. Her *width* is not set from here — the image's own aspect decides it
+   once the file has decoded (see spirit.js), because she is not square and a
+   height applied to both axes would stretch her. */
+const SPIRIT_H = DIM.H;
+
+/* ============================== the buttons that are gone =================
+   Six of the transport's controls wrote their state to a button: 拆解 and 翻面
+   pressed `on`/`aria-pressed` onto themselves. Those two buttons are out of the
+   markup now (see TAPE_ON), and the state they wrote is still worth writing —
+   `exploded` and `flipped` are read by the render pass, by `live()` and by the
+   vantages — so the calls stay and only the button lookup has to survive coming
+   back null. One helper rather than six `?.` chains, because two of the six
+   also write `aria-pressed` and a chain that guards the classList but not the
+   attribute is the kind of half-guard that only shows up on the one path nobody
+   clicks. */
+const setPressed = (sel, on) => {
+  const el = $(sel);
+  if (!el) return;
+  el.classList.toggle('on', on);
+  el.setAttribute('aria-pressed', String(on));
+};
 
 /* ============================== nothing changes in one frame ==============
    Two helpers, and between them every read-out on this page changes the way
@@ -133,13 +179,13 @@ const THEMES = {
     grade: {
       bloom: 0.32, ca: 0.85, grain: 0.040, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26,
       halTint: [1.0, 0.86, 0.62],          // the gold of the room's one spot
-    },
-    bg: {
+    },    bg: {
       stops: [[0, '#111214'], [0.44, '#1b1c1f'], [0.64, '#0c0d0f'], [1, '#040405']],
       spot: { u: 0.849, v: 0.48, r: 0.40, color: 'rgba(220,190,140,0.60)' },
     },
     floor2: 0x0e0f11, floorMix: 0.60, shadowOp: 0.44,
     pool: 0xffc978, poolOp: 0.07,
+    spirit: { tint: 0xfff5e6, rim: 0xdcbe8c, rimOp: 0.30 },
     glare: { tint: [1.0, 0.86, 0.62], strength: 0.16, stride: 0.010, threshold: 0.58 },
   },
   studio: {
@@ -156,6 +202,7 @@ const THEMES = {
     },
     floor2: 0xd6d8da, floorMix: 0.30, shadowOp: 0.18,
     pool: 0xffffff, poolOp: 0.03,
+    spirit: { tint: 0xdedad2, rim: 0x2a2b1f, rimOp: 0.42 },
     // the room the page opens in, so this is the one glare nobody should be
     // able to notice: a hint of a streak on the speculars and nothing else
     glare: { tint: [0.92, 0.95, 1.0], strength: 0.06, stride: 0.008, threshold: 0.66 },
@@ -177,6 +224,7 @@ const THEMES = {
     },
     floor2: 0xc2ced8, floorMix: 0.34, shadowOp: 0.22,
     pool: 0x5fc8e8, poolOp: 0.06,
+    spirit: { tint: 0xe2eaf0, rim: 0x2e3a3a, rimOp: 0.38 },
     glare: { tint: [0.62, 0.84, 1.0], strength: 0.22, stride: 0.011, threshold: 0.55 },
   },
 };
@@ -185,6 +233,8 @@ for (const T of Object.values(THEMES)) {
   T.cPool = new THREE.Color(T.pool);
   T.cHalTint = new THREE.Vector3(...T.grade.halTint);
   T.cGlare = new THREE.Vector3(...T.glare.tint);
+  T.cTint = new THREE.Color(T.spirit.tint);
+  T.cRim = new THREE.Color(T.spirit.rim);
 }
 let themeName = 'studio';
 
@@ -339,7 +389,7 @@ function driftDust(dt, t) {
 }
 
 /* ============================== model =================================== */
-let cas = null, envs = null, rig = null, composer = null, grade = null, bloom = null, glarePass = null;
+let cas = null, spirit = null, envs = null, rig = null, composer = null, grade = null, bloom = null, glarePass = null;
 let probe = null, rigPanels = null, probeDirty = false, probeBound = false;
 
 /* Handling the model is a detour, not a destination: five seconds after the last
@@ -480,7 +530,7 @@ function setDur() {
 function setNowChip() {
   swapText($('#now-title'), TRACK.title);
   const credits = [TRACK.artist, TRACK.album].filter(Boolean).join(' · ');
-  swapText($('#now-sub'), audioFailed ? '音频加载失败 · 仅走带动画' : (credits || '未知曲目'));
+  swapText($('#now-sub'), audioFailed ? '音频加载失败 · 她只做口型' : (credits || '未知曲目'));
 }
 
 /** the file's own length as a promise — the media element is the only thing that
@@ -585,7 +635,7 @@ function settleSwap() {
   // was, and the card keeps the '--' it was printed with
   if (swap.dur > 0) {
     cas.st.duration = swap.dur;
-    swapText(brandCode, 'L—' + tapeMinutes(swap.dur));
+    swapText(brandCode, 'SP—' + tapeMinutes(swap.dur));
   }
   setNowChip();
   flashAdd(null);
@@ -640,7 +690,7 @@ function reinitTrack() {
   cas.commitLabel();
   for (const t of staged.old) t.dispose();
   cas.warmLabel(false);
-  swapText(brandCode, 'L—' + T.minutes);
+  swapText(brandCode, 'SP—' + T.minutes);
   setNowChip();
   swap.dur = 0;
 }
@@ -665,7 +715,14 @@ async function playSide(i) {
 /** F is 翻面: the shell turns over *and* the tape changes with it — the one
     thing a real cassette cannot do and a rendered one can. setFlip() itself is
     left alone: the ?f=1 deep link and 重置 both call it, and neither wants a
-    load. A face is the front, B face is the back. */
+    load. A face is the front, B face is the back.
+
+    Unreachable while the shell is off — the F key and the button it mirrored are
+    both gone — and kept because it is the *only* caller of playSide, which is the
+    only thing that would put a side in by flipping. Nothing is locked away by
+    that: side B is not behind 翻面, it is in the track list, which has always
+    listed both sides (`buildIndex` walks SIDES) and always played them through
+    playTrack. */
 function flipSide() {
   setFlip(!flipped);
   playSide(flipped ? 1 : 0);
@@ -703,9 +760,13 @@ function applyQuery(camera = true) {
   if (vk >= 0) { vi = vk; orbit.setPreset(VANTAGES[vk].v, true); }
   else if (camera && [...Q.keys()].length && !Q.has('x')) orbit.setPreset(orbit.home, true);
   // instant, like x=1 and r=: this URL exists to be screenshotted, and a flip
-  // that eases over a second gets caught mid-turn
-  if (Q.get('f') === '1') setFlip(true, true);
-  if (Q.get('x') === '1') setExplode(true, true);
+  // that eases over a second gets caught mid-turn. Both flags name a pose of the
+  // shell, so with the shell off they are read and dropped rather than left to
+  // open a thing nobody can see — the link still opens the room.
+  if (TAPE_ON) {
+    if (Q.get('f') === '1') setFlip(true, true);
+    if (Q.get('x') === '1') setExplode(true, true);
+  }
   // ?r=03 opens that record: the id, not the index, so a link keeps working
   if (Q.has('r')) {
     const r = RECORDS.findIndex((x) => x.no === Q.get('r').padStart(2, '0'));
@@ -732,13 +793,20 @@ function applyQuery(camera = true) {
  *  02 观察窗 over 01 象牙上壳, 05 轮毂与带盘 over 03 自攻螺钉. Those numbers are
  *  the dossier's file numbers — they name the part, and stay with it. Only the
  *  rows move. */
-const ANNOS = [
+/* Empty, and that is the whole edit: every consumer below iterates this list —
+   the DOM build, the width measure, the per-frame leader update — so a list with
+   nothing in it leaves all three with nothing to do, and no `if` has to be added
+   anywhere. The five labels name five parts of a shell nobody can see (TAPE_ON),
+   and a leader is a line drawn to a thing: with the thing gone there is nothing
+   for the line to point at. The rows are kept rather than deleted because they
+   are the only written record of the numbers the exploded drawing used. */
+const ANNOS = TAPE_ON ? [
   { key: 'glass', side: 'left', n: '02', t: '观察窗', s: 'PC 玻璃 · 透射 1.0' },
   { key: 'shell', side: 'left', n: '01', t: '象牙上壳', s: '聚碳酸酯 · 1.1 mm' },
   { key: 'hub', side: 'left', n: '05', t: '轮毂与带盘', s: 'POM · 六齿 · ⌀12' },
   { key: 'tape', side: 'left', n: '04', t: '磁带', s: 'γ-Fe₂O₃ · 3.81 mm' },
   { key: 'screw', side: 'left', n: '03', t: '自攻螺钉', s: '钢 · M2 × 5 · ×5' },
-];
+] : [];
 const ui = document.querySelector('.ui');
 const lines = $('#lines');
 const slots = { left: 0, right: 0 };
@@ -969,6 +1037,22 @@ function applyTheme(dt, instant = false) {
   if (composer?.ao) composer.ao.strength = to(composer.ao.strength, T.ao ?? 1);
   poolMat.color.lerp(T.cPool, k);
   poolMat.opacity = to(poolMat.opacity, T.poolOp);
+  /* Her grade, and the only one a room has over her. A SpriteMaterial samples no
+     light and no environment — she is a photograph of a drawing, and nothing the
+     rig does reaches her — so two multiplies into `material.color` are the whole
+     of it. Which makes this load-bearing rather than decorative: 74% of her own
+     palette is near-white (see tools/key-spirit.py), and 晴室's wall is the same
+     near-white, so untinted she has no edge to be seen against. The light rooms
+     tint her *down*, the dark one leaves her alone and warms her a touch, and
+     every room walks to its own value over the same 1.4 s the lamps take.
+     The rim is the contour that puts the edge back — see the note in spirit.js
+     for why a cut-out needs one — and its colour is the room's: her own line
+     colour in the galleries, the room's gold in 夜巢. */
+  if (spirit) {
+    spirit.material.color.lerp(T.cTint, k);
+    spirit.rimMaterial.color.lerp(T.cRim, k);
+    spirit.rimMaterial.opacity = to(spirit.rimMaterial.opacity, T.spirit.rimOp);
+  }
   // the background crosses over on the same clock as everything else, and once
   // it has arrived the incoming room simply becomes the base. This replaces the
   // shutter dip that used to cover the map swap: there is nothing left to hide,
@@ -1151,11 +1235,24 @@ async function boot() {
     // counter's total.
     audioEl.src = TRACK.src;
     audioEl.load();
-    swapText(brandCode, 'L—' + TRACK.minutes);
+    swapText(brandCode, 'SP—' + TRACK.minutes);
   });
   await step('正在建立几何体', 12, () => {
     cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: TRACK.minutes });
     scene.add(cas.root);
+    /* The shell is built and then hidden, not skipped: building it is what
+       defines the room's scale (the rig's reach, the floor's shadow catcher, the
+       probe's capture volume all measure against it), and the sprite is sized
+       against it below. Skipping the build to save the work would mean every one
+       of those numbers becoming a guess. See TAPE_ON. */
+    cas.root.visible = TAPE_ON;
+    /* Her feet are on the floor, not at the room's centre: `center` is (0.5, 0),
+       so this one number is where she touches down. The cassette was a flat
+       object lying at y ≈ 0 and the camera still looks there, which is what
+       leaves her standing in the lower half of the frame with the room's height
+       above her — the composition the shell had, kept. */
+    spirit = createSpirit({ url: 'assets/spirit-cut.webp', height: SPIRIT_H, y: FLOOR_Y });
+    scene.add(spirit.root);
     rig = createRig(scene);
     // the shell only breathes slowly, so the shadow map does not need a full
     // re-render every frame — refresh it on alternate frames instead
@@ -1325,55 +1422,81 @@ function runIntro() {
    tape simply holds still until something moves it. */
 let exploded = false, flipped = false, autoRotate = false;
 
-/* One record per thing that is actually on this tape: the whole unit, and the
-   five parts the exploded drawing is made of. A record carries its own real
-   spec sheet, its own framing, and — for a part — the node that stays in its
-   true materials while the rest of the shell drops back to a ghost. The three
-   numbers in `spec` are the only made-up thing here; everything else is read
-   off the model. */
+/* Six records, one per thing that is actually on her: the whole spirit, and the
+   five features the drawing is made of. A record carries its own sheet and its
+   own framing.
+
+   THE COLOURS ARE SAMPLED, NOT INVENTED. Every hex here came out of
+   `assets/spirit.png` (a histogram over the pixels that are inside her
+   silhouette — see the note in tools/key-spirit.py for how "inside" is decided),
+   so the archive describes the drawing rather than an idea of it:
+     素白 #EBE9E9 · 浅青 #B4CD94 · 青绿 #6F9457 · 苔绿 #536232 · 描边 #2A2B1F
+   The counts are counted the same way (four butterflies, three skirt tiers).
+
+   WHAT `key` USED TO DO AND WHY IT IS NULL. It named the one part that stayed in
+   its true materials while the rest of the shell dropped back to a ghost, and
+   the framing then flew to that part. With the shell hidden there is nothing to
+   hold solid, so every record is `key: null` — which is also what makes
+   `applyFocus` a no-op and `exploded` permanently false. What is left of a
+   record is its sheet and its `view`, and that is enough: she is a billboard, so
+   the camera cannot orbit round to a feature, it can only come closer.
+
+   HOW CLOSE IT CAN COME IS A NUMBER, NOT A TASTE. She is 6.40 tall standing on
+   the floor with the lens aimed at y ≈ 0, and the frame at distance r is
+   `2·r·tan(15°)` tall — so at r the top of her head sits `(6.40 − 1.67·sin φ) /
+   (0.536 r)` of a frame-height above centre, and that has to stay under 0.5. At
+   φ ≈ 1.4 (near eye level, where her feet drop the furthest below the aim) the
+   floor is r ≈ 18; every `view` below stays above 20. A tighter close-up would
+   need the aim itself to rise, which is a change to controls.js rather than to a
+   number here. */
 const RECORDS = [
   {
-    no: '00', cn: '整机', en: '磁性录音带 · II 型',
-    note: '聚碳酸酯外壳，γ-Fe₂O₃ 磁层，3.81 mm 带基。工程与手感之间，一段沉默的机械。',
-    spec: [['外壳', '聚碳酸酯 · 象牙'], ['磁层', 'γ-Fe₂O₃ · 12 µm'], ['带基', 'PET · 3.81 mm'],
-      ['屏蔽', '冷轧钢 · 0.8 mm'], ['轮毂', 'POM · 六齿']],
-    act: '读取整机', key: null,
+    no: '00', cn: '灵宝', en: '声之精灵 · I 型',
+    note: '素白的头发，青绿的叶冠，衣上落着一整片叶脉。她站在声场正中，把正在响的那一段唱成看得见的样子。',
+    spec: [['本体', '声之精灵 · I 型'], ['体高', '6.40'], ['素白', '#EBE9E9'],
+      ['青绿', '#6F9457'], ['描边', '#2A2B1F']],
+    act: '唤醒灵宝', key: null,
     view: { theta: 0.62, phi: 1.03, radius: 33 }, viewName: '等轴机位', viewEn: '等角投影',
   },
   {
-    no: '01', cn: '象牙上壳', en: '聚碳酸酯外壳',
-    note: '注塑上壳，细纹面半哑清漆。观察窗、标签与全部印刷都落在这一层。',
-    spec: [['材料', '聚碳酸酯 · 象牙'], ['壁厚', '1.1 mm'], ['表面', '细纹 · 半哑'], ['印刷', 'A 面 · 丝印']],
-    act: '读取上壳', key: 'shell',
-    view: { theta: 0.78, phi: 0.98, radius: 33 }, viewName: '专用机位', viewEn: '上壳抬升',
+    no: '01', cn: '灵发', en: '素白短发 · 侧辫',
+    note: '齐耳的素白短发，一侧编成细辫盘过额角。发梢跟着呼吸动，动得比人慢半拍。',
+    spec: [['发色', '#EBE9E9'], ['暗部', '#A4A5A1'], ['形制', '齐耳 · 侧辫'],
+      ['响应', '滞后半拍']],
+    act: '读取灵发', key: null,
+    view: { theta: 0.72, phi: 1.34, radius: 24 }, viewName: '专用机位', viewEn: '侧前方',
   },
   {
-    no: '02', cn: '观察窗', en: '浅灰玻璃',
-    note: '浅灰 PC 玻璃，双面清漆。透光压到两成，走带清晰而不抢外壳的形。',
-    spec: [['材料', 'PC 玻璃 · 浅灰'], ['透射', '0.22'], ['厚度', '0.03'], ['工艺', '双面清漆']],
-    act: '读取观察窗', key: 'glass',
-    view: { theta: 0.60, phi: 0.86, radius: 33 }, viewName: '专用机位', viewEn: '玻璃抬升',
+    no: '02', cn: '灵冠', en: '三出复叶 · 叶冠',
+    note: '一片三出复叶斜簪在右鬓，叶缘压深绿描边；左侧另有一支细藤顺着发流盘上去。',
+    spec: [['材料', '常绿叶'], ['形制', '三出复叶'], ['叶面', '#6F9457'],
+      ['叶背', '#536232'], ['描边', '#4C5031']],
+    act: '读取灵冠', key: null,
+    view: { theta: 0.88, phi: 1.30, radius: 21 }, viewName: '专用机位', viewEn: '冠部',
   },
   {
-    no: '03', cn: '自攻螺钉', en: '十字自攻螺钉',
-    note: '五颗 M2 自攻螺钉，两前两后一颗中置，直接拧入聚碳酸酯柱。',
-    spec: [['规格', 'M2 × 5'], ['数量', '5 枚'], ['材料', '冷轧钢 · 镀镍'], ['分布', '四角 + 中置']],
-    act: '读取螺钉', key: 'screw',
-    view: { theta: 0.45, phi: 0.80, radius: 33 }, viewName: '专用机位', viewEn: '螺钉平面',
+    no: '03', cn: '灵瞳', en: '四叶草瞳',
+    note: '青绿的瞳仁里各嵌一枚四叶草，边缘压一圈深绿。她看过来的时候，那两枚草是转的。',
+    spec: [['瞳色', '#6F9457'], ['纹样', '四叶草'], ['高光', '#EBE9E9'],
+      ['描边', '#374923']],
+    act: '读取灵瞳', key: null,
+    view: { theta: 0.50, phi: 1.42, radius: 20.5 }, viewName: '专用机位', viewEn: '面部',
   },
   {
-    no: '04', cn: '磁带', en: '磁性带基',
-    note: 'γ-Fe₂O₃ 磁层涂在 3.81 mm 带基上，以 4.76 cm/s 走过磁头。',
-    spec: [['磁层', 'γ-Fe₂O₃'], ['带宽', '3.81 mm'], ['带速', '4.76 cm/s'], ['带基', 'PET · 12 µm']],
-    act: '读取磁带', key: 'tape',
-    view: { theta: 1.00, phi: 0.98, radius: 33 }, viewName: '专用机位', viewEn: '带路走线',
+    no: '04', cn: '灵衣', en: '叶脉纹样 · 层叠裙',
+    note: '素白底上一层浅青叶脉，胸前一排深绿宝石扣。裙摆分三层，每层比上一层多一片叶。',
+    spec: [['底色', '#EBE9E9'], ['叶纹', '#B4CD94'], ['宝石', '#536232'],
+      ['层次', '三层 · 逐层加叶'], ['腰带', '细金线']],
+    act: '读取灵衣', key: null,
+    view: { theta: 1.05, phi: 1.46, radius: 22 }, viewName: '专用机位', viewEn: '正面全身',
   },
   {
-    no: '05', cn: '轮毂与带盘', en: '六齿轮毂 · 双带盘',
-    note: '六齿 POM 轮毂带动带盘，半径按带面积守恒实时变化。',
-    spec: [['轮毂', 'POM · 六齿'], ['轴径', '⌀12'], ['满盘半径', '⌀40.4'], ['驱动', '恒线速']],
-    act: '读取轮毂', key: 'hub',
-    view: { theta: 0.88, phi: 0.76, radius: 33 }, viewName: '专用机位', viewEn: '轮毂微距',
+    no: '05', cn: '灵蝶', en: '伴飞青蝶',
+    note: '四只青蝶绕着她飞，离得最近的那只总在换。它们不吃不喝，只听调子起落。',
+    spec: [['数量', '四只'], ['翅色', '#B4CD94'], ['翅脉', '#6F9457'],
+      ['习性', '随音高升降'], ['离场', '音乐停即散']],
+    act: '读取灵蝶', key: null,
+    view: { theta: 0.30, phi: 1.38, radius: 27 }, viewName: '专用机位', viewEn: '侧后方',
   },
 ];
 
@@ -1604,7 +1727,13 @@ function applyFocus(key) {
   focusKey = key;
   if (key) lastFocus = key;
   const sets = key ? focusSets(key) : null;
-  cas.assembly.traverse((o) => {
+  /* With the shell hidden this walk has no audience: the meshes it swaps
+     materials on are invisible, and a ghost is transparent, so every part it
+     touches costs a second shader program built for a fade nobody can see (see
+     TAPE_ON). It is moot on the data as well — every record's `key` is null now,
+     so the only thing the walk could still do is release parts that were never
+     embraced. */
+  if (TAPE_ON) cas.assembly.traverse((o) => {
     // the write head's layers are a transition device rather than a part: they
     // are only on screen while a track is being loaded, and the ghost system's
     // per-frame opacity is the one thing that would fight the sweep
@@ -1979,8 +2108,7 @@ function readRecord(instant = false, moveCam = true) {
   exploded = !!R.key;
   cas.setExplode(exploded);
   if (instant || reduce) cas.st.explode = cas.st.explodeTarget;   // deep links land settled
-  $('#btn-explode').classList.toggle('on', exploded);
-  $('#btn-explode').setAttribute('aria-pressed', String(exploded));
+  setPressed('#btn-explode', exploded);
   // with the lens left alone (the intro is driving it) the panel keeps naming
   // the vantage that is actually on screen — the intro lands on VANTAGES[0]
   if (moveCam) {
@@ -2203,12 +2331,12 @@ try {
 const savePrefs = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify({ v: PREF_V, ...prefs })); } catch { /* nothing to do */ } };
 
 const SETTINGS = [
-  { k: 'intro', cn: '开场动画', en: '入场推轨', note: '打开时那 3.4 秒的推轨与浮起，下次打开生效。' },
-  { k: 'loop', cn: '循环播放', en: '自动换向', note: '放完自动倒带重放；关掉则倒回开头停住。' },
-  { k: 'hiss', cn: '磁带底噪', en: '磁带底声', note: '走带时的嘶声与马达嗡声，不含换向声与旋钮声。' },
+  { k: 'intro', cn: '开场动画', en: '入场推轨', note: '打开时那 3.4 秒的推轨，下次打开生效。' },
+  { k: 'loop', cn: '循环播放', en: '自动换向', note: '放完自动从头重放；关掉则退回开头停住。' },
+  { k: 'hiss', cn: '房间底噪', en: '底声', note: '唱歌时的嘶声与低鸣，不含换向声与旋钮声。' },
   { k: 'keys', cn: '按键提示', en: '快捷键说明', note: '底部那行快捷键说明。' },
   { k: 'mirror', cn: '地面镜像', en: '地面反射', note: '地面实时反射，关掉可省一整遍场景渲染。' },
-  { k: 'viz', cn: '音频联动', en: '声画同步', note: '走带时频谱柱、浮尘与辉光跟随音乐起伏。关掉画面回到匀速，柱条仍会自己动。' },
+  { k: 'viz', cn: '音频联动', en: '声画同步', note: '演唱时频谱柱、浮尘与辉光跟随音乐起伏。关掉画面回到匀速，柱条仍会自己动。' },
   { k: 'glare', cn: '镜头眩光', en: '横向光条', note: '亮处被镜头拉成的那道横条，三套灯光各留自己的色与长短。关掉画面更干净。' },
   { k: 'fast', cn: '性能模式', en: '降一档渲染', note: '渲染分辨率 1.5× → 1.1×，并关掉超采样与地面反射。帧率不够时打开，画面会软一点。' },
   { k: 'vig', cn: '暗角', en: '四周压暗', dial: true, note: '画面四周压暗，像镜头前的遮光罩。滑条调的是强度，三套灯光各留自己的深浅。' },
@@ -2385,8 +2513,7 @@ function reinit() {
   setFlip(false);
   exploded = false;
   cas.setExplode(false);
-  $('#btn-explode').classList.remove('on');
-  $('#btn-explode').setAttribute('aria-pressed', 'false');
+  setPressed('#btn-explode', false);
   syncViewShift();
   if (cas.st.playing) togglePlay(false);
   audioEl.currentTime = 0;
@@ -2420,8 +2547,11 @@ $('#btn-mute').addEventListener('wheel', (e) => {
   audio.tick();
 }, { passive: false });
 setVolume(volume, { flash: false });
-$('#btn-explode').addEventListener('click', () => { setExplode(!exploded); audio.tick(); render(); });
-$('#btn-flip').addEventListener('click', () => { flipSide(); audio.tick(); render(); });
+/* `?.` rather than an `if`: with TAPE_ON the two buttons are in the markup and
+   these two lines are the only thing that makes them do anything, so the wiring
+   is kept whole and only the lookup is allowed to come back empty. */
+$('#btn-explode')?.addEventListener('click', () => { setExplode(!exploded); audio.tick(); render(); });
+$('#btn-flip')?.addEventListener('click', () => { flipSide(); audio.tick(); render(); });
 $('#theme').addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (b) { setTheme(b.dataset.theme); audio.tick(); document.body.classList.add('moved'); }
@@ -2433,6 +2563,79 @@ $('#btn-access').addEventListener('click', () => readRecord());
 $('#btn-index').addEventListener('click', toggleIndex);
 $('#index-close').addEventListener('click', closeIndex);
 $('#btn-reinit').addEventListener('click', reinit);
+
+/* ---------- picking her up ------------------------------------------------
+   There was no raycasting anywhere on this page before her: the only 3D input
+   was the orbit, and every orbit gesture is a drag. A tap is therefore a new
+   kind of event, and the hard part is not the intersection — it is telling a tap
+   apart from the first frames of a drag, because both arrive as
+   pointerdown → pointerup on the same element, and the orbit has already
+   claimed the pointer (`setPointerCapture`) by the time these run. Two
+   thresholds, and the reason for each:
+
+   - 6 px of travel. A hand-held click wanders one or two pixels; the orbit's own
+     dead zone is nothing at all, so anything past a few pixels is somebody
+     turning the room, and pressing play on the way out of a camera move would be
+     the worst kind of accidental input.
+   - 500 ms. A press that is held is a press being thought about. (The browser's
+     own long-press answer on a canvas is the context menu, which controls.js
+     already suppresses.)
+
+   The double-click is the reset gesture, so two taps in quick succession are
+   collapsed into one: without that, double-clicking her would toggle the
+   transport twice, a pause and a play a tenth of a second apart, which reads as
+   a stutter rather than as a reset.
+
+   Hover is a raycast too, but against her alone, so it is one intersection test
+   per pointermove and the cursor is the whole feedback. The cursor goes through
+   a class rather than `canvas.style.cursor`, because an inline style would beat
+   `body.dragging canvas#gl { cursor: grabbing }` and a drag that starts on her
+   would keep pointing. */
+const raycaster = new THREE.Raycaster();
+const pickNdc = new THREE.Vector2();
+let spiritHover = false;
+let tapFrom = null;
+let lastTap = 0;
+
+/* the canvas is fixed and full-viewport (`canvas#gl`), so the pointer maps to NDC
+   without a rect read — and by the same arithmetic controls.js uses for parallax */
+function overSpirit(e) {
+  if (!spirit) return false;
+  pickNdc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(pickNdc, camera);
+  return raycaster.intersectObject(spirit.sprite, false).length > 0;
+}
+
+canvas.addEventListener('pointermove', (e) => {
+  const hit = overSpirit(e);
+  if (hit === spiritHover) return;
+  spiritHover = hit;
+  document.body.classList.toggle('over-spirit', hit);
+});
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;                 // right-drag and middle-drag are not taps
+  tapFrom = { x: e.clientX, y: e.clientY, t: performance.now() };
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  const from = tapFrom;
+  tapFrom = null;
+  if (!from) return;
+  if (Math.hypot(e.clientX - from.x, e.clientY - from.y) > 6) return;    // a drag
+  if (performance.now() - from.t > 500) return;                        // a hold
+  const now = performance.now();
+  if (now - lastTap < 320) return;                                     // half of a double-click
+  lastTap = now;
+  if (!overSpirit(e)) return;
+  togglePlay();
+  audio.tick();
+  render();
+});
+// a pointercancel is the browser taking the gesture back — a pinch, a scroll, a
+// system gesture. There is no tap in it, so the pending one has to be dropped
+// rather than left to pair with the next pointerup.
+canvas.addEventListener('pointercancel', () => { tapFrom = null; });
 
 /* ---------- the seek rail -------------------------------------------------
    A real <input type="range">, not a div with a pointer handler: the drag, the
@@ -2598,9 +2801,11 @@ addEventListener('keydown', (e) => {
   if (k === 'ArrowRight') { e.preventDefault(); setVantage(vi + 1); return; }
   if (k === ' ') { e.preventDefault(); togglePlay(); render(); return; }
   const l = k.toLowerCase();
-  if (l === 'e') setExplode(!exploded);
-  else if (l === 'f') flipSide();
-  else if (l === 'a') setAuto(!autoRotate);
+  /* E and F are gone from the table along with the two buttons they mirrored:
+     both keyed the shell's own assembly — 拆解 the parts, 翻面 the face — and the
+     shell is off (TAPE_ON). Left in, E would open a shell nobody can see and set
+     `exploded`, which `live()` and the panel both read. */
+  if (l === 'a') setAuto(!autoRotate);
   else if (l === 'm') { setMute(!muted); showVolume(); }
   else if (l === 'i') toggleIndex();
   else if (l === ',') toggleSettings();
@@ -2623,8 +2828,8 @@ function togglePlay(force) {
   st.playing = on;
   document.body.classList.toggle('playing', on);
   // the label always names what pressing it does next, so the idling state
-  // says 走带 — the same word it says before the first press
-  swapText($('#play-label'), on ? '暂停' : '走带');
+  // says 演唱 — the same word it says before the first press
+  swapText($('#play-label'), on ? '暂停' : '演唱');
   if (on) {
     mode = 'play';
     if (audioOk()) {
@@ -2656,8 +2861,7 @@ function setExplode(on, instant = false) {
   // the lit state belongs to the explode, not to reading a record — pressing E
   // or the button itself used to leave the trigger unlit, while reading a part
   // record lit it. Same writer, both paths.
-  $('#btn-explode').classList.toggle('on', on);
-  $('#btn-explode').setAttribute('aria-pressed', String(on));
+  setPressed('#btn-explode', on);
   if (!on) applyFocus(null);          // shutting the shell releases the part
   const a = orbit.theta;
   syncViewShift();
@@ -2700,8 +2904,7 @@ function setFlip(on, instant = false) {
   flipped = on;
   cas.setFlip(on);
   if (instant || reduce) cas.st.flip = cas.st.flipTarget;
-  $('#btn-flip').classList.toggle('on', on);
-  $('#btn-flip').setAttribute('aria-pressed', String(on));
+  setPressed('#btn-flip', on);
   audio.clunk(on ? 0.8 : 1.2);
   document.body.classList.add('moved');
 }
@@ -2874,9 +3077,28 @@ function loop() {
      the drift and the bars are looking at the same beat — and it is taken even
      when there is nothing to follow, because the envelope has to be allowed to
      fall back to rest rather than freezing where it was. A rewind is excluded
-     the same way a stopped tape is: the bars are flat on purpose there. */
-  const lv = viz.update(dt, audioEl,
-    vizOn() && !reduce && mode !== 'rew' && audioOk() && !audioEl.paused && !audioEl.ended);
+     the same way a stopped tape is: the bars are flat on purpose there.
+
+     `musicLive` is split out from the third argument rather than written twice,
+     because it answers two different questions. The visualiser also wants the
+     user's 频谱 switch and the reduced-motion flag; *she* does not — with the
+     equaliser switched off the music is still playing, and a spirit who stops
+     singing when you hide the bars has misunderstood the setting.
+
+     She and the bars then part company once more, and it is worth being explicit
+     about why, because the obvious thing to do is hand them the same flag. The
+     bars are a *measurement*: they can only follow a signal, so they need the
+     audio element to be genuinely producing one. She is a *performance*: all she
+     has to know is that the transport is rolling. Those two come apart exactly
+     when there is no audio to load — the reels still turn from the local clock
+     (see the `driven` branch above), and a spirit standing perfectly still while
+     the machine plays her song contradicts the chip printed beside her, which
+     says 她只做口型. `st.playing` is the transport's own state, so it is the one
+     to ask; `mode !== 'rew'` keeps her out of the rewind, where the bars are
+     flat on purpose and so is she. */
+  const musicLive = mode !== 'rew' && audioOk() && !audioEl.paused && !audioEl.ended;
+  const sheSings = mode !== 'rew' && cas.st.playing;
+  const lv = viz.update(dt, audioEl, vizOn() && !reduce && musicLive);
   bloomGain = viz.beat;
 
   // idle life
@@ -2884,6 +3106,13 @@ function loop() {
   cas.root.position.y = intro.y + bob - swap.press;   // ...and pressed down under the write head
   cas.root.rotation.z = intro.tilt + (reduce ? 0 : Math.sin(t * 0.42) * 0.008);
   cas.root.rotation.x = reduce ? 0 : Math.sin(t * 0.33 + 1.2) * 0.006;
+
+  /* Her clock is `dt` — but under reduced motion it is stopped rather than
+     slowed. Slowing would still be a moving thing on a page that asked for
+     none, and she has a rest pose worth landing on: t = 0 is exactly the frame
+     she was modelled at, so the reduced-motion page shows her still, at rest,
+     with nothing to catch mid-motion. */
+  spirit.update(reduce ? 0 : dt, sheSings, spiritHover);
   if (!reduce) {
     // the same drift, with more of it while the low end is loud
     driftDust(dt * (1 + 0.6 * lv[0]), t);
@@ -2906,7 +3135,12 @@ function loop() {
   }
   syncPanelGive();
   syncPanelFold();
-  cas.root.getWorldPosition(subjectPos).project(camera);
+  /* The grade's centre — the point the vignette closes around and the defocus
+     is aimed at — follows the subject, and the subject is whichever of the two
+     is on screen. She bobs, so this is a live point, not a constant: the light
+     has to stay on the thing that is moving. */
+  const subject = TAPE_ON ? cas.root : spirit.root;
+  subject.getWorldPosition(subjectPos).project(camera);
   grade.uniforms.uCenter.value.set(subjectPos.x * 0.5 + 0.5, subjectPos.y * 0.5 + 0.5);
   watchPerf(dt);
   applyTheme(dt, reduce);
@@ -2942,7 +3176,7 @@ function loop() {
     const audioLive = audioOk() && !audioEl.paused && !audioEl.ended;
     // writing document.title re-titles the native window every time; only do it
     // when the string actually changes
-    const title = audioLive ? `♪ ${fmt(audioEl.currentTime)} · ${TRACK.title}` : `${TRACK.title} — LUX TAPE`;
+    const title = audioLive ? `♪ ${fmt(audioEl.currentTime)} · ${TRACK.title}` : `${TRACK.title} — 灵宝`;
     if (title !== lastTitle) { lastTitle = title; document.title = title; }
   }
 

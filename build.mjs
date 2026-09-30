@@ -13,4 +13,4 @@ await build({
   legalComments: 'none',
   logLevel: 'info',
 });
-console.log(`\n📼  dist/app.js  ${(statSync(out).size / 1024).toFixed(0)} KB`);
+console.log(`\n✨  dist/app.js  ${(statSync(out).size / 1024).toFixed(0)} KB`);

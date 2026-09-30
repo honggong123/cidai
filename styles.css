@@ -250,6 +250,10 @@ canvas#gl {
   cursor: grab;
   touch-action: none;
 }
+/* she is a button. Same specificity as the rule below it and written first, so a
+   drag that starts on her still gets `grabbing` — the drag wins because it is the
+   one that is actually happening. */
+body.over-spirit canvas#gl { cursor: pointer; }
 body.dragging canvas#gl { cursor: grabbing; }
 
 /* every numeral on this page is a read-out: it must not jitter sideways when
@@ -295,7 +299,10 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
 .brand h1 {
   font-family: var(--disp);
   font-size: clamp(1.625rem, 3.05vw, 3.125rem); font-weight: 700;
-  letter-spacing: -.032em; line-height: .94;
+  /* two CJK glyphs, not eight Latin ones: the negative tracking that pulled LUX
+     TAPE into a block squeezes 灵宝 into a smudge, and a two-glyph wordmark wants
+     air between the glyphs instead of less */
+  letter-spacing: .04em; line-height: .94;
 }
 .brand-mid {
   font-size: clamp(0.625rem, .8vw, 0.84375rem); font-weight: 400;
@@ -715,6 +722,21 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   font-style: normal; font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em;
   opacity: .58; white-space: nowrap; padding-left: 0.75rem; border-left: 1px solid var(--chip-hair);
 }
+/* The transport's own word, and the only place the page says what *she* is doing
+   rather than what the machine is doing. Two words stacked in one grid cell and
+   crossfaded on `body.playing` — which togglePlay already writes — so the chip
+   needs no JavaScript of its own and the change lands on the same beat as the
+   equaliser beside it. `:not(.rewinding)` because a rewind is the one moment she
+   is standing there with the music running past her: the bars are flat then, and
+   so is she. */
+.now-state {
+  display: inline-grid; font-size: var(--fs-label); letter-spacing: .16em; color: var(--accent);
+}
+.now-state b { grid-area: 1 / 1; font-weight: 500; transition: opacity var(--t-med) var(--e-out); }
+.now-state .s-idle { opacity: 1; }
+.now-state .s-sing { opacity: 0; }
+body.playing:not(.rewinding) .now-state .s-idle { opacity: 0; }
+body.playing:not(.rewinding) .now-state .s-sing { opacity: 1; }
 .eq { display: flex; align-items: flex-end; gap: 0.125rem; height: 0.6875rem; }
 .eq i { width: 0.0625rem; height: 0.1875rem; background: currentColor; opacity: .45; transition: opacity var(--t-med) var(--e-out), height var(--t-med) var(--e-out); }
 body.playing .eq i { opacity: 1; animation: eq .9s ease-in-out infinite; }
@@ -1219,9 +1241,15 @@ body.ready .loader { opacity: 0; visibility: hidden; }
 @keyframes lin { from { opacity: 0; transform: translateY(0.5625rem); } to { opacity: 1; transform: none; } }
 .loader-mark {
   font-family: var(--disp);
-  font-size: 0.8125rem; letter-spacing: .5em; color: var(--ink-faint); margin-bottom: 1.375rem; text-align: center;
+  font-size: 0.8125rem; letter-spacing: .3em; color: var(--ink-faint); margin-bottom: 1.375rem; text-align: center;
 }
-.loader-mark b { font-weight: 700; color: var(--ink); }
+/* The tracking leaves a gap after the last glyph, and centring counts that gap
+   as content — so a two-glyph wordmark sits visibly left of centre. An
+   inline-block whose first line is indented by the same amount puts the gap on
+   the *left* as well, and the two cancel: the box is symmetric again, and the
+   parent centres it honestly. (At eight Latin glyphs the error was under a
+   pixel and nobody ever saw it; at two it is a third of a glyph.) */
+.loader-mark b { font-weight: 700; color: var(--ink); display: inline-block; text-indent: .3em; }
 .loader-bar { position: relative; width: 15rem; height: 0.0625rem; background: var(--hair); margin: 0 auto; }
 .loader-bar i { display: block; height: 100%; width: 0%; background: var(--ink); transition: width .4s var(--e-out); }
 /* the leading edge of the bar carries the accent, so the one moving thing on

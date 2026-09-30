@@ -317,6 +317,11 @@ const MEASURE = `(() => {
     // nothing — what matters is whether a thing that is *drawn* lands on it
     selOverSheet: +overlap(r(document.querySelector('.deck > .sel')), r(sheet)).toFixed(0),
     pagerOverSheet: +overlap(r(document.querySelector('.pager')), r(sheet)).toFixed(0),
+    // ...and .deck-right is the child the old box check could never see: the
+    // transport *inside* it is measured above, but the flex row around it is
+    // wider than the transport and reaches further left, so a plate that grew
+    // into that row would slip past every other drawn measure.
+    rightOverSheet: +overlap(r(document.querySelector('.deck-right')), r(sheet)).toFixed(0),
     nowOverSheet: +overlap(r(now), r(sheet)).toFixed(0),
     navOverTheme: +overlap(r(nav), r(theme)).toFixed(0),
     dossier: r(dossier),
@@ -350,10 +355,19 @@ for (const [w, h] of WIDTHS) {
   if (m.unreachable) flags.push(`record clipped out of reach (${m.unreachable}px)`);
   if (m.visOverTransport > 2) flags.push(`plate prints on transport (${m.visOverTransport}px)`);
   if (drift) flags.push('UNSTABLE — two reads of the same width disagree, re-run');
-  if (m.deckOverSheet > 0) flags.push(`deck∩sheet ${m.deckOverSheet}px²`);
+  /* The deck's own box is NOT flagged, and the reason is worth keeping here
+     because the box number still prints in the table. `.deck` is a transparent
+     grid, and at 1080 it is three rows whose first two are empty on the right —
+     which is exactly where the plate lives. Measured there: box overlap
+     48629px², and every single thing actually drawn in that band zero. Flagging
+     the box made two widths cry wolf for a whole round. What is flagged is
+     anything *drawn* on the plate, `.deck-right` included. */
+  const drawnOnSheet = m.transportOverSheet + m.selOverSheet + m.pagerOverSheet
+    + m.rightOverSheet + m.nowOverSheet;
   if (m.transportOverSheet > 0) flags.push(`transport∩sheet ${m.transportOverSheet}px²`);
   if (m.selOverSheet > 0) flags.push(`sel∩sheet ${m.selOverSheet}px²`);
   if (m.pagerOverSheet > 0) flags.push(`pager∩sheet ${m.pagerOverSheet}px²`);
+  if (m.rightOverSheet > 0) flags.push(`deck-right∩sheet ${m.rightOverSheet}px²`);
   if (m.nowOverSheet > 0) flags.push(`now∩sheet ${m.nowOverSheet}px²`);
   if (m.theme && (m.theme.l < -1 || m.theme.r > m.vw + 1)) flags.push('theme seg out of view');
   if (flags.length) bad.push(`${w}×${h}: ${flags.join(' | ')}`);
@@ -370,7 +384,8 @@ for (const [w, h] of WIDTHS) {
     '  ' + String(m.deckOverSheet).padStart(10) +
     '   ' + m.themeBtns.join(' / ') +
     '\n        drawn-on-plate: transport=' + m.transportOverSheet +
-    ' sel=' + m.selOverSheet + ' pager=' + m.pagerOverSheet + ' now=' + m.nowOverSheet +
+    ' sel=' + m.selOverSheet + ' pager=' + m.pagerOverSheet + ' right=' + m.rightOverSheet +
+    ' now=' + m.nowOverSheet + ' total=' + drawnOnSheet +
     '\n        state: ' + m.state + '   sans: ' + m.sans +
     '\n        dossier.h=' + m.dossier.h + '  sheet.h=' + m.sheet.h +
     '  crumb.h=' + (m.crumb ? m.crumb.h : '-') +

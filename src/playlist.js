@@ -1,10 +1,10 @@
-/* ============================== the demo tape ==========================
+/* ============================== the demo programme =====================
 
    Two sides of sixty seconds, six tracks, all of it synthesised at runtime.
-   The tape it replaces was a commercial record that cannot ship with the
+   The programme it replaces was a commercial record that cannot ship with the
    repository, so rather than leave the deck empty the page carries its own
    pressing — a fictional release by a fictional band, which is also the honest
-   thing to put on a label in a page that is about the machine rather than the
+   thing to put on a label in a page that is about the room rather than the
    music.
 
    A side is one continuous piece of audio; the three tracks are regions of it.
@@ -12,8 +12,10 @@
    the label bake all keep speaking the language they already spoke: a track is
    `applyTrack()` plus a position.
 
-   The two sides are deliberately different keys and tempos, so 翻面 is audible
-   as well as visible.
+   The two sides are deliberately different keys and tempos, so switching sides
+   is audible as well as visible. They are reached from the track list, which
+   lists both — the 翻面 button that used to reach B is gone with the shell (see
+   TAPE_ON in main.js), and this list is where B was always reachable anyway.
    ======================================================================= */
 
 import { renderSide } from './demo-audio.js';
@@ -37,8 +39,8 @@ export const SIDES = [
   {
     id: 'A',
     cn: 'A 面',
-    /* what gets printed on the cassette's own label for this side */
-    label: { title: '低温装配', artist: ARTIST, album: 'LUX 演示带 · A 面' },
+    /* what gets printed on the label for this side */
+    label: { title: '低温装配', artist: ARTIST, album: '灵宝演示曲 · A 面' },
     spec: {
       dur: 60, bpm: 92, arr: [0, 1, 2], tracks: A_TRACKS,
       chords: [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 62], [55, 59, 62, 66]],
@@ -48,7 +50,7 @@ export const SIDES = [
   {
     id: 'B',
     cn: 'B 面',
-    label: { title: '深水区', artist: ARTIST, album: 'LUX 演示带 · B 面' },
+    label: { title: '深水区', artist: ARTIST, album: '灵宝演示曲 · B 面' },
     spec: {
       dur: 60, bpm: 76, arr: [1, 2, 0], tracks: B_TRACKS,
       chords: [[50, 53, 57, 60], [47, 50, 53, 57], [46, 50, 53, 57], [48, 52, 55, 62]],

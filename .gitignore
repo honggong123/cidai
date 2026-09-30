@@ -3,7 +3,14 @@ tools/_*.png
 _*.png
 .DS_Store
 Thumbs.db
-assets/
+# 素材目录：默认只放本地的大件源素材（不进仓库），但随站点发布的图必须例外。
+# 注意不能写成 `assets/` + `!assets/xxx` —— git 不允许父目录被排除后再重新包含
+# 其中的文件，那样写会静默失效、线上 404。
+#   spirit.png      交付的原图（实为 JPEG，黑底无 alpha），只作切图源，运行时不用
+#   spirit-cut.webp 运行时贴的透明图，由 tools/key-spirit.py 生成 —— 必须进仓库
+assets/*
+!assets/spirit.png
+!assets/spirit-cut.webp
 # tools/_viz.mjs 自己建的插桩副本；正常跑完会删掉，崩了才会留下
 _viz_probe/
 # 本地验收截图（tools/page-shot.mjs 的输出），不进仓库
