@@ -37,21 +37,32 @@
  *      fired. Counting rAF ticks in the page and waiting on that counter is
  *      exact at any frame rate, and it needs no calibration.
  *
- * The moves are triggered the way a person triggers them: click the row to
- * select it, click it again to play it (`pick()` in main.js — "clicking the row
- * you already selected does it, so the list can be driven end to end without
- * reaching for the button"). Row centres are re-read every iteration, because
- * playing a move hands the camera to that move's own framing and the panel
- * narrows itself for some of them, which moves the rows.
+ * The moves are triggered the way a person triggers them: one click on the row.
+ * It used to be two — select, then play — and this file used to click twice to
+ * match; `pick()` in main.js now selects and fires in the same gesture, so a
+ * second click would only restart the clip under the probe's own frame counter.
+ * Row centres are re-read every iteration even though they no longer move: a
+ * move used to hand the camera to its own framing, which dragged the panel
+ * around underneath the probe's own cursor. That is gone — a move is only a
+ * pose now — so the re-read is cheap insurance rather than a requirement.
+ *
+ * The third sample point (0.82) will report `action=null` on the shorter clips.
+ * That is this file, not the model: `Page.captureScreenshot` under software
+ * rendering costs 5-8 frames and `action()` is read *after* the shot, by which
+ * time a 21-frame clip is over. The 32-frame `wave` is the one long enough to
+ * still be running at its own 0.82 mark.
  */
 import { writeFileSync } from 'node:fs';
 
 const [url, cdpPort = '9445', dpr = '1', outPrefix = '_shots/mv'] = process.argv.slice(2);
 if (!url) { console.error('usage: node tools/_moves.mjs <url> [cdpPort] [dpr] [outPrefix]'); process.exit(2); }
 
+// The tab is picked by URL, never by position: /json/list lists every page in
+// the browser, and another project's page being first is a normal accident.
+// Imports are hoisted, so the helper can be declared here, next to its use.
+import { pickPage } from './_cdp.mjs';
 const list = await (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).json();
-const page = list.find((t) => t.type === 'page');
-if (!page) throw new Error('no page target — start tools/_dev.mjs first');
+const page = pickPage(list, url);
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 
@@ -64,7 +75,8 @@ ws.onmessage = (e) => {
   if (m.id && pending.has(m.id)) {
     const p = pending.get(m.id);
     pending.delete(m.id);
-    if (m.error) p.reject(new Error(`${m.error.message} (${m.error.code})`)); else p.resolve(m);
+    /* 报错带上方法名：-32602 这类参数错不说是谁，只能全流程二分 */
+    if (m.error) p.reject(new Error(`${m.error.message} (${m.error.code}) [${p.method}]`)); else p.resolve(m);
     return;
   }
   if (m.method === 'Runtime.exceptionThrown') problems.push(m.params.exceptionDetails?.exception?.description || m.params.exceptionDetails?.text);
@@ -72,9 +84,10 @@ ws.onmessage = (e) => {
 };
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const n = ++id;
+  if (process.env.MOVES_DEBUG) console.error('SEND', n, method, JSON.stringify(params).slice(0, 140));
   const guard = setTimeout(() => { if (pending.has(n)) { pending.delete(n); reject(new Error(`${method} timed out`)); } }, 180000);
   guard.unref?.();
-  pending.set(n, { resolve: (v) => { clearTimeout(guard); resolve(v); }, reject: (e) => { clearTimeout(guard); reject(e); } });
+  pending.set(n, { method, resolve: (v) => { clearTimeout(guard); resolve(v); }, reject: (e) => { clearTimeout(guard); reject(e); } });
   ws.send(JSON.stringify({ id: n, method, params }));
 });
 const evaluate = (expression) => send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
@@ -115,11 +128,20 @@ const framesTo = (f) => evaluate(`new Promise((res) => { const go = () => {
   if (window.__fc >= ${f}) res(window.__fc); else requestAnimationFrame(go); }; go(); })`);
 
 /* a frame count, not a duration: `dt` is clamped to 1/20 s, so the clip's
-   seconds are frames at five per tenth of a second */
+   seconds are frames at five per tenth of a second.
+   ★ These five numbers and five names are a **copy of `ghost.js`'s `ACTIONS`
+   and `main.js`'s `MOVES`**, and they were wrong: the durations were still the
+   previous character's (1.15/1.85/1.60/1.25/1.50 against the real
+   1.05/1.45/1.30/1.00/1.15) and `salute` still printed the old label 敬礼
+   instead of 掀帽. A copy that is not checked is a copy that is wrong, and this
+   one failed quietly in the worst way: the third sample of *every* move landed
+   past the end of the clip and reported `action=null`, which reads like "the
+   clip finished early" rather than "the probe aimed at the wrong frame".
+   If a clip's length changes, change it here too. */
 const MOVE = [
-  { k: 'nod', cn: '点头', dur: 1.15 }, { k: 'wave', cn: '挥手', dur: 1.85 },
-  { k: 'spin', cn: '转个圈', dur: 1.60 }, { k: 'jump', cn: '跳一跳', dur: 1.25 },
-  { k: 'salute', cn: '敬礼', dur: 1.50 },
+  { k: 'nod', cn: '点头', dur: 1.25 }, { k: 'wave', cn: '晃一晃', dur: 1.75 },
+  { k: 'spin', cn: '转个圈', dur: 1.55 }, { k: 'jump', cn: '跳一跳', dur: 1.15 },
+  { k: 'salute', cn: '掀帽', dur: 1.60 },
 ];
 /* three points: committed, mid-flight, unwinding. A mesh that intersects often
    only does so on the way out, when a limb is coming down past the body. */
@@ -152,10 +174,9 @@ for (let i = 0; i < MOVE.length; i++) {
     console.log(`FAIL  row ${i} sits at ${x},${y}, outside the ${W}x${H} viewport — the panel is folded`);
     fails++; continue;
   }
-  await click(x, y);                       // select
-  await framesTo(await fc() + 2);
   const f0 = await fc();                   // the frame the clip starts on, ±1
-  await click(x, y);                       // play
+  await click(x, y);                       // select *and* play — one gesture now
+  await framesTo(f0 + 2);
   const started = await action();
   const ok = started === MOVE[i].k;
   if (!ok) fails++;

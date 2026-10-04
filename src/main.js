@@ -2,9 +2,10 @@ import * as THREE from 'three';
 import { createEnvironments } from './env.js';
 import { createProbe } from './probe.js';
 import { createRig, buildRigPanels, RIG } from './lights.js';
-import { createCassette, DIM } from './cassette.js';
+import { createRelic, DIM } from './relic.js';
 import { createSoftFloor } from './floor.js';
 import { createComposer } from './post.js';
+import { createCastle } from './castle.js';
 import { Orbit } from './controls.js';
 import { clamp, damp, ease, Timeline } from './anim.js';
 import * as TX from './textures.js';
@@ -12,14 +13,14 @@ import { TapeAudio } from './audio.js';
 import { readTags, looksLikeAudio } from './tags.js';
 import { SIDES, loadSide as ensureSide, sideOf, trackAt } from './playlist.js';
 import { createViz } from './viz.js';
-import { createNahida } from './nahida.js';
+import { createGhost } from './ghost.js';
 
 const $ = (s) => document.querySelector(s);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canvas = $('#gl');
 
 /* ============================== the tape is off ==========================
-   The subject of this page is 纳西妲 now, and the cassette is kept rather than
+   The subject of this page is 小幽灵 now, and the cassette is kept rather than
    deleted: every part of it, its materials, its two reels' worth of animation
    and its two hundred lines of assembly are still here, one flag away. Nothing
    downstream has to be told the difference beyond this constant, which is why
@@ -38,12 +39,13 @@ const canvas = $('#gl');
    untouched: they never belonged to the tape in the first place. */
 const TAPE_ON = false;
 
-/* She stands where the shell lay, and is sized against it rather than picked:
-   `DIM.H` is how deep the cassette was, and a character who overtopped the
-   object she replaced would read as a change of scale rather than a change of
-   subject. Her *width* is not set from here — the image's own aspect decides it
-   once the file has decoded (see spirit.js), because she is not square and a
-   height applied to both axes would stretch her. */
+/* She occupies the space the shell lay in, and is sized against it rather than
+   picked: `DIM.H` is how deep the cassette was, and a character who overtopped
+   the object she replaced would read as a change of scale rather than a change
+   of subject. `ghost.js` reads this as the *whole envelope* — hem to hat tip —
+   and hangs the hem `FLOAT` above the floor so the hat tip lands on the same
+   ceiling the old crown did. That is what keeps the five camera vantages
+   framed without touching a single one of them. */
 const SPIRIT_H = DIM.H;
 
 /* ============================== the buttons that are gone =================
@@ -180,29 +182,32 @@ const THEMES = {
       bloom: 0.32, ca: 0.85, grain: 0.040, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26,
       halTint: [1.0, 0.86, 0.62],          // the gold of the room's one spot
     },    bg: {
-      stops: [[0, '#111214'], [0.44, '#1b1c1f'], [0.64, '#0c0d0f'], [1, '#040405']],
-      spot: { u: 0.849, v: 0.48, r: 0.40, color: 'rgba(220,190,140,0.60)' },
+      stops: [[0, '#120e1c'], [0.44, '#1e1733'], [0.64, '#0d0a17'], [1, '#050309']],
+      spot: { u: 0.849, v: 0.48, r: 0.40, color: 'rgba(226,196,150,0.58)' },
     },
-    floor2: 0x0e0f11, floorMix: 0.60, shadowOp: 0.44,
-    pool: 0xffc978, poolOp: 0.07,
-    spirit: { tint: 0xfff5e6, rim: 0xdcbe8c, rimOp: 0.30 },
-    glare: { tint: [1.0, 0.86, 0.62], strength: 0.16, stride: 0.010, threshold: 0.58 },
+    floor2: 0x1c1626, floorMix: 0.22, shadowOp: 0.44,
+    pool: 0xb98cff, poolOp: 0.03,
+    /* 房间能改幽灵的只有两样：光环的颜色/浓度、体内青光的色偏。
+       暗房里光环取金带那个金 —— 它替掉了原来那身叶子发饰在房间里的作用。 */
+    spirit: { tint: 0xe8dcff, rim: 0xc9a24e, rimOp: 0.30 },
+    glare: { tint: [0.94, 0.86, 1.0], strength: 0.16, stride: 0.010, threshold: 0.58 },
   },
   studio: {
     env: 'studio', dust: 0.10, hal: 0.012, ao: 0.92,
     grade: {
       bloom: 0.32, ca: 0.85, grain: 0.035, vig: 0.85, sat: 1.0, edge: 1.0, focus: 0.26,
-      // neutral: in a white hall a warm bleed on a white highlight is the one
-      // thing that would give the whole room away as a filter
-      halTint: [1.0, 0.97, 0.94],
+      // a hair violet rather than neutral: the hall's white is now a cold one
+      // (see lights.js), and a neutral bleed on a violet-white highlight is the
+      // one thing that would give the whole room away as a filter
+      halTint: [0.96, 0.96, 1.0],
     },
     bg: {
-      stops: [[0, '#b8bcc1'], [0.46, '#d7dade'], [0.78, '#ebedef'], [1, '#f6f7f8']],
-      spot: { u: 0.849, v: 0.48, r: 0.44, color: 'rgba(255,255,255,0.42)' },
+      stops: [[0, '#b6bac8'], [0.46, '#d5d9e4'], [0.78, '#eaecf2'], [1, '#f5f6fa']],
+      spot: { u: 0.849, v: 0.48, r: 0.44, color: 'rgba(246,244,255,0.42)' },
     },
-    floor2: 0xd6d8da, floorMix: 0.30, shadowOp: 0.18,
-    pool: 0xffffff, poolOp: 0.03,
-    spirit: { tint: 0xdedad2, rim: 0x2a2b1f, rimOp: 0.26 },
+    floor2: 0x8b8a96, floorMix: 0.12, shadowOp: 0.18,
+    pool: 0xcfc4ff, poolOp: 0.0,
+    spirit: { tint: 0xe0e2f2, rim: 0x6a4fa8, rimOp: 0.26 },
     // the room the page opens in, so this is the one glare nobody should be
     // able to notice: a hint of a streak on the speculars and nothing else
     glare: { tint: [0.92, 0.95, 1.0], strength: 0.06, stride: 0.008, threshold: 0.66 },
@@ -216,16 +221,16 @@ const THEMES = {
     env: 'abyss', dust: 0.18, hal: 0.026, ao: 1.05,
     grade: {
       bloom: 0.34, ca: 0.75, grain: 0.040, vig: 0.92, sat: 1.0, edge: 1.05, focus: 0.24,
-      halTint: [0.66, 0.84, 1.0],
+      halTint: [0.62, 0.92, 1.0],
     },
     bg: {
-      stops: [[0, '#a8bcc9'], [0.46, '#cbd8e0'], [0.74, '#e2e9ee'], [1, '#f1f5f8']],
-      spot: { u: 0.849, v: 0.48, r: 0.42, color: 'rgba(180,215,240,0.45)' },
+      stops: [[0, '#93b6c4'], [0.46, '#c2dae2'], [0.74, '#dcebf0'], [1, '#eef6f8']],
+      spot: { u: 0.849, v: 0.48, r: 0.42, color: 'rgba(150,225,245,0.48)' },
     },
-    floor2: 0xc2ced8, floorMix: 0.34, shadowOp: 0.22,
-    pool: 0x5fc8e8, poolOp: 0.06,
-    spirit: { tint: 0xe2eaf0, rim: 0x2e3a3a, rimOp: 0.24 },
-    glare: { tint: [0.62, 0.84, 1.0], strength: 0.22, stride: 0.011, threshold: 0.55 },
+    floor2: 0x7e8f96, floorMix: 0.14, shadowOp: 0.22,
+    pool: 0x5fe0f0, poolOp: 0.02,
+    spirit: { tint: 0xd8f0f5, rim: 0x1f8fa0, rimOp: 0.26 },
+    glare: { tint: [0.58, 0.92, 1.0], strength: 0.22, stride: 0.011, threshold: 0.55 },
   },
 };
 for (const T of Object.values(THEMES)) {
@@ -324,6 +329,12 @@ function setFloorDrop(d) {
   pool.position.y = FLOOR_Y + 0.02 - d;
 }
 setFloorDrop(0);
+/* 城堡内部（2026-10-02：不要摄影房，改到西欧城堡）—— 石墙/拱窗/木门/挂毯/
+   火把/吊灯/横梁/石板地全在 castle.js。她的实用灯与雾随主题走（applyTheme 里
+   setTheme(name, k)），火光闪烁在主循环的 castle.update(t)。 */
+const castle = createCastle({ floorY: FLOOR_Y });
+scene.add(castle.group);
+scene.fog = castle.fog;                // 雾只雾墙（near ≥ 34），她永远在雾外
 /* ============================== dust ==================================== */
 const dustLayers = [
   { n: 220, size: 0.055, color: 0xffe6c8, opacity: 0.5, spread: 26, rise: 0.09 },
@@ -398,20 +409,22 @@ let probe = null, rigPanels = null, probeDirty = false, probeBound = false;
    it a stray drag leaves the tape at whatever three-quarter angle you let go of,
    and the read-out down the side keeps naming a vantage the lens has left. The
    timer is armed only by *manual* handling; anything the app does itself (arrows,
-   a record, 拆解, the double-click home) already ends on a framing, so it
-   disarms instead. 巡览 beats it: with the model turning by itself there is
-   nothing to return to. */
+   a record, 拆解) already ends on a framing, so it disarms instead. 巡览 beats
+   it: with the model turning by itself there is nothing to return to.
+   ★ 双击**不在**这张名单里：它现在什么都不做（见 controls.js）。原来它也是一个
+   "自己走到某个取景"的动作，所以既会调 `onReset` 让面板改回 01，又不 arm 计时器
+   —— 2026-10-02 用户要求双击别再把镜头拉回默认机位，整个口子跟着拆了。 */
 const HOME_DELAY = 5.0;
 let homeArmed = false;
 function armHome() { if (!autoRotate) homeArmed = true; }
 function goHome() {
   homeArmed = false;
-  orbit.setPreset(vi >= 0 ? VANTAGES[vi].v : cur().view, false);
+  orbit.setPreset((vi >= 0 ? VANTAGES[vi] : VANTAGES[0]).v, false);
   if (orbit.tween) orbit.tween.dur = 1.6;
 }
 const orbit = new Orbit(canvas, camera, {
   theta: 1.18, phi: 1.34, radius: 40, target: new THREE.Vector3(0, 0.05, 0),
-  minR: 11, maxR: 52, minPhi: 0.16, maxPhi: 1.52,
+  minR: 11, maxR: 40, minPhi: 0.16, maxPhi: 1.52,   // 城堡墙在 44 —— 镜头最远 40，留在厅内
   auto: false,
   reduce,
   onInteract: (dragging) => {
@@ -421,19 +434,24 @@ const orbit = new Orbit(canvas, camera, {
     if (!dragging) armHome();
   },
   onManual: armHome,
-  onReset: () => {
-    // the double-click home *is* VANTAGES[0], so the panel follows the camera
-    // back to the first vantage. Without this it keeps showing 04 / MACRO and
-    // keeps the dossier narrowed for a lens that is no longer close in.
-    vi = 0;
-    homeArmed = false;
-    render();
-  },
 });
-/* the tape is ~9.6 units across, so the framing wants the lens well back of the
-   old product-shot distance — at 18 units the subject alone filled the frame and
-   there was no room left for the panel down the right-hand side */
-orbit.home = { theta: 0.62, phi: 1.03, radius: 33 };
+
+/* the camera's four filed vantages, independent of whatever record is open.
+   ★★ 01 就是**默认机位**：开场推轨的收尾、`reset()`、以及"没带查询串/关掉开场
+   动画"时的回位，三处都落在 `orbit.home` 上，所以"01"和"home"必须是同一份数字。
+   以前这两处各写一遍（都写 iso），分头改一次就会得到"镜头停在 front、面板报 01
+   等轴机位"。现在 home 直接指向 `VANTAGES[0].v`，只有一份。
+   2026-10-02 用户要求把默认从 等轴(iso) 换成 正视(front)：iso 是 31° 俯角，
+   看下去帽檐占满画幅；front 的 15.5° 才是一张肖像。 */
+const VANTAGES = [
+  { k: 'front', cn: '正视机位', en: '正立面', v: { theta: 0.06, phi: 1.30, radius: 31 } },
+  { k: 'iso', cn: '等轴机位', en: '等角投影', v: { theta: 0.62, phi: 1.03, radius: 33 } },
+  { k: 'top', cn: '俯视机位', en: '平面', v: { theta: 0.34, phi: 0.30, radius: 34 } },
+  { k: 'detail', cn: '细节特写', en: '微距', v: { theta: 0.95, phi: 1.14, radius: 21 } },
+];
+/* 镜头拉得比旧的产品机位远：18 单位时主体自己占满画幅，右侧那列面板没有地方
+   站。数字只有 `VANTAGES[0]` 这一份 —— 上面那张表在 Orbit 旁边，就是为这个。 */
+orbit.home = VANTAGES[0].v;
 
 const audio = new TapeAudio();
 
@@ -491,11 +509,12 @@ const bedLevel = () => (prefs.hiss ? (muted ? 0.45 : 0.30 * volume) : 0);
 const audioOk = () => audioEl.readyState >= 2 && isFinite(audioEl.duration) && audioEl.duration > 0;
 
 /* ============================== putting a track in =======================
-   A label is a baked texture and pointing a material at a new one is a step, so
-   a swap is not a swap: it is a *rewrite*. The incoming print is drawn onto the
-   copy of the plate the write head carries (see cassette.js), the head crosses
-   the card over SWAP_DUR, and only then does the plate itself take the new map
-   (updateLabelSwap below).
+   ★★ 这一段描述的是**老走带台**的换曲：纸标是一张烤好的贴图，换曲就是重写它 ——
+   写头把新印样搬过去，用 SWAP_DUR 横过卡片，然后纸标才换图。磁带收起来之后没有
+   纸标了（`relic.js` 的 `sweepLabel` / `stepHead` / `warmLabel` 是**有意的空操作**），
+   换曲的可见过渡改归面板的雾涌；`setLabel()` 的返回值也不再存在（见 `applyTrack`）。
+   留下来的只有**时刻**：`swap` 状态机仍然决定"页面从哪一帧开始说新曲目" ——
+   `settleSwap()` 那一帧才写 `TRACK`、`st.duration`、芯片与标题。
 
    Everything the page says about the track changes on that last frame and not
    one frame sooner — the handwriting on the label, its MINUTES caption, the
@@ -505,7 +524,7 @@ const audioOk = () => audioEl.readyState >= 2 && isFinite(audioEl.duration) && a
    browser hands over several hundred milliseconds *before* the print does.
    ======================================================================== */
 const SWAP_DUR = 1.2;
-const swap = { state: 'idle', p: 0, press: 0, neu: null, old: null, dur: 0, play: false, seek: null, meta: null };
+const swap = { state: 'idle', p: 0, press: 0, dur: 0, play: false, seek: null, meta: null };
 /* Every load carries a ticket. A load spends a few hundred milliseconds waiting
    on the media element, and REINITIALIZE can land inside that window — without
    this the load would come back from the await and print itself over the reset
@@ -590,12 +609,20 @@ async function applyTrack({ title, artist, album, src, file }) {
   const dur = await whenPlayable();
   if (seq !== loadSeq) return;                // a reset overtook this load
 
-  /* drawn here, on a still frame: two 2048px canvases are the one expensive part
-     of a swap, and a hitch before anything moves reads far better than a hitch
-     in the middle of a sweep */
-  const staged = cas.setLabel({ title, artist, album, minutes: dur > 0 ? tapeMinutes(dur) : '--' });
-  swap.neu = staged.neu;
-  swap.old = staged.old;
+  /* ★★ 这里原来是 `const staged = cas.setLabel(...)` 再 `swap.neu = staged.neu`。
+     `setLabel()` 的返回值是老走带台的**纸标交接** —— `{ neu, old }`，写头扫过的
+     那两张 2048px 画布。`relic.js` 的 `setLabel()` 没有返回值，于是 `staged.neu`
+     读的是 `undefined` 的属性，抛 TypeError。
+     **这个异常完全没有声音**：`applyTrack` 是**不被 await** 调用的（`playTrack` /
+     `playSide` / 文件选择器），所以它只变成一条 `unhandledrejection`，而
+     `showError()` 写的是**早就消失的 loader**（`if (loaderLbl.parentElement)`）。
+     症状：点总目录里的曲子，音响照旧、面板照旧、芯片照旧 —— 只是那一首永远不装
+     进来（实测 `tools/_swap.mjs`：`TypeError: … reading 'neu'`，芯片停在「静水」）。
+     交接的下游（`swap.neu/old`）只服务 `ghosts`，而 `ghosts` 只由 `embrace()` 填，
+     `embrace()` 只在 `TAPE_ON` 的遍历里被调用（`TAPE_ON = false`）→ **恒空**。
+     所以整套交接随纸标一起拆掉；`setLabel()` 本身要留着 —— 它在音频元数据到来
+     之前用 `minutes` 预告 `st.duration`。 */
+  cas.setLabel({ title, artist, album, minutes: dur > 0 ? tapeMinutes(dur) : '--' });
   cas.sweepLabel(0);                          // parked off the leading edge
   audio.clunk(0.9);                           // the head comes down on the tape
   swap.p = 0;
@@ -612,6 +639,9 @@ function updateLabelSwap(dt) {
   const k = ease.inOut(swap.p);
   cas.sweepLabel(k);
   // the machine takes the load: pressed down under the head, up again after it
+  /* ★ 只写通道（同 intro.y）：写它的那三处都还在，读它的那一行
+     （`cas.root.position.y = … - swap.press`）随磁带删了。换曲的可见过渡
+     现在归面板的雾涌（relic.js 的 sweepLabel 是空操作）。 */
   swap.press = Math.sin(Math.PI * k) * 0.10;
   if (swap.p >= 1) settleSwap();
 }
@@ -620,14 +650,17 @@ function settleSwap() {
   swap.state = 'idle';
   swap.press = 0;
   cas.commitLabel();
-  // The plates' ghost copies hold the maps that are about to go — move them off
-  // first. bindProbe() does the same dance for the probe, for the same reason.
-  for (const e of ghosts) {
-    const i = swap.old.indexOf(e.m.map);
-    if (i >= 0) e.m.map = swap.neu[i];
-  }
-  for (const t of swap.old) t.dispose();
-  swap.neu = swap.old = null;
+  /* ★★ 这里原来是"把纸标的幽灵副本挪到新贴图上，再 dispose 旧贴图"两行，
+     第一行在 `ghosts` 里找、第二行**无条件** `for (const t of swap.old)`。
+     `ghosts` 恒空、`swap.old` 从来不存在（见 `applyTrack`），所以第二行必抛
+     TypeError —— 而它抛在**函数中段**，后面这一整串全部不执行：
+
+       Object.assign(TRACK, swap.meta) · cas.st.duration · setNowChip()
+       · swap.seek 的落位 · syncNowTrack() · swap.play 的延迟播放
+
+     也就是"换曲永远不落地、换曲时按下的播放永远丢失"。实测
+     `tools/_swap.mjs`：点目录里的曲目 → `TypeError: … reading 'old'`。
+     纸标没了，这两行一起没了。 */
 
   Object.assign(TRACK, swap.meta);
   swap.meta = null;
@@ -635,7 +668,7 @@ function settleSwap() {
   // was, and the card keeps the '--' it was printed with
   if (swap.dur > 0) {
     cas.st.duration = swap.dur;
-    swapText(brandCode, 'ND—' + tapeMinutes(swap.dur));
+    swapText(brandCode, 'GH—' + tapeMinutes(swap.dur));
   }
   setNowChip();
   flashAdd(null);
@@ -663,8 +696,6 @@ function cancelSwap() {
   swap.meta = null;
   swap.dur = 0;
   swap.play = false;
-  if (swap.neu) for (const t of swap.neu) t.dispose();
-  swap.neu = swap.old = null;
   cas.warmLabel(false);
 }
 
@@ -682,15 +713,16 @@ function reinitTrack() {
   cas.setProgress(0);
   audioFailed = false;
   Object.assign(TRACK, T);
-  const staged = cas.setLabel({ title: T.title, artist: T.artist, album: T.album, minutes: T.minutes });
-  for (const e of ghosts) {
-    const i = staged.old.indexOf(e.m.map);
-    if (i >= 0) e.m.map = staged.neu[i];
-  }
+  /* ★★ 同 `applyTrack`：`cas.setLabel()` 没有返回值，`staged.old` 必抛 TypeError。
+     这一处比那一处**更重**，因为 `reinitTrack()` 是被 `reinit()` **同步**调用的
+     （`main.js` 的 `#btn-reinit` 处理器），异常直接抛穿到点击处理器里，`reinit()`
+     后半截的 `setTheme('studio')` / `orbit.setPreset(VANTAGES[0].v)` / `render()`
+     全部不执行 —— 也就是**「重置」按下去什么也不重置**。
+     实测 `tools/_swap.mjs`：`TypeError: … reading 'old'`，页面停在原地。 */
+  cas.setLabel({ title: T.title, artist: T.artist, album: T.album, minutes: T.minutes });
   cas.commitLabel();
-  for (const t of staged.old) t.dispose();
   cas.warmLabel(false);
-  swapText(brandCode, 'ND—' + T.minutes);
+  swapText(brandCode, 'GH—' + T.minutes);
   setNowChip();
   swap.dur = 0;
 }
@@ -758,7 +790,22 @@ function applyQuery(camera = true) {
   // same state as clicking there — including the panel narrowing itself
   const vk = camera && Q.has('v') ? VANTAGES.findIndex((x) => x.k === Q.get('v')) : -1;
   if (vk >= 0) { vi = vk; orbit.setPreset(VANTAGES[vk].v, true); }
-  else if (camera && [...Q.keys()].length && !Q.has('x')) orbit.setPreset(orbit.home, true);
+  /* ★ 这里原来还有一个 `&& !Q.has('x')`。它当年是对的：`?x=1` 要带着**拆解态
+     自己的取景**打开，所以它必须跳过"回位到 home"这一句，否则刚摆好的取景
+     会被推回默认机位。拆解随磁带一起没有了（下面 TAPE_ON 里两个 flag 都被
+     读掉、不报错），可这个例外留了下来 —— 于是 `?x=1` 成了一个**什么都不
+     做、却改变取景**的 flag：它让镜头停在 Orbit 的初始值 (1.18, 1.34, 40)，
+     而 `?x=0`、`?f=1` 以及任何别的单 flag 都回 home (0.62, 1.03, 33)。
+     40 与 33 的半径差在画面上是一眼的事。一个已经不存在的功能不该再改变
+     任何东西，所以例外去掉：flag 被读掉，取景照常。 */
+  /* ★ 这一句原来是 `else if (camera && [...Q.keys()].length)` —— 只有"URL 带
+     查询串"时才回位。零查询串那一支靠的是开场推轨**自己收尾在 home 上**，可
+     是关掉「开场动画」之后这条腿就断了：`wantsIntro` 为假 → 不走 `runIntro()`
+     → `applyQuery(true)` 里键数为 0 → 三处都不设镜头，页面就停在
+     `new Orbit(...)` 的初始值 (theta 1.18, phi 1.34, **radius 40**)，而右侧
+     面板报的是 01。40 与 31 差着一整档，症状就是"一打开镜头拉得特别远"。
+     回位不该有条件。 */
+  else if (camera) orbit.setPreset(orbit.home, true);
   // instant, like x=1 and r=: this URL exists to be screenshotted, and a flip
   // that eases over a second gets caught mid-turn. Both flags name a pose of the
   // shell, so with the shell off they are read and dropped rather than left to
@@ -770,7 +817,7 @@ function applyQuery(camera = true) {
   // ?m=03 opens on that move: the id, not the index, so a link keeps working
   if (Q.has('m')) {
     const r = MOVES.findIndex((x) => x.no === Q.get('m').padStart(2, '0'));
-    if (r >= 0) { ri = r; doMove(true, camera); }
+    if (r >= 0) { ri = r; doMove(true); }
   }
   if (Q.get('p') === '1') togglePlay(true);
   if (Q.get('spin') === '1') setAuto(true);
@@ -1000,6 +1047,9 @@ function applyTheme(dt, instant = false) {
      drifting into the preset over the first second of the page. k-scaled values
      snap; damped ones need telling. */
   const to = (cur, tgt) => (instant ? tgt : damp(cur, tgt, l, dt));
+  /* 城堡的实用灯（窗光/火把/吊灯）、墙色、石板色与雾跟着同一个 k 走 ——
+     换房时它和灯、地板一个步频，深链 (?t=) 快照落位也一样。 */
+  castle.setTheme(themeName, k);
   renderer.toneMappingExposure += ((RIG[themeName].exposure ?? 1) - renderer.toneMappingExposure) * k;
   scene.environmentIntensity += ((RIG[themeName].envInt ?? 1) - (scene.environmentIntensity ?? 1)) * k;
   dust.mat.opacity = to(dust.mat.opacity, T.dust);
@@ -1045,7 +1095,7 @@ function applyTheme(dt, instant = false) {
      tinting her body would be a filter over a photograph of a lit object, which
      is the one thing this page's lighting is careful never to do. Instead the
      rim goes where an edge actually belongs on a solid: a fresnel shell around
-     her (`setRoom` in nahida.js), and the `tint` goes onto the leaf accents
+     her (`setRoom` in ghost.js), and the `tint` goes onto the sheet's own glow
      alone, at a whisper. */
   if (spirit) spirit.setRoom(T.cRim, T.spirit.rimOp, T.cTint, k);
   // the background crosses over on the same clock as everything else, and once
@@ -1230,17 +1280,23 @@ async function boot() {
     // counter's total.
     audioEl.src = TRACK.src;
     audioEl.load();
-    swapText(brandCode, 'ND—' + TRACK.minutes);
+    swapText(brandCode, 'GH—' + TRACK.minutes);
   });
   await step('正在建立几何体', 12, () => {
-    cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: TRACK.minutes });
+    cas = createRelic({
+      title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: TRACK.minutes,
+      // 厅的地面。烛台的底座落在它上面，不落在 y=0 —— 见 relic.js 的 ★★
+      floorY: FLOOR_Y,
+    });
     scene.add(cas.root);
     /* The shell is built and then hidden, not skipped: building it is what
        defines the room's scale (the rig's reach, the floor's shadow catcher, the
        probe's capture volume all measure against it), and the sprite is sized
        against it below. Skipping the build to save the work would mean every one
        of those numbers becoming a guess. See TAPE_ON. */
-    cas.root.visible = TAPE_ON;
+    /* 幽魂烛台是磁带的继任者 —— 它是**看得见**的，不受 TAPE_ON 管辖
+       （那个开关管的是磁带外壳，磁带已经不在了）。 */
+    cas.root.visible = true;
     /* Her feet are on the floor, not at the room's centre: `center` is (0.5, 0),
        so this one number is where she touches down. The cassette was a flat
        object lying at y ≈ 0 and the camera still looks there, which is what
@@ -1248,9 +1304,9 @@ async function boot() {
        above her — the composition the shell had, kept. */
     /* She is built, not loaded: no mesh file, no texture file, no font — every
        surface is a primitive or a canvas the page draws at boot (see
-       nahida.js). Which is why this line takes no URL and why the single-file
+       ghost.js). Which is why this line takes no URL and why the single-file
        deliverable stayed single-file when she stopped being a billboard. */
-    spirit = createNahida({ height: SPIRIT_H, y: FLOOR_Y });
+    spirit = createGhost({ height: SPIRIT_H, y: FLOOR_Y });
     scene.add(spirit.root);
     /* The room she is born into. `applyTheme` already ran while the query string
        was being read, which is *before* this line, so its `setRoom` found no
@@ -1276,9 +1332,22 @@ async function boot() {
     Object.defineProperty(window, '__spirit', {
       configurable: true,
       value: {
+        /* 探针的相机/场景读数口（castle 调试用；页面自己不读） */
+        get cam() { return camera.position.toArray().map((n) => +n.toFixed(1)); },
+        get kids() { return scene.children.map((o) => o.type + ':' + o.name + ':' + o.children.length); },
+        get fogv() { return scene.fog ? [scene.fog.near, scene.fog.far, scene.fog.color.getHexString()] : null; },
+        /* 城堡的实用灯与火苗可见性。火把在世界 y=4.9、锥体半径 0.15 —— 标准
+           机位框不到，"火把在霜厅里熄着没有"这句话用截图是证不出来的（试过：
+           两种机位都框不到那面墙的上半）。所以让页面把数字说出来。 */
+        get castle() { return castle ? castle.debug() : null; },
         get sing() { return spirit ? spirit.sing : null; },
         get bob() { return spirit ? spirit.bob : null; },
         get action() { return spirit ? spirit.action : null; },
+        /* `action` says which clip is running; `pose` says whether the clip is
+           *doing* anything. `tools/_moves.mjs` checks the first and cannot check
+           the second, which is how two action channels (`arm`, `lift`) sat in
+           ghost.js for a whole round with nothing reading them. */
+        get pose() { return spirit ? spirit.pose() : null; },
         get aimX() { return spiritAim.x; },
         get aimY() { return spiritAim.y; },
         get hover() { return spiritHover; },
@@ -1402,6 +1471,12 @@ async function boot() {
 }
 
 /* ============================== intro =================================== */
+/* ★ `y` 与 `tilt` 现在是**只写通道**：唯一的读者是主循环里的
+   `cas.root.position.y = intro.y + bob - swap.press`，那一行随磁带一起删了
+   （幽魂烛台站在地上，自己的呼吸归 relic.update）。下面的 `onUpdate` 仍在
+   每帧往里写，但没有任何东西会因此动 —— 想改"开场升起"的量，改这里不会有
+   任何效果，得先给它一个读者。`spin` 与 `fade` 仍有读者（烛环的自转、
+   grade 的 uFade），是活的。 */
 const intro = { y: 0, tilt: 0, spin: 0, fade: 0 };
 /* The lift starts *on* the floor, not under it. Coming up through the floor
    from below meant the tape spent the first two seconds of the page buried in
@@ -1463,70 +1538,98 @@ let exploded = false, flipped = false, autoRotate = false;
    been folded back into the one thing they were all standing in for.
 
    THE COLOURS ARE STILL SAMPLED, NOT INVENTED. Every hex below came out of the
-   reference she is keyed to — the official sculpt sheet (`_ref/ref-3d.png`,
-   the wireframe / clay / render triptych): gown white, deep-green collar,
-   cape green-to-blue, hair silver-white going lake-blue at the tips —
-   and `nahida.js` builds her out of the same set, so the archive
-   describes the model rather than an idea of it:
-     裙白 #F6F4EF · 领绿 #49684F · 披风 #8FAE6E→#9FC4DC
-     发梢湖蓝 #A9C4D8 · 描边 #2A2B1F
-   Two of them moved on purpose. The white is a hair cooler than the drawing's
-   #EBE9E9, which was a flat fill meant to be looked at; a lit solid needs a
-   base that is not already sitting on the top of the tone curve, or every
-   highlight clips and she reads as fog. And the greens are cloth greens —
-   deeper, greyer than the artwork's paint, for the same reason. */
+   reference she is keyed to — the sculpt in `BV1xRho6DEG4` (blender 新手教程·
+   简单幽灵模型), whose finished look is the video's opening frame: deep violet
+   witch hat with a gold band and a crimson underside, a white sheet lit from
+   inside by an aqua glow, two red eyes of *different sizes*, and a red-handled
+   broom. `ghost.js` builds her out of the same set, so the archive describes
+   the model rather than an idea of it:
+     帽面靛紫 #372370 · 檐底猩红 #C62B2B · 金带 #C9A24E
+     床单白 #E8F2F3 · 体内青光 #86F0F5 · 眼 #2A1218 / #B0332A
+   The numbers here are ALBEDO, not the sampled pixel. The video is a dark room
+   with one strong key, so a sample comes back darker than the material is —
+   the brim's underside samples at #94212E, the hat's shadow at #1E103F. Put
+   those on a surface that has its own lights and the model goes black. Same
+   reason the white is a hair cooler than the reference's #EFFBFC: a lit solid
+   needs a base that is not already at the top of the tone curve, or every
+   highlight clips and she reads as fog. */
 const PROFILE = {
-  no: '00',
-  cn: '纳西妲',
-  en: 'Nahida · 小吉祥草王',
+  no: '01',
+  cn: '小幽灵',
+  en: 'Little Ghost · 会唱歌的精灵',
+  note: '一顶歪戴的紫色女巫帽、一条会发光的床单，和一柄比她手臂还长的红柄扫帚。'
+      + '她飘在半空，帽尖被谁拧过一道弯；体内那点青光跟着歌走——唱到高处就亮一档，'
+      + '停下来便慢慢暗回去。两只眼睛不一样大，右眼的那一颗高光是特意点的。',
+  /* 这几行是 `ghost.js` 里 `C` 的**反照率**，不是从视频里采到的像素值 ——
+     采样到的是那盏强主光下的受光色，写进图鉴会跟模型对不上。改 `C` 就得
+     改这里，否则档案开始描述一个不存在的颜色。（上一轮就漏改过一次：
+     `C` 里的 `hatTop` 从 0x3D2C6E 换成了 0x372370、`hatUnder` 从 0xA8202C
+     换成了 0xC62B2B，这张表还停在旧值上。） */
   spec: [
-    ['本体', '草元素 · 精灵'],
-    ['别称', '小吉祥草王'],
-    ['体高', '6.40'],
-    ['裙白', '#F6F4EF'],
-    ['领绿', '#49684F'],
-    ['发梢蓝', '#A9C4D8'],
+    ['本体', '布灵 · 幽灵'],
+    ['别称', '小幽灵'],
+    ['体高', '6.38'],
+    ['帽面靛紫', '#372370'],
+    ['檐底猩红', '#C62B2B'],
+    ['金带', '#C9A24E'],
   ],
 };
 
 /* ---------- the moves ----------
    Five things she can be asked to do, and the one new part of the page. Each is
-   a small directed shot rather than a bare button: `cn` is what the panel
-   prints, `k` is the clip of the same name in `nahida.js`, and `view` is where
-   the lens goes to watch it. So picking one from the list, from the ticks, from
-   the keyboard, or by clicking her all land in the same three places, and there
-   is no second code path that can drift out of agreement with the first.
+   a pose rather than a bare button: `cn` is what the panel prints, `k` is the
+   clip of the same name in `ghost.js`, and `note` is the line the 目录 card
+   prints — what she does, in words. So picking one from the list, from the
+   ticks, from the keyboard, or by clicking her all land in the same place, and
+   there is no second code path that can drift out of agreement with the first.
 
-   HOW CLOSE THE LENS MAY COME IS A NUMBER, NOT A TASTE. She is 6.40 tall
-   standing on the floor with the lens aimed at y ≈ 0, and the frame at distance
-   r is `2·r·tan(15°)` tall — so at r her head sits `(6.40 − 1.67·sin φ) /
-   (0.536 r)` of a frame-height above centre, and that has to stay under 0.5. At
-   φ ≈ 1.4 (near eye level, where her feet drop the furthest below the aim) the
-   floor is r ≈ 18; every `view` below stays above 22. A tighter close-up would
-   need the aim itself to rise, which is a change to controls.js rather than to
-   a number here. */
+   HOW CLOSE THE LENS MAY COME IS A NUMBER, NOT A TASTE — and the number lives
+   in `VANTAGES` (up by Orbit) now, because the lens belongs to the visitor.
+   The envelope is still 6.38 tall — the same ceiling the crown used to reach —
+   but this one *hangs*: her hem floats 0.80 above the floor and the hat tip
+   lands where her head did, so the four vantages frame the same box they always
+   did and none of them had to move. The frame at distance r is `2·r·tan(15°)`
+   tall, and the aim is the capsule's centre, so the margin is unchanged. A
+   tighter close-up would need the aim itself to rise, which is a change to
+   controls.js rather than to a number. */
+/* ★ A MOVE DOES NOT TOUCH THE CAMERA. It used to: each of the five carried its
+   own `view` — a framing picked to flatter that particular gesture — and
+   choosing one swung the lens onto it over 1.6 s. Two things were wrong with
+   that. The obvious one is that the visitor asked her to nod, not to be
+   re-framed; the lens travelling is a *bigger* motion than the nod, it arrives
+   over the same second, and it is the one you end up watching. The subtler one
+   is that a move's framing was the reason `vi` could be −1 — and `vi < 0`
+   already meant something else: "the shell is open, there is no vantage to
+   name". One variable, two meanings, and the read-out had to guess which. The
+   lens now belongs to the visitor alone (`VANTAGES`, ← →); a move is only a pose.
+
+   `note` replaces the old 机位 / 距离 / 俯仰 read-out on the 目录 cards. With the
+   framing gone those three numbers described nothing, and a card that says what
+   she does is worth more than one that says where the lens used to go. */
 const MOVES = [
-  { no: '01', k: 'nod', cn: '点头', en: 'Nod',
-    view: { theta: 0.24, phi: 1.24, radius: 25 }, viewName: '近景机位', viewEn: '正面近景' },
-  { no: '02', k: 'wave', cn: '挥手', en: 'Wave',
-    view: { theta: 0.06, phi: 1.30, radius: 30 }, viewName: '正视机位', viewEn: '正立面' },
-  { no: '03', k: 'spin', cn: '转个圈', en: 'Twirl',
-    view: { theta: 0.62, phi: 1.16, radius: 32 }, viewName: '环绕机位', viewEn: '等角投影' },
-  { no: '04', k: 'jump', cn: '跳一跳', en: 'Hop',
-    view: { theta: 0.16, phi: 1.34, radius: 31 }, viewName: '全身机位', viewEn: '低机位' },
-  { no: '05', k: 'salute', cn: '敬礼', en: 'Salute',
-    view: { theta: 0.44, phi: 1.30, radius: 27 }, viewName: '半身机位', viewEn: '侧前方' },
+  { no: '01', k: 'nod', cn: '点头', en: 'Nod', note: '整只下沉两次' },
+  /* `k` stays `wave` — `GREETINGS`, the deep link `?m=02` and the clip's name in
+     ghost.js all key off it. What she does is sway the whole sheet, because she
+     has no arms to wave; the label says what actually happens, the way 05 says
+     掀帽 for a clip still called `salute`. */
+  { no: '02', k: 'wave', cn: '晃一晃', en: 'Sway', note: '以地板为轴左右摆，扫帚同向甩' },
+  { no: '03', k: 'spin', cn: '转个圈', en: 'Twirl', note: '绕竖直轴转一圈，升起后停住' },
+  { no: '04', k: 'jump', cn: '跳一跳', en: 'Hop', note: '跃起并做挤压拉伸' },
+  /* `k` stays `salute` — the deep link `?m=05` and the clip's name in ghost.js
+     both key off it. What she does is doff the hat, so the label says that. */
+  { no: '05', k: 'salute', cn: '掀帽', en: 'Tip the hat', note: '把帽子掀起来并歪向一侧' },
 ];
 
-/* the camera's four filed vantages, independent of whatever record is open */
-const VANTAGES = [
-  { k: 'iso', cn: '等轴机位', en: '等角投影', v: { theta: 0.62, phi: 1.03, radius: 33 } },
-  { k: 'front', cn: '正视机位', en: '正立面', v: { theta: 0.06, phi: 1.30, radius: 31 } },
-  { k: 'top', cn: '俯视机位', en: '平面', v: { theta: 0.34, phi: 0.30, radius: 34 } },
-  { k: 'detail', cn: '细节特写', en: '微距', v: { theta: 0.95, phi: 1.14, radius: 21 } },
-];
+/* What the read-out names when there is no vantage to name: the shell is open
+   and the lens has pulled back off the shelf entirely. This used to be a move's
+   own framing, which is why a move used to print a vantage nobody had picked.
+   `VANTAGES` 不在这里 —— 它搬到上面 Orbit 旁边了，因为 `orbit.home` 必须指向
+   `VANTAGES[0].v`，而 `const` 在声明之前是 TDZ，没法在下面引用。 */
+const NO_VANTAGE = { cn: '拆解全览', en: 'Exploded' };
 
-let ri = 0, vi = 0;               // move, vantage; vi < 0 means a move's own framing
+/* `vi < 0` no longer means "a move brought its own framing" — moves do not move
+   the lens any more. It means the shell is open and there is no vantage to name. */
+let ri = 0, vi = 0;               // move, vantage
 let savedVi = 0;                  // the vantage an exploded pull-back stepped away from
 const cur = () => MOVES[ri];
 const MACRO = VANTAGES.findIndex((v) => v.k === 'detail');
@@ -1551,9 +1654,14 @@ D.selN.textContent = MOVES[MOVES.length - 1].no;
 const refRows = [], ticks = [];
 for (let i = 0; i < MOVES.length; i++) {
   const m = MOVES[i];
-  // click selects; clicking the row you already selected does it, so the list
-  // can be driven end to end without reaching for the button
-  const pick = () => { if (i === ri) doMove(); else { ri = i; render(true); } };
+  /* ONE CLICK ASKS FOR IT. This used to take two — the first selected, the
+     second fired — on the theory that browsing a list should not yank the
+     camera. But this column is not an index, it is the interaction area: every
+     row is one of the five things she can be asked to do, and asking has to be
+     one gesture. Selection still follows the click, and it has to happen
+     *before* `doMove`, because `doMove` reads `cur()` — the lit row and the
+     clip that is running are the same statement. */
+  const pick = () => { ri = i; doMove(); };
 
   const b = document.createElement('button');
   b.className = 'row';
@@ -2108,8 +2216,8 @@ function render(bump = false) {
   // the vantage read-out falls back to the move's own framing, and says so
   const V = vi >= 0 ? VANTAGES[vi] : null;
   setRoll(D.colI, V ? String(vi + 1).padStart(2, '0') : '--');
-  swapText(D.colCn2, V ? V.cn : M.viewName);
-  swapText(D.colEn, V ? V.en : M.viewEn);
+  swapText(D.colCn2, V ? V.cn : NO_VANTAGE.cn);
+  swapText(D.colEn, V ? V.en : NO_VANTAGE.en);
 
   // the move list and the ticks are the same five moves at two sizes. Both
   // were built once, further up — rebuilding them here would replace the
@@ -2141,9 +2249,14 @@ function render(bump = false) {
    Every way in — this button, a row, a tick, the index, ENTER — comes through
    here, so the clip and the camera can never disagree about which move is
    running. */
-function doMove(instant = false, moveCam = true) {
+/* Ask her for a pose. That is the whole job — see MOVES for why the lens is not
+   part of it. `vi` is deliberately left exactly where the visitor put it. */
+function doMove(instant = false) {
   const M = cur();
-  homeArmed = false;                  // a move ends on its own framing
+  /* It does not move the lens, and it does not want the lens moving: a row click
+     cancels any pending return-to-vantage so nothing drifts across the frame
+     while she performs. */
+  homeArmed = false;
   if (spirit) spirit.play(M.k);
   syncMoveButtons();
   /* The shell is hidden, so there is nothing left to isolate and nothing to
@@ -2154,13 +2267,6 @@ function doMove(instant = false, moveCam = true) {
   exploded = false;
   cas.setExplode(false);
   setPressed('#btn-explode', false);
-  // with the lens left alone (the intro is driving it) the panel keeps naming
-  // the vantage that is actually on screen — the intro lands on VANTAGES[0]
-  if (moveCam) {
-    vi = -1;                                 // the move brings its own framing
-    orbit.setPreset(M.view, instant);
-    if (!instant && orbit.tween) orbit.tween.dur = 1.6;
-  }
   syncViewShift();
   measure();
   audio.tick();
@@ -2169,6 +2275,15 @@ function doMove(instant = false, moveCam = true) {
   if (instant) snapFileNo();               // a deep link lands settled, cursor included
 }
 function stepMove(d) { ri = (ri + d + MOVES.length) % MOVES.length; audio.tick(); render(true); }
+
+/* ★★ 双击走这里（用户 2026-10-03：「双击时的做动作要从上到下一个一个切换」）：
+   每双击一次，**选中的动作往下走一个**，走到底回到 01，并且立刻做出来。
+   和点列表一行是同一件事，所以选中同样必须写在 `doMove()` **之前** ——
+   `doMove` 读的是 `cur()`，晚一步就会"点亮的是 02、做出来的是 01"。 */
+function nextMove() {
+  ri = (ri + 1) % MOVES.length;
+  doMove();
+}
 function setVantage(i) {
   // `vi = -1` is a record's own framing: there is no vantage to count from, so
   // the first step lands on the end it is stepping toward — ← goes to the last
@@ -2244,10 +2359,12 @@ function buildIndex() {
     d.appendChild(h);
     const ul = document.createElement('ul');
     ul.className = 'spec';
+    /* The card used to print 机位 / 距离 / 俯仰 — the framing that move would
+       swing the lens onto. Moves no longer own a framing, so those three numbers
+       would be three copies of the same lie. What she does is the useful thing. */
     ul.replaceChildren(...[
-      ['机位', M.viewName],
-      ['距离', M.view.radius.toFixed(1)],
-      ['俯仰', M.view.phi.toFixed(2)],
+      ['编号', M.no],
+      ['表现', M.note],
     ].map(([k, v]) => {
       const li = document.createElement('li');
       li.innerHTML = `<span>${k}</span><b>${v}</b>`;
@@ -2338,7 +2455,16 @@ function openIndex() {
   indexOpen = true;
   buildIndex();
   indexEl.hidden = false;
-  requestAnimationFrame(() => indexEl.classList.add('open'));
+  /* ★★ The class goes on one frame late on purpose — the browser needs a frame
+     between `hidden = false` and the class to have anything to transition *from*
+     — but the callback has to re-check `indexOpen` before it writes.
+     `buildTracks()`'s row handler is `closeIndex(); playTrack(...)`, so opening
+     the panel and picking a track inside the same task closes it while this
+     callback is still queued; without the guard the queued frame puts `.open`
+     back on a panel whose `indexOpen` is already `false`, and `closeIndex()`'s
+     `if (!indexOpen) return;` can never take it off again — the panel is up and
+     重置 cannot put it down. Measured with tools/_swap.mjs step 6. */
+  requestAnimationFrame(() => { if (indexOpen) indexEl.classList.add('open'); });
   document.body.classList.add('moved');
 }
 function closeIndex() {
@@ -2530,7 +2656,13 @@ function openSettings() {
   setOpen = true;
   buildSettings();
   settingsEl.hidden = false;
-  requestAnimationFrame(() => settingsEl.classList.add('open'));
+  /* ★★ same guard as `openIndex()`, for the same reason: the class lands a frame
+     late, so the callback must not write over a panel that a same-task close has
+     already put away. Nothing reaches this today — `buildSettings()`'s rows write
+     prefs and nothing in the sheet closes it — but the sheet is exactly where a
+     "pick one and get out of the way" row would go next, and that row would hit
+     the same wall the programme's rows hit. */
+  requestAnimationFrame(() => { if (setOpen) settingsEl.classList.add('open'); });
   // the gear stays turned while the sheet is up, so the button reads as open
   settingsBtn.classList.add('open');
   settingsBtn.setAttribute('aria-expanded', 'true');
@@ -2634,10 +2766,18 @@ $('#btn-reinit').addEventListener('click', reinit);
      own long-press answer on a canvas is the context menu, which controls.js
      already suppresses.)
 
-   The double-click is the reset gesture, so two taps in quick succession are
-   collapsed into one: without that, double-clicking her would toggle the
-   transport twice, a pause and a play a tenth of a second apart, which reads as
-   a stutter rather than as a reset.
+   The double-click is **not** a reset any more (the reset gesture went with the
+   shell), and it is not swallowed either: it steps the move list. Two taps in
+   quick succession used to be collapsed into one — correct while the second tap
+   would have been a duplicate transport command, wrong once the gesture has to
+   *mean* something. So the second tap of a double-click advances the selection
+   by one row and performs it, top to bottom, wrapping at 05.
+
+   A double-click anywhere on the canvas counts, not only on her: this is the
+   page's own "next" gesture, and requiring the pointer to be over a moving
+   target would make it a gesture you can only perform by luck. Clicking *her* is
+   still the greeting, so a double-click that starts on her greets once and then
+   steps — which reads as her answering and then doing the next thing.
 
    Hover is a raycast too, but against her alone, so it is one intersection test
    per pointermove and the cursor is the whole feedback. The cursor goes through
@@ -2669,7 +2809,7 @@ function overSpirit(e) {
   raycaster.setFromCamera(pickNdc, camera);
   /* one capsule, not twenty meshes: a thin forearm is a patchy target and the
      real meshes move every frame, so the hit region would wobble under the
-     cursor. See the proxy's note in nahida.js. */
+     cursor. See the proxy's note in ghost.js. */
   return raycaster.intersectObject(spirit.hit, false).length > 0;
 }
 
@@ -2740,7 +2880,15 @@ canvas.addEventListener('pointerup', (e) => {
   if (Math.hypot(e.clientX - from.x, e.clientY - from.y) > 6) return;    // a drag
   if (performance.now() - from.t > 500) return;                        // a hold
   const now = performance.now();
-  if (now - lastTap < 320) return;                                     // half of a double-click
+  if (now - lastTap < 320) {                                           // a double-click
+    lastTap = now;
+    /* ★★ 第二次点击不再被吞掉：它 = 「下一个动作」。放在 `overSpirit` 之前是
+       故意的 —— 这是页面级的"下一个"手势，不要求指针正好落在她身上（她还在
+       慢慢浮，要求命中一个会动的目标等于让这个手势只能靠运气触发）。 */
+    nextMove();
+    render();
+    return;
+  }
   lastTap = now;
   if (!overSpirit(e)) return;
   /* Clicking her is a greeting, not a transport command. It used to toggle
@@ -3132,7 +3280,7 @@ addEventListener('resize', () => {
 });
 
 /* ============================== loop ==================================== */
-const tcEl = $('#tc'), tdEl = $('#td'), clockEl = $('#clock');
+const tcEl = $('#tc'), tdEl = $('#td'), clockEl = $('#clock'), counterEl = $('.counter');
 const p2 = (n) => String(n).padStart(2, '0');
 const subjectPos = new THREE.Vector3();
 const lastCamPos = new THREE.Vector3(0, 0, 1e9);
@@ -3223,10 +3371,13 @@ function loop() {
   bloomGain = viz.beat;
 
   // idle life
+  /* ★ 这一行现在是**空转**：`bob` 唯一的读者也是被删掉的
+     `cas.root.position.y = intro.y + bob - swap.press`。留着是为了让下一位
+     读者看得见它已经被摘掉，而不是以为她还在上下浮 —— 烛台自己的浮沉在
+     `relic.update` 里（`stand.position.y`），且是以地面为基准的 ±0.05。 */
   const bob = reduce ? 0 : Math.sin(t * 0.62) * 0.055 + Math.sin(t * 1.71) * 0.012;
-  cas.root.position.y = intro.y + bob - swap.press;   // ...and pressed down under the write head
-  cas.root.rotation.z = intro.tilt + (reduce ? 0 : Math.sin(t * 0.42) * 0.008);
-  cas.root.rotation.x = reduce ? 0 : Math.sin(t * 0.33 + 1.2) * 0.006;
+  /* 磁带的悬浮/压下/歪斜编舞随磁带一起舍弃 —— 幽魂烛台站在地上，
+     自己的呼吸归 relic.update 管。 */
 
   /* Her clock is `dt` — but under reduced motion it is stopped rather than
      slowed. Slowing would still be a moving thing on a page that asked for
@@ -3234,17 +3385,45 @@ function loop() {
      she was modelled at, so the reduced-motion page shows her still, at rest,
      with nothing to catch mid-motion.
 
+     ★ One exception, and it is the whole interaction area: an **action**. The
+     rule above is about *ambient* motion — a page that asked for none should not
+     have something bobbing away in the corner of it. An action is the opposite:
+     it is the one motion here the visitor asked for *by name*, and a button that
+     answers with a perfectly still character is not calm, it is broken. So her
+     clock runs while a clip is playing, and is stopped the rest of the time.
+
      Everything she needs arrives in one object rather than as a fourth and
-     fifth positional argument: she has five inputs now (singing, hover, the
-     pointer's two axes, the beat) and a signature of bare booleans would be
-     unreadable at the call site, which is the only place it is ever read. */
-  spirit.update(reduce ? 0 : dt, {
+     fifth positional argument: she has six inputs now (singing, hover, the
+     pointer's two axes, the beat, and whether she may improvise) and a signature
+     of bare booleans would be unreadable at the call site, which is the only
+     place it is ever read.
+
+     `routine` is the singing improvisation. Under reduced motion it used to be
+     `!reduce` outright, on the same reasoning as the ambient clock — but that
+     made the one state the visitor *did* ask for the one state with nothing in
+     it: press play and she stands there frozen while the tape rolls and the
+     music plays. Singing is the same kind of exception as a button press (it is
+     asked for, by name, and the whole page is built around it), so the
+     improvisation is allowed whenever the transport is rolling, reduce or not.
+     It cannot be inferred from `dt` alone — under reduce `dt` comes back to
+     life for the duration of an *action*, and the improvisation's own countdown
+     would ride along with it and fire the moment that action ended.
+
+     `pos` is the *song's* clock (`audioEl.currentTime`), not the page's. The
+     improvisation lands its gestures on phrase boundaries derived from it, so
+     they follow the track instead of a stopwatch — and it keeps working on a
+     slow machine, where page seconds and wall seconds are nowhere near each
+     other. It reads 0 when there is no source, and ghost.js falls back to its
+     own timer in that case. */
+  spirit.update(reduce && !spirit.action && !sheSings ? 0 : dt, {
     singing: sheSings,
     hovered: spiritHover,
     aimX: spiritAim.x,
     aimY: spiritAim.y,
     beat: viz.pulse,
     beatOn: !reduce && vizOn() && musicLive,
+    routine: !reduce || sheSings,
+    pos: audioEl.currentTime || 0,
   });
   syncMoveButtons();
   if (!reduce) {
@@ -3278,7 +3457,7 @@ function loop() {
      because that is where the bob is measured from and where the feet belong —
      and aiming a vignette and a defocus at a pair of ankles puts the sharpest
      part of the frame under her hem and the softest part on her face. The
-     capsule is already centred on her middle (see nahida.js), so it is the
+     capsule is already centred on her middle (see ghost.js), so it is the
      right point and it is already being kept up to date. */
   const subject = TAPE_ON ? cas.root : spirit.hit;
   subject.getWorldPosition(subjectPos).project(camera);
@@ -3305,6 +3484,7 @@ function loop() {
         railShown = frac;
         seekEl.value = String(frac);
         railEl.style.setProperty('--p', frac.toFixed(4));
+        counterEl.style.setProperty('--p', frac.toFixed(4));   // 烛环：烧到哪，环合到哪
       }
     }
     const d = new Date();
@@ -3317,7 +3497,7 @@ function loop() {
     const audioLive = audioOk() && !audioEl.paused && !audioEl.ended;
     // writing document.title re-titles the native window every time; only do it
     // when the string actually changes
-    const title = audioLive ? `♪ ${fmt(audioEl.currentTime)} · ${TRACK.title}` : `${TRACK.title} — 纳西妲`;
+    const title = audioLive ? `♪ ${fmt(audioEl.currentTime)} · ${TRACK.title}` : `${TRACK.title} — 小幽灵`;
     if (title !== lastTitle) { lastTitle = title; document.title = title; }
   }
 
@@ -3326,6 +3506,7 @@ function loop() {
   const camMoved = camera.position.distanceToSquared(lastCamPos) > 1e-6;
   lastCamPos.copy(camera.position);
   floorBase.update(renderer, scene, camera, camMoved);
+  castle.update(t, camera.position);    // 火光闪烁 + 玩具屋显隐（相机在墙外藏那面墙）
   composer.composer.render();
   // everything above is CPU: matrix updates, culling, uniform uploads, draw
   // submission. This is the number to watch when the GPU is not the bottleneck.

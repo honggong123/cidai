@@ -24,7 +24,6 @@ export class Orbit {
     this.aim = new THREE.Vector2();
     this.tween = null;
     this.onInteract = opt.onInteract;
-    this.onReset = opt.onReset;
     this._ptrs = new Map();
     this._pinch = 0;
     this._last = new THREE.Vector3();
@@ -85,22 +84,20 @@ export class Orbit {
       // timer off this, exactly as it does for a drag
       this.onManual?.();
     };
-    this._onDbl = () => {
-      const home = this.home || { theta: 0.66, phi: 1.04, radius: 16.5 };
-      // the second parameter of setPreset is `hard`, not a duration: passing
-      // 1.1 there made this an instant snap instead of a move. The owner also
-      // needs telling — the panel indexes the vantages, and it has to stop
-      // claiming to be in one the camera has just left.
-      this.setPreset({ ...home, dur: 1.1 });
-      this.onReset?.();
-    };
+    /* ★ 双击**什么都不做**（2026-10-02 用户：「双击不要回到默认机位」）。
+       这里原来是一个 `_onDbl`：它把镜头 `setPreset({...home, dur:1.1})` 拉回
+       01 号机位，再调 `onReset()` 把面板也跟着改回 01。现在整个拆掉了，连带
+       `opt.onReset` 这个口子一起 —— 它唯一的调用者就是这里，留着就是一个
+       "写了但没人读"的通道（教训见 MEMORY：动作通道必须有读者）。
+       为什么干脆不注册监听器：`dblclick` 在页面上没有第二个消费者（`contextmenu`
+       是单独一条），而 `.ui` 整层 `pointer-events:none`、画布上也没有可选中的
+       文本，所以不接它不会让第二次点击冒到别处去。 */
 
     d.addEventListener('pointerdown', this._onDown);
     d.addEventListener('pointermove', this._onMove);
     addEventListener('pointerup', this._onUp);
     addEventListener('pointercancel', this._onUp);
     addEventListener('wheel', this._onWheel, { passive: false });
-    d.addEventListener('dblclick', this._onDbl);
     d.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 

@@ -11,13 +11,24 @@
  * pixels, which is how a close-up of one corner of the model gets framed.
  */
 import { writeFileSync } from 'node:fs';
+import { pickPage } from './_cdp.mjs';
 
 const [url, out, w = '1280', h = '820', waitMs = '0', js = '', clip = '', dpr = '1'] = process.argv.slice(2);
-const port = 9445;
+/* 9445 is only the default. The port is shared machine-wide, so a second
+   project whose dev server also picks 9445 puts *its* page into the same
+   browser — and then this script's page is whichever of the two navigated
+   last. Override per project with CDP_PORT. */
+const port = process.env.CDP_PORT || 9445;
 
 const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
-const page = list.find((t) => t.type === 'page');
-if (!page) throw new Error('no page target — start the browser with --remote-debugging-port');
+/* PICK THE TAB BY URL, NOT BY POSITION — see tools/_cdp.mjs for the whole
+   story. Short version: `/json/list` returns every page target in the browser,
+   and on a machine that is also serving some *other* project, the first one is
+   that other project. What comes back is then a perfectly well-rendered
+   screenshot of the wrong thing, which cost an afternoon and two wrong
+   diagnoses ("the model is not drawing", "the figure has drifted off-camera")
+   before anyone suspected the tab. */
+const page = pickPage(list, url);
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 

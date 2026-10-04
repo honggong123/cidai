@@ -27,9 +27,12 @@ if (!url || !box) { console.error('usage: node tools/_px.mjs <url> "x,y,w,h" [sc
 const [bx, by, bw, bh] = box.split(',').map(Number);
 if ([bx, by, bw, bh].some((v) => !Number.isFinite(v))) { console.error('box wants "x,y,w,h"'); process.exit(2); }
 
+// The tab is picked by URL, never by position: /json/list lists every page in
+// the browser, and another project's page being first is a normal accident.
+// Imports are hoisted, so the helper can be declared here, next to its use.
+import { pickPage } from './_cdp.mjs';
 const list = await (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).json();
-const page = list.find((t) => t.type === 'page');
-if (!page) throw new Error('no page target — start tools/_dev.mjs first');
+const page = pickPage(list, url);
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 

@@ -14,6 +14,16 @@
     return !l || getComputedStyle(l).opacity === '0';
   }, 180000));
 
+  /* 标签页标题是一条**走带读数**，它只在主循环的计数器块里被写 —— 那个块每
+     0.2 **页面秒**才走一次。`dt` 截到 1/20、软件渲染一帧 ≈ 1s 墙钟，所以第一次
+     写入落在 `loop()` 启动后约 4s，也就是 loader 消失之后。在 loader 刚消失的
+     那一刻读它，拿到的是 index.html 的静态 `<title>`，看上去完全像"页面从来没
+     改过标题"。上一轮就是拿这个字段下过"开发页与产物 title 不一致"的结论。
+     `until` 的预算从 `t0` 起算（不是每次调用重新计时），所以这里必须把启动的
+     那 20s 一起留出来。 */
+  const titleAtStart = document.title;
+  await until(() => document.title !== titleAtStart, 90000);
+
   const cv = document.querySelector('canvas');
   const gl = cv && (cv.getContext('webgl2') || cv.getContext('webgl'));
   const lose = gl && gl.getExtension('WEBGL_lose_context');

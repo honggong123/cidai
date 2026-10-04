@@ -1196,7 +1196,7 @@ export function labelTexture(face = 'A', { title = '', artist = '', album = '', 
   tracked(g, '4.76 cm/s  ·  EQ 70 µs', X(-0.78), bandTop + bandH * 0.34, { track: U(0.035) });
   g.fillStyle = dark ? 'rgba(238,236,231,.5)' : 'rgba(27,27,29,.52)';
   g.font = `300 ${U(0.14)}px "Menlo", "Consolas", monospace`;
-  tracked(g, face === 'A' ? 'LUX TAPE MFG.  № 000-A' : 'LUX TAPE MFG.  № 000-B', X(-0.78), bandTop + bandH * 0.64, { track: U(0.035) });
+  tracked(g, face === 'A' ? '№ 000-A' : '№ 000-B', X(-0.78), bandTop + bandH * 0.64, { track: U(0.035) });
 
   if (dark) { // barcode on the back band
     let bx = X(2.65);

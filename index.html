@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>纳西妲 — 会唱歌的精灵</title>
+<title>小幽灵 — 会唱歌的精灵</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,15 +15,15 @@
   <!-- ── masthead: the product, and the lights ─────────────────── -->
   <header class="mast">
     <div class="brand">
-      <h1>纳西妲</h1>
-      <p class="brand-mid">小吉祥草王 · 会唱歌</p>
-      <p class="brand-end" id="brand-code">ND—01</p>
+      <h1>小幽灵</h1>
+      <p class="brand-mid">布灵 · 会唱歌</p>
+      <p class="brand-end" id="brand-code">GH—01</p>
     </div>
     <nav class="mast-nav">
       <div class="seg" id="theme">
-        <button class="ui-hit" data-theme="noir">夜巢</button>
-        <button class="ui-hit on" data-theme="studio">晴室</button>
-        <button class="ui-hit" data-theme="abyss">深潭</button>
+        <button class="ui-hit" data-theme="noir">紫夜</button>
+        <button class="ui-hit on" data-theme="studio">霜厅</button>
+        <button class="ui-hit" data-theme="abyss">冰渊</button>
       </div>
       <i class="vr" aria-hidden="true"></i>
       <button class="tb ui-hit" id="btn-index">
@@ -54,9 +54,30 @@
        you can ask her to do. -->
   <section class="dossier" id="dossier">
     <div class="sheet">
+      <!-- ── the ornaments ───────────────────────────────────────────
+           Three drawn marks in one ink, and one attribute between them
+           and the next room: the colour and the hem's drawing are
+           per-theme, the markup is not. Inert and absolutely positioned
+           — nothing here may add a line of height to a plate that has no
+           height ceiling above 900px (see .doc-note in styles.css). -->
+      <div class="orn" aria-hidden="true">
+        <!-- A quarter web, drawn with its corner at the plate's bottom-right
+             so the strokes are not mirrored into place. -->
+        <svg class="o-web" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width=".7" stroke-linecap="round">
+          <path d="M100 100V0M100 100 7.6 61.7M100 100 29.3 29.3M100 100 61.7 7.6M100 100H0"/>
+          <path d="M100 70A30 30 0 0 0 70 100M100 48A52 52 0 0 0 48 100M100 26A74 74 0 0 0 26 100M100 4A96 96 0 0 0 4 100"/>
+        </svg>
+        <i class="o-hem"></i>
+        <!-- Her, in the web. The two eyes are the two different sizes they are
+             on the model — the right one larger — because at 2.5rem the
+             asymmetry is the only thing that says ghost rather than bell. -->
+        <svg class="o-ghost" viewBox="0 0 40 48" fill="currentColor">
+          <path fill-rule="evenodd" d="M20 2C13.4 2 9 7.1 9 13.4V44l4.3-3.6 3.7 3.6 3-3.6 3 3.6 3.7-3.6 4.3 3.6V13.4C31 7.1 26.6 2 20 2ZM13 16.6a2.2 2.2 0 1 0 4.4 0 2.2 2.2 0 1 0-4.4 0ZM21.5 16.6a2.9 2.9 0 1 0 5.8 0 2.9 2.9 0 1 0-5.8 0Z"/>
+        </svg>
+      </div>
       <p class="crumb">
         <span class="crumb-pre">精灵图鉴<i>/</i>声之档案<i>/</i></span>
-        <span class="crumb-id" id="col-cn">纳西妲</span>
+        <span class="crumb-id" id="col-cn">小幽灵</span>
         <button class="fold ui-hit" id="btn-fold" aria-expanded="true" aria-controls="dbody">收起详情</button>
       </p>
       <div class="dbody" id="dbody">
@@ -64,9 +85,9 @@
         <div class="foldwrap">
           <div class="dossier-grid">
             <div class="doc">
-              <p class="doc-cn" id="file-cn">纳西妲</p>
-              <p class="doc-en" id="file-en">Nahida · 小吉祥草王</p>
-              <p class="doc-note" id="file-note">须弥的草神，人称小吉祥草王。世上所有的智慧她都读过，最大的好奇却留给了梦。素白的长发间簪一片三出复叶，青绿瞳中各嵌一枚四叶草——她说那是替世界收着的运气。音乐响起时，她把正在响的那一段唱成看得见的样子。</p>
+              <p class="doc-cn" id="file-cn">小幽灵</p>
+              <p class="doc-en" id="file-en">Little Ghost · 会唱歌的精灵</p>
+              <p class="doc-note" id="file-note">一顶歪戴的紫色女巫帽、一条会发光的床单，和一柄比她手臂还长的红柄扫帚。她飘在半空，帽尖被谁拧过一道弯；体内那点青光跟着歌走——唱到高处就亮一档，停下来便慢慢暗回去。两只眼睛不一样大，右眼的那一颗高光是特意点的。</p>
               <ul class="spec" id="file-spec"></ul>
             </div>
             <div class="ref">
@@ -126,7 +147,9 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><path class="ico-play" d="M4.6 2.5 13.1 8 4.6 13.5Z"/><g class="ico-pause"><path d="M5.4 2.7v10.6M10.6 2.7v10.6"/></g></svg>
           <b id="play-label">演唱</b>
         </button>
-        <span class="counter"><b id="tc">00:00</b><i>/</i><span id="td">05:17</span></span>
+        <!-- 烛环：一圈光按演唱进度合拢（--p 由主循环写入），时间是环心的一粒火。
+             磁带式走带计数器到此为止 —— 这间房间的东西只为她而造。 -->
+        <span class="counter ring"><i class="ring-arc" aria-hidden="true"></i><b id="tc">00:00</b><span id="td" class="ring-total">01:00</span></span>
         <div class="tc-set">
           <button class="tc-ico ui-hit" id="btn-auto" aria-label="自动巡览" aria-pressed="false" title="自动巡览（A）">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.72 9.67a5 5 0 1 1-1.18-5.2"/><path d="M14.11 3.56v3.33h-3.33"/></svg>
@@ -147,7 +170,7 @@
 
   <!-- ── hud ───────────────────────────────────────────────────── -->
   <div class="hud">
-    <p class="hud-l"><span class="live" aria-hidden="true"></span>纳西妲已就位</p>
+    <p class="hud-l"><span class="live" aria-hidden="true"></span>小幽灵已就位</p>
     <p class="hud-c" id="keys">
       <span class="kg" data-p="1" data-k="arrowup arrowdown"><kbd>↑</kbd><kbd>↓</kbd><em>动作</em></span>
       <span class="kg" data-p="1" data-k="arrowleft arrowright"><kbd>←</kbd><kbd>→</kbd><em>机位</em></span>
@@ -197,7 +220,7 @@
 
 <div class="loader" id="loader">
   <div class="loader-box">
-    <div class="loader-mark"><b>纳西妲</b></div>
+    <div class="loader-mark"><b>小幽灵</b></div>
     <div class="loader-bar"><i id="lbar"></i></div>
     <div class="loader-lbl"><span id="llbl">正在初始化</span><em id="lpct">0%</em></div>
   </div>

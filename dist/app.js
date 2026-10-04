@@ -220,7 +220,6 @@
     }
   };
   var _lut = ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "0a", "0b", "0c", "0d", "0e", "0f", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "1a", "1b", "1c", "1d", "1e", "1f", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "2a", "2b", "2c", "2d", "2e", "2f", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "3a", "3b", "3c", "3d", "3e", "3f", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "4a", "4b", "4c", "4d", "4e", "4f", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "5a", "5b", "5c", "5d", "5e", "5f", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "6a", "6b", "6c", "6d", "6e", "6f", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "7a", "7b", "7c", "7d", "7e", "7f", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "8a", "8b", "8c", "8d", "8e", "8f", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "9a", "9b", "9c", "9d", "9e", "9f", "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "aa", "ab", "ac", "ad", "ae", "af", "b0", "b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "ba", "bb", "bc", "bd", "be", "bf", "c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "ca", "cb", "cc", "cd", "ce", "cf", "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "da", "db", "dc", "dd", "de", "df", "e0", "e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "ea", "eb", "ec", "ed", "ee", "ef", "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "fa", "fb", "fc", "fd", "fe", "ff"];
-  var _seed = 1234567;
   var DEG2RAD = Math.PI / 180;
   var RAD2DEG = 180 / Math.PI;
   function generateUUID() {
@@ -237,101 +236,8 @@
   function euclideanModulo(n, m) {
     return (n % m + m) % m;
   }
-  function mapLinear(x, a1, a2, b1, b2) {
-    return b1 + (x - a1) * (b2 - b1) / (a2 - a1);
-  }
-  function inverseLerp(x, y, value) {
-    if (x !== y) {
-      return (value - x) / (y - x);
-    } else {
-      return 0;
-    }
-  }
   function lerp(x, y, t2) {
     return (1 - t2) * x + t2 * y;
-  }
-  function damp(x, y, lambda, dt) {
-    return lerp(x, y, 1 - Math.exp(-lambda * dt));
-  }
-  function pingpong(x, length = 1) {
-    return length - Math.abs(euclideanModulo(x, length * 2) - length);
-  }
-  function smoothstep(x, min, max) {
-    if (x <= min) return 0;
-    if (x >= max) return 1;
-    x = (x - min) / (max - min);
-    return x * x * (3 - 2 * x);
-  }
-  function smootherstep(x, min, max) {
-    if (x <= min) return 0;
-    if (x >= max) return 1;
-    x = (x - min) / (max - min);
-    return x * x * x * (x * (x * 6 - 15) + 10);
-  }
-  function randInt(low, high) {
-    return low + Math.floor(Math.random() * (high - low + 1));
-  }
-  function randFloat(low, high) {
-    return low + Math.random() * (high - low);
-  }
-  function randFloatSpread(range) {
-    return range * (0.5 - Math.random());
-  }
-  function seededRandom(s) {
-    if (s !== void 0) _seed = s;
-    let t2 = _seed += 1831565813;
-    t2 = Math.imul(t2 ^ t2 >>> 15, t2 | 1);
-    t2 ^= t2 + Math.imul(t2 ^ t2 >>> 7, t2 | 61);
-    return ((t2 ^ t2 >>> 14) >>> 0) / 4294967296;
-  }
-  function degToRad(degrees) {
-    return degrees * DEG2RAD;
-  }
-  function radToDeg(radians) {
-    return radians * RAD2DEG;
-  }
-  function isPowerOfTwo(value) {
-    return (value & value - 1) === 0 && value !== 0;
-  }
-  function ceilPowerOfTwo(value) {
-    return Math.pow(2, Math.ceil(Math.log(value) / Math.LN2));
-  }
-  function floorPowerOfTwo(value) {
-    return Math.pow(2, Math.floor(Math.log(value) / Math.LN2));
-  }
-  function setQuaternionFromProperEuler(q, a, b, c, order) {
-    const cos = Math.cos;
-    const sin = Math.sin;
-    const c2 = cos(b / 2);
-    const s2 = sin(b / 2);
-    const c13 = cos((a + c) / 2);
-    const s13 = sin((a + c) / 2);
-    const c1_3 = cos((a - c) / 2);
-    const s1_3 = sin((a - c) / 2);
-    const c3_1 = cos((c - a) / 2);
-    const s3_1 = sin((c - a) / 2);
-    switch (order) {
-      case "XYX":
-        q.set(c2 * s13, s2 * c1_3, s2 * s1_3, c2 * c13);
-        break;
-      case "YZY":
-        q.set(s2 * s1_3, c2 * s13, s2 * c1_3, c2 * c13);
-        break;
-      case "ZXZ":
-        q.set(s2 * c1_3, s2 * s1_3, c2 * s13, c2 * c13);
-        break;
-      case "XZX":
-        q.set(c2 * s13, s2 * s3_1, s2 * c3_1, c2 * c13);
-        break;
-      case "YXY":
-        q.set(s2 * c3_1, c2 * s13, s2 * s3_1, c2 * c13);
-        break;
-      case "ZYZ":
-        q.set(s2 * s3_1, s2 * c3_1, c2 * s13, c2 * c13);
-        break;
-      default:
-        console.warn("THREE.MathUtils: .setQuaternionFromProperEuler() encountered an unknown order: " + order);
-    }
   }
   function denormalize(value, array) {
     switch (array.constructor) {
@@ -373,250 +279,6 @@
         throw new Error("Invalid component type.");
     }
   }
-  var MathUtils = {
-    DEG2RAD,
-    RAD2DEG,
-    /**
-     * Generate a [UUID]{@link https://en.wikipedia.org/wiki/Universally_unique_identifier}
-     * (universally unique identifier).
-     *
-     * @static
-     * @method
-     * @return {string} The UUID.
-     */
-    generateUUID,
-    /**
-     * Clamps the given value between min and max.
-     *
-     * @static
-     * @method
-     * @param {number} value - The value to clamp.
-     * @param {number} min - The min value.
-     * @param {number} max - The max value.
-     * @return {number} The clamped value.
-     */
-    clamp,
-    /**
-     * Computes the Euclidean modulo of the given parameters that
-     * is `( ( n % m ) + m ) % m`.
-     *
-     * @static
-     * @method
-     * @param {number} n - The first parameter.
-     * @param {number} m - The second parameter.
-     * @return {number} The Euclidean modulo.
-     */
-    euclideanModulo,
-    /**
-     * Performs a linear mapping from range `<a1, a2>` to range `<b1, b2>`
-     * for the given value.
-     *
-     * @static
-     * @method
-     * @param {number} x - The value to be mapped.
-     * @param {number} a1 - Minimum value for range A.
-     * @param {number} a2 - Maximum value for range A.
-     * @param {number} b1 - Minimum value for range B.
-     * @param {number} b2 - Maximum value for range B.
-     * @return {number} The mapped value.
-     */
-    mapLinear,
-    /**
-     * Returns the percentage in the closed interval `[0, 1]` of the given value
-     * between the start and end point.
-     *
-     * @static
-     * @method
-     * @param {number} x - The start point
-     * @param {number} y - The end point.
-     * @param {number} value - A value between start and end.
-     * @return {number} The interpolation factor.
-     */
-    inverseLerp,
-    /**
-     * Returns a value linearly interpolated from two known points based on the given interval -
-     * `t = 0` will return `x` and `t = 1` will return `y`.
-     *
-     * @static
-     * @method
-     * @param {number} x - The start point
-     * @param {number} y - The end point.
-     * @param {number} t - The interpolation factor in the closed interval `[0, 1]`.
-     * @return {number} The interpolated value.
-     */
-    lerp,
-    /**
-     * Smoothly interpolate a number from `x` to `y` in  a spring-like manner using a delta
-     * time to maintain frame rate independent movement. For details, see
-     * [Frame rate independent damping using lerp]{@link http://www.rorydriscoll.com/2016/03/07/frame-rate-independent-damping-using-lerp/}.
-     *
-     * @static
-     * @method
-     * @param {number} x - The current point.
-     * @param {number} y - The target point.
-     * @param {number} lambda - A higher lambda value will make the movement more sudden,
-     * and a lower value will make the movement more gradual.
-     * @param {number} dt - Delta time in seconds.
-     * @return {number} The interpolated value.
-     */
-    damp,
-    /**
-     * Returns a value that alternates between `0` and the given `length` parameter.
-     *
-     * @static
-     * @method
-     * @param {number} x - The value to pingpong.
-     * @param {number} [length=1] - The positive value the function will pingpong to.
-     * @return {number} The alternated value.
-     */
-    pingpong,
-    /**
-     * Returns a value in the range `[0,1]` that represents the percentage that `x` has
-     * moved between `min` and `max`, but smoothed or slowed down the closer `x` is to
-     * the `min` and `max`.
-     *
-     * See [Smoothstep]{@link http://en.wikipedia.org/wiki/Smoothstep} for more details.
-     *
-     * @static
-     * @method
-     * @param {number} x - The value to evaluate based on its position between min and max.
-     * @param {number} min - The min value. Any x value below min will be `0`.
-     * @param {number} max - The max value. Any x value above max will be `1`.
-     * @return {number} The alternated value.
-     */
-    smoothstep,
-    /**
-     * A [variation on smoothstep]{@link https://en.wikipedia.org/wiki/Smoothstep#Variations}
-     * that has zero 1st and 2nd order derivatives at x=0 and x=1.
-     *
-     * @static
-     * @method
-     * @param {number} x - The value to evaluate based on its position between min and max.
-     * @param {number} min - The min value. Any x value below min will be `0`.
-     * @param {number} max - The max value. Any x value above max will be `1`.
-     * @return {number} The alternated value.
-     */
-    smootherstep,
-    /**
-     * Returns a random integer from `<low, high>` interval.
-     *
-     * @static
-     * @method
-     * @param {number} low - The lower value boundary.
-     * @param {number} high - The upper value boundary
-     * @return {number} A random integer.
-     */
-    randInt,
-    /**
-     * Returns a random float from `<low, high>` interval.
-     *
-     * @static
-     * @method
-     * @param {number} low - The lower value boundary.
-     * @param {number} high - The upper value boundary
-     * @return {number} A random float.
-     */
-    randFloat,
-    /**
-     * Returns a random integer from `<-range/2, range/2>` interval.
-     *
-     * @static
-     * @method
-     * @param {number} range - Defines the value range.
-     * @return {number} A random float.
-     */
-    randFloatSpread,
-    /**
-     * Returns a deterministic pseudo-random float in the interval `[0, 1]`.
-     *
-     * @static
-     * @method
-     * @param {number} [s] - The integer seed.
-     * @return {number} A random float.
-     */
-    seededRandom,
-    /**
-     * Converts degrees to radians.
-     *
-     * @static
-     * @method
-     * @param {number} degrees - A value in degrees.
-     * @return {number} The converted value in radians.
-     */
-    degToRad,
-    /**
-     * Converts radians to degrees.
-     *
-     * @static
-     * @method
-     * @param {number} radians - A value in radians.
-     * @return {number} The converted value in degrees.
-     */
-    radToDeg,
-    /**
-     * Returns `true` if the given number is a power of two.
-     *
-     * @static
-     * @method
-     * @param {number} value - The value to check.
-     * @return {boolean} Whether the given number is a power of two or not.
-     */
-    isPowerOfTwo,
-    /**
-     * Returns the smallest power of two that is greater than or equal to the given number.
-     *
-     * @static
-     * @method
-     * @param {number} value - The value to find a POT for.
-     * @return {number} The smallest power of two that is greater than or equal to the given number.
-     */
-    ceilPowerOfTwo,
-    /**
-     * Returns the largest power of two that is less than or equal to the given number.
-     *
-     * @static
-     * @method
-     * @param {number} value - The value to find a POT for.
-     * @return {number} The largest power of two that is less than or equal to the given number.
-     */
-    floorPowerOfTwo,
-    /**
-     * Sets the given quaternion from the [Intrinsic Proper Euler Angles]{@link https://en.wikipedia.org/wiki/Euler_angles}
-     * defined by the given angles and order.
-     *
-     * Rotations are applied to the axes in the order specified by order:
-     * rotation by angle `a` is applied first, then by angle `b`, then by angle `c`.
-     *
-     * @static
-     * @method
-     * @param {Quaternion} q - The quaternion to set.
-     * @param {number} a - The rotation applied to the first axis, in radians.
-     * @param {number} b - The rotation applied to the second axis, in radians.
-     * @param {number} c - The rotation applied to the third axis, in radians.
-     * @param {('XYX'|'XZX'|'YXY'|'YZY'|'ZXZ'|'ZYZ')} order - A string specifying the axes order.
-     */
-    setQuaternionFromProperEuler,
-    /**
-     * Normalizes the given value according to the given typed array.
-     *
-     * @static
-     * @method
-     * @param {number} value - The float value in the range `[0,1]` to normalize.
-     * @param {TypedArray} array - The typed array that defines the data type of the value.
-     * @return {number} The normalize value.
-     */
-    normalize,
-    /**
-     * Denormalizes the given value according to the given typed array.
-     *
-     * @static
-     * @method
-     * @param {number} value - The value to denormalize.
-     * @param {TypedArray} array - The typed array that defines the data type of the value.
-     * @return {number} The denormalize (float) value in the range `[0,1]`.
-     */
-    denormalize
-  };
   var Vector2 = class _Vector2 {
     /**
      * Constructs a new 2D vector.
@@ -5019,9 +4681,9 @@
      * @param {Box3} box - The box to copy.
      * @return {Box3} A reference to this bounding box.
      */
-    copy(box2) {
-      this.min.copy(box2.min);
-      this.max.copy(box2.max);
+    copy(box) {
+      this.min.copy(box.min);
+      this.max.copy(box.max);
       return this;
     }
     /**
@@ -5164,8 +4826,8 @@
      * @param {Box3} box - The bounding box to test.
      * @return {boolean} Whether the bounding box contains the given bounding box or not.
      */
-    containsBox(box2) {
-      return this.min.x <= box2.min.x && box2.max.x <= this.max.x && this.min.y <= box2.min.y && box2.max.y <= this.max.y && this.min.z <= box2.min.z && box2.max.z <= this.max.z;
+    containsBox(box) {
+      return this.min.x <= box.min.x && box.max.x <= this.max.x && this.min.y <= box.min.y && box.max.y <= this.max.y && this.min.z <= box.min.z && box.max.z <= this.max.z;
     }
     /**
      * Returns a point as a proportion of this box's width, height and depth.
@@ -5187,8 +4849,8 @@
      * @param {Box3} box - The bounding box to test.
      * @return {boolean} Whether the given bounding box intersects with this bounding box.
      */
-    intersectsBox(box2) {
-      return box2.max.x >= this.min.x && box2.min.x <= this.max.x && box2.max.y >= this.min.y && box2.min.y <= this.max.y && box2.max.z >= this.min.z && box2.min.z <= this.max.z;
+    intersectsBox(box) {
+      return box.max.x >= this.min.x && box.min.x <= this.max.x && box.max.y >= this.min.y && box.min.y <= this.max.y && box.max.z >= this.min.z && box.min.z <= this.max.z;
     }
     /**
      * Returns `true` if the given bounding sphere intersects with this bounding box.
@@ -5333,9 +4995,9 @@
      * @param {Box3} box - The bounding box to intersect with.
      * @return {Box3} A reference to this bounding box.
      */
-    intersect(box2) {
-      this.min.max(box2.min);
-      this.max.min(box2.max);
+    intersect(box) {
+      this.min.max(box.min);
+      this.max.min(box.max);
       if (this.isEmpty()) this.makeEmpty();
       return this;
     }
@@ -5347,9 +5009,9 @@
      * @param {Box3} box - The bounding box that will be unioned with this instance.
      * @return {Box3} A reference to this bounding box.
      */
-    union(box2) {
-      this.min.min(box2.min);
-      this.max.max(box2.max);
+    union(box) {
+      this.min.min(box.min);
+      this.max.max(box.max);
       return this;
     }
     /**
@@ -5389,8 +5051,8 @@
      * @param {Box3} box - The box to test for equality.
      * @return {boolean} Whether this bounding box is equal with the given one.
      */
-    equals(box2) {
-      return box2.min.equals(this.min) && box2.max.equals(this.max);
+    equals(box) {
+      return box.min.equals(this.min) && box.max.equals(this.max);
     }
     /**
      * Returns a serialized structure of the bounding box.
@@ -5570,8 +5232,8 @@
      * @param {Box3} box - The box to test.
      * @return {boolean} Whether this sphere intersects with the given box or not.
      */
-    intersectsBox(box2) {
-      return box2.intersectsSphere(this);
+    intersectsBox(box) {
+      return box.intersectsSphere(this);
     }
     /**
      * Returns `true` if this sphere intersects with the given plane.
@@ -5988,33 +5650,33 @@
      * @param {Vector3} target - The target vector that is used to store the method's result.
      * @return {?Vector3} The intersection point.
      */
-    intersectBox(box2, target) {
+    intersectBox(box, target) {
       let tmin, tmax, tymin, tymax, tzmin, tzmax;
       const invdirx = 1 / this.direction.x, invdiry = 1 / this.direction.y, invdirz = 1 / this.direction.z;
       const origin = this.origin;
       if (invdirx >= 0) {
-        tmin = (box2.min.x - origin.x) * invdirx;
-        tmax = (box2.max.x - origin.x) * invdirx;
+        tmin = (box.min.x - origin.x) * invdirx;
+        tmax = (box.max.x - origin.x) * invdirx;
       } else {
-        tmin = (box2.max.x - origin.x) * invdirx;
-        tmax = (box2.min.x - origin.x) * invdirx;
+        tmin = (box.max.x - origin.x) * invdirx;
+        tmax = (box.min.x - origin.x) * invdirx;
       }
       if (invdiry >= 0) {
-        tymin = (box2.min.y - origin.y) * invdiry;
-        tymax = (box2.max.y - origin.y) * invdiry;
+        tymin = (box.min.y - origin.y) * invdiry;
+        tymax = (box.max.y - origin.y) * invdiry;
       } else {
-        tymin = (box2.max.y - origin.y) * invdiry;
-        tymax = (box2.min.y - origin.y) * invdiry;
+        tymin = (box.max.y - origin.y) * invdiry;
+        tymax = (box.min.y - origin.y) * invdiry;
       }
       if (tmin > tymax || tymin > tmax) return null;
       if (tymin > tmin || isNaN(tmin)) tmin = tymin;
       if (tymax < tmax || isNaN(tmax)) tmax = tymax;
       if (invdirz >= 0) {
-        tzmin = (box2.min.z - origin.z) * invdirz;
-        tzmax = (box2.max.z - origin.z) * invdirz;
+        tzmin = (box.min.z - origin.z) * invdirz;
+        tzmax = (box.max.z - origin.z) * invdirz;
       } else {
-        tzmin = (box2.max.z - origin.z) * invdirz;
-        tzmax = (box2.min.z - origin.z) * invdirz;
+        tzmin = (box.max.z - origin.z) * invdirz;
+        tzmax = (box.min.z - origin.z) * invdirz;
       }
       if (tmin > tzmax || tzmin > tmax) return null;
       if (tzmin > tmin || tmin !== tmin) tmin = tzmin;
@@ -6028,8 +5690,8 @@
      * @param {Box3} box - The box to intersect.
      * @return {boolean} Whether this ray intersects with the given box or not.
      */
-    intersectsBox(box2) {
-      return this.intersectBox(box2, _vector$a) !== null;
+    intersectsBox(box) {
+      return this.intersectBox(box, _vector$a) !== null;
     }
     /**
      * Intersects this ray with the given triangle, returning the intersection
@@ -8792,8 +8454,8 @@
      * @param {Box3} box - The box to intersect.
      * @return {boolean} Whether this triangle intersects with the given box or not.
      */
-    intersectsBox(box2) {
-      return box2.intersectsTriangle(this);
+    intersectsBox(box) {
+      return box.intersectsTriangle(this);
     }
     /**
      * Returns the closest point on the triangle to the given point.
@@ -12453,14 +12115,14 @@
         blending: NoBlending
       });
       material.uniforms.tEquirect.value = texture;
-      const mesh2 = new Mesh(geometry, material);
+      const mesh = new Mesh(geometry, material);
       const currentMinFilter = texture.minFilter;
       if (texture.minFilter === LinearMipmapLinearFilter) texture.minFilter = LinearFilter;
       const camera2 = new CubeCamera(1, 10, this);
-      camera2.update(renderer2, mesh2);
+      camera2.update(renderer2, mesh);
       texture.minFilter = currentMinFilter;
-      mesh2.geometry.dispose();
-      mesh2.material.dispose();
+      mesh.geometry.dispose();
+      mesh.material.dispose();
       return this;
     }
     /**
@@ -12730,6 +12392,45 @@
       return hand.joints[inputjoint.jointName];
     }
   };
+  var Fog = class _Fog {
+    /**
+     * Constructs a new fog.
+     *
+     * @param {number|Color} color - The fog's color.
+     * @param {number} [near=1] - The minimum distance to start applying fog.
+     * @param {number} [far=1000] - The maximum distance at which fog stops being calculated and applied.
+     */
+    constructor(color, near = 1, far = 1e3) {
+      this.isFog = true;
+      this.name = "";
+      this.color = new Color(color);
+      this.near = near;
+      this.far = far;
+    }
+    /**
+     * Returns a new fog with copied values from this instance.
+     *
+     * @return {Fog} A clone of this instance.
+     */
+    clone() {
+      return new _Fog(this.color, this.near, this.far);
+    }
+    /**
+     * Serializes the fog into JSON.
+     *
+     * @param {?(Object|string)} meta - An optional value holding meta information about the serialization.
+     * @return {Object} A JSON object representing the serialized fog
+     */
+    toJSON() {
+      return {
+        type: "Fog",
+        name: this.name,
+        color: this.color.getHex(),
+        near: this.near,
+        far: this.far
+      };
+    }
+  };
   var Scene = class extends Object3D {
     /**
      * Constructs a new scene.
@@ -12973,8 +12674,8 @@
      * @param {Box3} box - The bounding box to test.
      * @return {boolean} Whether the given bounding box intersects with the plane or not.
      */
-    intersectsBox(box2) {
-      return box2.intersectsPlane(this);
+    intersectsBox(box) {
+      return box.intersectsPlane(this);
     }
     /**
      * Returns `true` if the given bounding sphere intersects with the plane.
@@ -13184,13 +12885,13 @@
      * @param {Box3} box - The bounding box to test.
      * @return {boolean} Whether the bounding box is intersecting this frustum or not.
      */
-    intersectsBox(box2) {
+    intersectsBox(box) {
       const planes = this.planes;
       for (let i = 0; i < 6; i++) {
         const plane = planes[i];
-        _vector$6.x = plane.normal.x > 0 ? box2.max.x : box2.min.x;
-        _vector$6.y = plane.normal.y > 0 ? box2.max.y : box2.min.y;
-        _vector$6.z = plane.normal.z > 0 ? box2.max.z : box2.min.z;
+        _vector$6.x = plane.normal.x > 0 ? box.max.x : box.min.x;
+        _vector$6.y = plane.normal.y > 0 ? box.max.y : box.min.y;
+        _vector$6.z = plane.normal.z > 0 ? box.max.z : box.min.z;
         if (plane.distanceToPoint(_vector$6) < 0) {
           return false;
         }
@@ -13770,6 +13471,43 @@
      */
     static fromJSON(data) {
       return new _CylinderGeometry(data.radiusTop, data.radiusBottom, data.height, data.radialSegments, data.heightSegments, data.openEnded, data.thetaStart, data.thetaLength);
+    }
+  };
+  var ConeGeometry = class _ConeGeometry extends CylinderGeometry {
+    /**
+     * Constructs a new cone geometry.
+     *
+     * @param {number} [radius=1] - Radius of the cone base.
+     * @param {number} [height=1] - Height of the cone.
+     * @param {number} [radialSegments=32] - Number of segmented faces around the circumference of the cone.
+     * @param {number} [heightSegments=1] - Number of rows of faces along the height of the cone.
+     * @param {boolean} [openEnded=false] - Whether the base of the cone is open or capped.
+     * @param {number} [thetaStart=0] - Start angle for first segment, in radians.
+     * @param {number} [thetaLength=Math.PI*2] - The central angle, often called theta, of the circular sector, in radians.
+     * The default value results in a complete cone.
+     */
+    constructor(radius = 1, height = 1, radialSegments = 32, heightSegments = 1, openEnded = false, thetaStart = 0, thetaLength = Math.PI * 2) {
+      super(0, radius, height, radialSegments, heightSegments, openEnded, thetaStart, thetaLength);
+      this.type = "ConeGeometry";
+      this.parameters = {
+        radius,
+        height,
+        radialSegments,
+        heightSegments,
+        openEnded,
+        thetaStart,
+        thetaLength
+      };
+    }
+    /**
+     * Factory method for creating an instance of this class from the given
+     * JSON object.
+     *
+     * @param {Object} data - A JSON object representing the serialized geometry.
+     * @return {ConeGeometry} A new instance.
+     */
+    static fromJSON(data) {
+      return new _ConeGeometry(data.radius, data.height, data.radialSegments, data.heightSegments, data.openEnded, data.thetaStart, data.thetaLength);
     }
   };
   var Curve = class {
@@ -15717,559 +15455,6 @@
       vertices.push(contour[i].y);
     }
   }
-  var ExtrudeGeometry = class _ExtrudeGeometry extends BufferGeometry {
-    /**
-     * Constructs a new extrude geometry.
-     *
-     * @param {Shape|Array<Shape>} [shapes] - A shape or an array of shapes.
-     * @param {ExtrudeGeometry~Options} [options] - The extrude settings.
-     */
-    constructor(shapes = new Shape([new Vector2(0.5, 0.5), new Vector2(-0.5, 0.5), new Vector2(-0.5, -0.5), new Vector2(0.5, -0.5)]), options = {}) {
-      super();
-      this.type = "ExtrudeGeometry";
-      this.parameters = {
-        shapes,
-        options
-      };
-      shapes = Array.isArray(shapes) ? shapes : [shapes];
-      const scope = this;
-      const verticesArray = [];
-      const uvArray = [];
-      for (let i = 0, l = shapes.length; i < l; i++) {
-        const shape = shapes[i];
-        addShape(shape);
-      }
-      this.setAttribute("position", new Float32BufferAttribute(verticesArray, 3));
-      this.setAttribute("uv", new Float32BufferAttribute(uvArray, 2));
-      this.computeVertexNormals();
-      function addShape(shape) {
-        const placeholder = [];
-        const curveSegments = options.curveSegments !== void 0 ? options.curveSegments : 12;
-        const steps = options.steps !== void 0 ? options.steps : 1;
-        const depth = options.depth !== void 0 ? options.depth : 1;
-        let bevelEnabled = options.bevelEnabled !== void 0 ? options.bevelEnabled : true;
-        let bevelThickness = options.bevelThickness !== void 0 ? options.bevelThickness : 0.2;
-        let bevelSize = options.bevelSize !== void 0 ? options.bevelSize : bevelThickness - 0.1;
-        let bevelOffset = options.bevelOffset !== void 0 ? options.bevelOffset : 0;
-        let bevelSegments = options.bevelSegments !== void 0 ? options.bevelSegments : 3;
-        const extrudePath = options.extrudePath;
-        const uvgen = options.UVGenerator !== void 0 ? options.UVGenerator : WorldUVGenerator;
-        let extrudePts, extrudeByPath = false;
-        let splineTube, binormal, normal, position2;
-        if (extrudePath) {
-          extrudePts = extrudePath.getSpacedPoints(steps);
-          extrudeByPath = true;
-          bevelEnabled = false;
-          splineTube = extrudePath.computeFrenetFrames(steps, false);
-          binormal = new Vector3();
-          normal = new Vector3();
-          position2 = new Vector3();
-        }
-        if (!bevelEnabled) {
-          bevelSegments = 0;
-          bevelThickness = 0;
-          bevelSize = 0;
-          bevelOffset = 0;
-        }
-        const shapePoints = shape.extractPoints(curveSegments);
-        let vertices = shapePoints.shape;
-        const holes = shapePoints.holes;
-        const reverse = !ShapeUtils.isClockWise(vertices);
-        if (reverse) {
-          vertices = vertices.reverse();
-          for (let h = 0, hl = holes.length; h < hl; h++) {
-            const ahole = holes[h];
-            if (ShapeUtils.isClockWise(ahole)) {
-              holes[h] = ahole.reverse();
-            }
-          }
-        }
-        function mergeOverlappingPoints(points) {
-          const THRESHOLD = 1e-10;
-          const THRESHOLD_SQ = THRESHOLD * THRESHOLD;
-          let prevPos = points[0];
-          for (let i = 1; i <= points.length; i++) {
-            const currentIndex = i % points.length;
-            const currentPos = points[currentIndex];
-            const dx = currentPos.x - prevPos.x;
-            const dy = currentPos.y - prevPos.y;
-            const distSq = dx * dx + dy * dy;
-            const scalingFactorSqrt = Math.max(
-              Math.abs(currentPos.x),
-              Math.abs(currentPos.y),
-              Math.abs(prevPos.x),
-              Math.abs(prevPos.y)
-            );
-            const thresholdSqScaled = THRESHOLD_SQ * scalingFactorSqrt * scalingFactorSqrt;
-            if (distSq <= thresholdSqScaled) {
-              points.splice(currentIndex, 1);
-              i--;
-              continue;
-            }
-            prevPos = currentPos;
-          }
-        }
-        mergeOverlappingPoints(vertices);
-        holes.forEach(mergeOverlappingPoints);
-        const numHoles = holes.length;
-        const contour = vertices;
-        for (let h = 0; h < numHoles; h++) {
-          const ahole = holes[h];
-          vertices = vertices.concat(ahole);
-        }
-        function scalePt2(pt, vec, size) {
-          if (!vec) console.error("THREE.ExtrudeGeometry: vec does not exist");
-          return pt.clone().addScaledVector(vec, size);
-        }
-        const vlen = vertices.length;
-        function getBevelVec(inPt, inPrev, inNext) {
-          let v_trans_x, v_trans_y, shrink_by;
-          const v_prev_x = inPt.x - inPrev.x, v_prev_y = inPt.y - inPrev.y;
-          const v_next_x = inNext.x - inPt.x, v_next_y = inNext.y - inPt.y;
-          const v_prev_lensq = v_prev_x * v_prev_x + v_prev_y * v_prev_y;
-          const collinear0 = v_prev_x * v_next_y - v_prev_y * v_next_x;
-          if (Math.abs(collinear0) > Number.EPSILON) {
-            const v_prev_len = Math.sqrt(v_prev_lensq);
-            const v_next_len = Math.sqrt(v_next_x * v_next_x + v_next_y * v_next_y);
-            const ptPrevShift_x = inPrev.x - v_prev_y / v_prev_len;
-            const ptPrevShift_y = inPrev.y + v_prev_x / v_prev_len;
-            const ptNextShift_x = inNext.x - v_next_y / v_next_len;
-            const ptNextShift_y = inNext.y + v_next_x / v_next_len;
-            const sf = ((ptNextShift_x - ptPrevShift_x) * v_next_y - (ptNextShift_y - ptPrevShift_y) * v_next_x) / (v_prev_x * v_next_y - v_prev_y * v_next_x);
-            v_trans_x = ptPrevShift_x + v_prev_x * sf - inPt.x;
-            v_trans_y = ptPrevShift_y + v_prev_y * sf - inPt.y;
-            const v_trans_lensq = v_trans_x * v_trans_x + v_trans_y * v_trans_y;
-            if (v_trans_lensq <= 2) {
-              return new Vector2(v_trans_x, v_trans_y);
-            } else {
-              shrink_by = Math.sqrt(v_trans_lensq / 2);
-            }
-          } else {
-            let direction_eq = false;
-            if (v_prev_x > Number.EPSILON) {
-              if (v_next_x > Number.EPSILON) {
-                direction_eq = true;
-              }
-            } else {
-              if (v_prev_x < -Number.EPSILON) {
-                if (v_next_x < -Number.EPSILON) {
-                  direction_eq = true;
-                }
-              } else {
-                if (Math.sign(v_prev_y) === Math.sign(v_next_y)) {
-                  direction_eq = true;
-                }
-              }
-            }
-            if (direction_eq) {
-              v_trans_x = -v_prev_y;
-              v_trans_y = v_prev_x;
-              shrink_by = Math.sqrt(v_prev_lensq);
-            } else {
-              v_trans_x = v_prev_x;
-              v_trans_y = v_prev_y;
-              shrink_by = Math.sqrt(v_prev_lensq / 2);
-            }
-          }
-          return new Vector2(v_trans_x / shrink_by, v_trans_y / shrink_by);
-        }
-        const contourMovements = [];
-        for (let i = 0, il = contour.length, j = il - 1, k = i + 1; i < il; i++, j++, k++) {
-          if (j === il) j = 0;
-          if (k === il) k = 0;
-          contourMovements[i] = getBevelVec(contour[i], contour[j], contour[k]);
-        }
-        const holesMovements = [];
-        let oneHoleMovements, verticesMovements = contourMovements.concat();
-        for (let h = 0, hl = numHoles; h < hl; h++) {
-          const ahole = holes[h];
-          oneHoleMovements = [];
-          for (let i = 0, il = ahole.length, j = il - 1, k = i + 1; i < il; i++, j++, k++) {
-            if (j === il) j = 0;
-            if (k === il) k = 0;
-            oneHoleMovements[i] = getBevelVec(ahole[i], ahole[j], ahole[k]);
-          }
-          holesMovements.push(oneHoleMovements);
-          verticesMovements = verticesMovements.concat(oneHoleMovements);
-        }
-        let faces;
-        if (bevelSegments === 0) {
-          faces = ShapeUtils.triangulateShape(contour, holes);
-        } else {
-          const contractedContourVertices = [];
-          const expandedHoleVertices = [];
-          for (let b = 0; b < bevelSegments; b++) {
-            const t2 = b / bevelSegments;
-            const z = bevelThickness * Math.cos(t2 * Math.PI / 2);
-            const bs2 = bevelSize * Math.sin(t2 * Math.PI / 2) + bevelOffset;
-            for (let i = 0, il = contour.length; i < il; i++) {
-              const vert = scalePt2(contour[i], contourMovements[i], bs2);
-              v(vert.x, vert.y, -z);
-              if (t2 === 0) contractedContourVertices.push(vert);
-            }
-            for (let h = 0, hl = numHoles; h < hl; h++) {
-              const ahole = holes[h];
-              oneHoleMovements = holesMovements[h];
-              const oneHoleVertices = [];
-              for (let i = 0, il = ahole.length; i < il; i++) {
-                const vert = scalePt2(ahole[i], oneHoleMovements[i], bs2);
-                v(vert.x, vert.y, -z);
-                if (t2 === 0) oneHoleVertices.push(vert);
-              }
-              if (t2 === 0) expandedHoleVertices.push(oneHoleVertices);
-            }
-          }
-          faces = ShapeUtils.triangulateShape(contractedContourVertices, expandedHoleVertices);
-        }
-        const flen = faces.length;
-        const bs = bevelSize + bevelOffset;
-        for (let i = 0; i < vlen; i++) {
-          const vert = bevelEnabled ? scalePt2(vertices[i], verticesMovements[i], bs) : vertices[i];
-          if (!extrudeByPath) {
-            v(vert.x, vert.y, 0);
-          } else {
-            normal.copy(splineTube.normals[0]).multiplyScalar(vert.x);
-            binormal.copy(splineTube.binormals[0]).multiplyScalar(vert.y);
-            position2.copy(extrudePts[0]).add(normal).add(binormal);
-            v(position2.x, position2.y, position2.z);
-          }
-        }
-        for (let s = 1; s <= steps; s++) {
-          for (let i = 0; i < vlen; i++) {
-            const vert = bevelEnabled ? scalePt2(vertices[i], verticesMovements[i], bs) : vertices[i];
-            if (!extrudeByPath) {
-              v(vert.x, vert.y, depth / steps * s);
-            } else {
-              normal.copy(splineTube.normals[s]).multiplyScalar(vert.x);
-              binormal.copy(splineTube.binormals[s]).multiplyScalar(vert.y);
-              position2.copy(extrudePts[s]).add(normal).add(binormal);
-              v(position2.x, position2.y, position2.z);
-            }
-          }
-        }
-        for (let b = bevelSegments - 1; b >= 0; b--) {
-          const t2 = b / bevelSegments;
-          const z = bevelThickness * Math.cos(t2 * Math.PI / 2);
-          const bs2 = bevelSize * Math.sin(t2 * Math.PI / 2) + bevelOffset;
-          for (let i = 0, il = contour.length; i < il; i++) {
-            const vert = scalePt2(contour[i], contourMovements[i], bs2);
-            v(vert.x, vert.y, depth + z);
-          }
-          for (let h = 0, hl = holes.length; h < hl; h++) {
-            const ahole = holes[h];
-            oneHoleMovements = holesMovements[h];
-            for (let i = 0, il = ahole.length; i < il; i++) {
-              const vert = scalePt2(ahole[i], oneHoleMovements[i], bs2);
-              if (!extrudeByPath) {
-                v(vert.x, vert.y, depth + z);
-              } else {
-                v(vert.x, vert.y + extrudePts[steps - 1].y, extrudePts[steps - 1].x + z);
-              }
-            }
-          }
-        }
-        buildLidFaces();
-        buildSideFaces();
-        function buildLidFaces() {
-          const start = verticesArray.length / 3;
-          if (bevelEnabled) {
-            let layer = 0;
-            let offset = vlen * layer;
-            for (let i = 0; i < flen; i++) {
-              const face = faces[i];
-              f3(face[2] + offset, face[1] + offset, face[0] + offset);
-            }
-            layer = steps + bevelSegments * 2;
-            offset = vlen * layer;
-            for (let i = 0; i < flen; i++) {
-              const face = faces[i];
-              f3(face[0] + offset, face[1] + offset, face[2] + offset);
-            }
-          } else {
-            for (let i = 0; i < flen; i++) {
-              const face = faces[i];
-              f3(face[2], face[1], face[0]);
-            }
-            for (let i = 0; i < flen; i++) {
-              const face = faces[i];
-              f3(face[0] + vlen * steps, face[1] + vlen * steps, face[2] + vlen * steps);
-            }
-          }
-          scope.addGroup(start, verticesArray.length / 3 - start, 0);
-        }
-        function buildSideFaces() {
-          const start = verticesArray.length / 3;
-          let layeroffset = 0;
-          sidewalls(contour, layeroffset);
-          layeroffset += contour.length;
-          for (let h = 0, hl = holes.length; h < hl; h++) {
-            const ahole = holes[h];
-            sidewalls(ahole, layeroffset);
-            layeroffset += ahole.length;
-          }
-          scope.addGroup(start, verticesArray.length / 3 - start, 1);
-        }
-        function sidewalls(contour2, layeroffset) {
-          let i = contour2.length;
-          while (--i >= 0) {
-            const j = i;
-            let k = i - 1;
-            if (k < 0) k = contour2.length - 1;
-            for (let s = 0, sl = steps + bevelSegments * 2; s < sl; s++) {
-              const slen1 = vlen * s;
-              const slen2 = vlen * (s + 1);
-              const a = layeroffset + j + slen1, b = layeroffset + k + slen1, c = layeroffset + k + slen2, d = layeroffset + j + slen2;
-              f4(a, b, c, d);
-            }
-          }
-        }
-        function v(x, y, z) {
-          placeholder.push(x);
-          placeholder.push(y);
-          placeholder.push(z);
-        }
-        function f3(a, b, c) {
-          addVertex(a);
-          addVertex(b);
-          addVertex(c);
-          const nextIndex = verticesArray.length / 3;
-          const uvs = uvgen.generateTopUV(scope, verticesArray, nextIndex - 3, nextIndex - 2, nextIndex - 1);
-          addUV(uvs[0]);
-          addUV(uvs[1]);
-          addUV(uvs[2]);
-        }
-        function f4(a, b, c, d) {
-          addVertex(a);
-          addVertex(b);
-          addVertex(d);
-          addVertex(b);
-          addVertex(c);
-          addVertex(d);
-          const nextIndex = verticesArray.length / 3;
-          const uvs = uvgen.generateSideWallUV(scope, verticesArray, nextIndex - 6, nextIndex - 3, nextIndex - 2, nextIndex - 1);
-          addUV(uvs[0]);
-          addUV(uvs[1]);
-          addUV(uvs[3]);
-          addUV(uvs[1]);
-          addUV(uvs[2]);
-          addUV(uvs[3]);
-        }
-        function addVertex(index) {
-          verticesArray.push(placeholder[index * 3 + 0]);
-          verticesArray.push(placeholder[index * 3 + 1]);
-          verticesArray.push(placeholder[index * 3 + 2]);
-        }
-        function addUV(vector2) {
-          uvArray.push(vector2.x);
-          uvArray.push(vector2.y);
-        }
-      }
-    }
-    copy(source) {
-      super.copy(source);
-      this.parameters = Object.assign({}, source.parameters);
-      return this;
-    }
-    toJSON() {
-      const data = super.toJSON();
-      const shapes = this.parameters.shapes;
-      const options = this.parameters.options;
-      return toJSON$1(shapes, options, data);
-    }
-    /**
-     * Factory method for creating an instance of this class from the given
-     * JSON object.
-     *
-     * @param {Object} data - A JSON object representing the serialized geometry.
-     * @param {Array<Shape>} shapes - An array of shapes.
-     * @return {ExtrudeGeometry} A new instance.
-     */
-    static fromJSON(data, shapes) {
-      const geometryShapes = [];
-      for (let j = 0, jl = data.shapes.length; j < jl; j++) {
-        const shape = shapes[data.shapes[j]];
-        geometryShapes.push(shape);
-      }
-      const extrudePath = data.options.extrudePath;
-      if (extrudePath !== void 0) {
-        data.options.extrudePath = new Curves[extrudePath.type]().fromJSON(extrudePath);
-      }
-      return new _ExtrudeGeometry(geometryShapes, data.options);
-    }
-  };
-  var WorldUVGenerator = {
-    generateTopUV: function(geometry, vertices, indexA, indexB, indexC) {
-      const a_x = vertices[indexA * 3];
-      const a_y = vertices[indexA * 3 + 1];
-      const b_x = vertices[indexB * 3];
-      const b_y = vertices[indexB * 3 + 1];
-      const c_x = vertices[indexC * 3];
-      const c_y = vertices[indexC * 3 + 1];
-      return [
-        new Vector2(a_x, a_y),
-        new Vector2(b_x, b_y),
-        new Vector2(c_x, c_y)
-      ];
-    },
-    generateSideWallUV: function(geometry, vertices, indexA, indexB, indexC, indexD) {
-      const a_x = vertices[indexA * 3];
-      const a_y = vertices[indexA * 3 + 1];
-      const a_z = vertices[indexA * 3 + 2];
-      const b_x = vertices[indexB * 3];
-      const b_y = vertices[indexB * 3 + 1];
-      const b_z = vertices[indexB * 3 + 2];
-      const c_x = vertices[indexC * 3];
-      const c_y = vertices[indexC * 3 + 1];
-      const c_z = vertices[indexC * 3 + 2];
-      const d_x = vertices[indexD * 3];
-      const d_y = vertices[indexD * 3 + 1];
-      const d_z = vertices[indexD * 3 + 2];
-      if (Math.abs(a_y - b_y) < Math.abs(a_x - b_x)) {
-        return [
-          new Vector2(a_x, 1 - a_z),
-          new Vector2(b_x, 1 - b_z),
-          new Vector2(c_x, 1 - c_z),
-          new Vector2(d_x, 1 - d_z)
-        ];
-      } else {
-        return [
-          new Vector2(a_y, 1 - a_z),
-          new Vector2(b_y, 1 - b_z),
-          new Vector2(c_y, 1 - c_z),
-          new Vector2(d_y, 1 - d_z)
-        ];
-      }
-    }
-  };
-  function toJSON$1(shapes, options, data) {
-    data.shapes = [];
-    if (Array.isArray(shapes)) {
-      for (let i = 0, l = shapes.length; i < l; i++) {
-        const shape = shapes[i];
-        data.shapes.push(shape.uuid);
-      }
-    } else {
-      data.shapes.push(shapes.uuid);
-    }
-    data.options = Object.assign({}, options);
-    if (options.extrudePath !== void 0) data.options.extrudePath = options.extrudePath.toJSON();
-    return data;
-  }
-  var LatheGeometry = class _LatheGeometry extends BufferGeometry {
-    /**
-     * Constructs a new lathe geometry.
-     *
-     * @param {Array<Vector2|Vector3>} [points] - An array of points in 2D space. The x-coordinate of each point
-     * must be greater than zero.
-     * @param {number} [segments=12] - The number of circumference segments to generate.
-     * @param {number} [phiStart=0] - The starting angle in radians.
-     * @param {number} [phiLength=Math.PI*2] - The radian (0 to 2PI) range of the lathed section 2PI is a
-     * closed lathe, less than 2PI is a portion.
-     */
-    constructor(points = [new Vector2(0, -0.5), new Vector2(0.5, 0), new Vector2(0, 0.5)], segments = 12, phiStart = 0, phiLength = Math.PI * 2) {
-      super();
-      this.type = "LatheGeometry";
-      this.parameters = {
-        points,
-        segments,
-        phiStart,
-        phiLength
-      };
-      segments = Math.floor(segments);
-      phiLength = clamp(phiLength, 0, Math.PI * 2);
-      const indices = [];
-      const vertices = [];
-      const uvs = [];
-      const initNormals = [];
-      const normals = [];
-      const inverseSegments = 1 / segments;
-      const vertex2 = new Vector3();
-      const uv = new Vector2();
-      const normal = new Vector3();
-      const curNormal = new Vector3();
-      const prevNormal = new Vector3();
-      let dx = 0;
-      let dy = 0;
-      for (let j = 0; j <= points.length - 1; j++) {
-        switch (j) {
-          case 0:
-            dx = points[j + 1].x - points[j].x;
-            dy = points[j + 1].y - points[j].y;
-            normal.x = dy * 1;
-            normal.y = -dx;
-            normal.z = dy * 0;
-            prevNormal.copy(normal);
-            normal.normalize();
-            initNormals.push(normal.x, normal.y, normal.z);
-            break;
-          case points.length - 1:
-            initNormals.push(prevNormal.x, prevNormal.y, prevNormal.z);
-            break;
-          default:
-            dx = points[j + 1].x - points[j].x;
-            dy = points[j + 1].y - points[j].y;
-            normal.x = dy * 1;
-            normal.y = -dx;
-            normal.z = dy * 0;
-            curNormal.copy(normal);
-            normal.x += prevNormal.x;
-            normal.y += prevNormal.y;
-            normal.z += prevNormal.z;
-            normal.normalize();
-            initNormals.push(normal.x, normal.y, normal.z);
-            prevNormal.copy(curNormal);
-        }
-      }
-      for (let i = 0; i <= segments; i++) {
-        const phi = phiStart + i * inverseSegments * phiLength;
-        const sin = Math.sin(phi);
-        const cos = Math.cos(phi);
-        for (let j = 0; j <= points.length - 1; j++) {
-          vertex2.x = points[j].x * sin;
-          vertex2.y = points[j].y;
-          vertex2.z = points[j].x * cos;
-          vertices.push(vertex2.x, vertex2.y, vertex2.z);
-          uv.x = i / segments;
-          uv.y = j / (points.length - 1);
-          uvs.push(uv.x, uv.y);
-          const x = initNormals[3 * j + 0] * sin;
-          const y = initNormals[3 * j + 1];
-          const z = initNormals[3 * j + 0] * cos;
-          normals.push(x, y, z);
-        }
-      }
-      for (let i = 0; i < segments; i++) {
-        for (let j = 0; j < points.length - 1; j++) {
-          const base = j + i * points.length;
-          const a = base;
-          const b = base + points.length;
-          const c = base + points.length + 1;
-          const d = base + 1;
-          indices.push(a, b, d);
-          indices.push(c, d, b);
-        }
-      }
-      this.setIndex(indices);
-      this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
-      this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
-      this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
-    }
-    copy(source) {
-      super.copy(source);
-      this.parameters = Object.assign({}, source.parameters);
-      return this;
-    }
-    /**
-     * Factory method for creating an instance of this class from the given
-     * JSON object.
-     *
-     * @param {Object} data - A JSON object representing the serialized geometry.
-     * @return {LatheGeometry} A new instance.
-     */
-    static fromJSON(data) {
-      return new _LatheGeometry(data.points, data.segments, data.phiStart, data.phiLength);
-    }
-  };
   var PlaneGeometry = class _PlaneGeometry extends BufferGeometry {
     /**
      * Constructs a new plane geometry.
@@ -16339,6 +15524,84 @@
      */
     static fromJSON(data) {
       return new _PlaneGeometry(data.width, data.height, data.widthSegments, data.heightSegments);
+    }
+  };
+  var RingGeometry = class _RingGeometry extends BufferGeometry {
+    /**
+     * Constructs a new ring geometry.
+     *
+     * @param {number} [innerRadius=0.5] - The inner radius of the ring.
+     * @param {number} [outerRadius=1] - The outer radius of the ring.
+     * @param {number} [thetaSegments=32] - Number of segments. A higher number means the ring will be more round. Minimum is `3`.
+     * @param {number} [phiSegments=1] - Number of segments per ring segment. Minimum is `1`.
+     * @param {number} [thetaStart=0] - Starting angle in radians.
+     * @param {number} [thetaLength=Math.PI*2] - Central angle in radians.
+     */
+    constructor(innerRadius = 0.5, outerRadius = 1, thetaSegments = 32, phiSegments = 1, thetaStart = 0, thetaLength = Math.PI * 2) {
+      super();
+      this.type = "RingGeometry";
+      this.parameters = {
+        innerRadius,
+        outerRadius,
+        thetaSegments,
+        phiSegments,
+        thetaStart,
+        thetaLength
+      };
+      thetaSegments = Math.max(3, thetaSegments);
+      phiSegments = Math.max(1, phiSegments);
+      const indices = [];
+      const vertices = [];
+      const normals = [];
+      const uvs = [];
+      let radius = innerRadius;
+      const radiusStep = (outerRadius - innerRadius) / phiSegments;
+      const vertex2 = new Vector3();
+      const uv = new Vector2();
+      for (let j = 0; j <= phiSegments; j++) {
+        for (let i = 0; i <= thetaSegments; i++) {
+          const segment = thetaStart + i / thetaSegments * thetaLength;
+          vertex2.x = radius * Math.cos(segment);
+          vertex2.y = radius * Math.sin(segment);
+          vertices.push(vertex2.x, vertex2.y, vertex2.z);
+          normals.push(0, 0, 1);
+          uv.x = (vertex2.x / outerRadius + 1) / 2;
+          uv.y = (vertex2.y / outerRadius + 1) / 2;
+          uvs.push(uv.x, uv.y);
+        }
+        radius += radiusStep;
+      }
+      for (let j = 0; j < phiSegments; j++) {
+        const thetaSegmentLevel = j * (thetaSegments + 1);
+        for (let i = 0; i < thetaSegments; i++) {
+          const segment = i + thetaSegmentLevel;
+          const a = segment;
+          const b = segment + thetaSegments + 1;
+          const c = segment + thetaSegments + 2;
+          const d = segment + 1;
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+        }
+      }
+      this.setIndex(indices);
+      this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+      this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+      this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+    }
+    copy(source) {
+      super.copy(source);
+      this.parameters = Object.assign({}, source.parameters);
+      return this;
+    }
+    /**
+     * Factory method for creating an instance of this class from the given
+     * JSON object.
+     *
+     * @param {Object} data - A JSON object representing the serialized geometry.
+     * @return {RingGeometry} A new instance.
+     */
+    static fromJSON(data) {
+      return new _RingGeometry(data.innerRadius, data.outerRadius, data.thetaSegments, data.phiSegments, data.thetaStart, data.thetaLength);
     }
   };
   var ShapeGeometry = class _ShapeGeometry extends BufferGeometry {
@@ -16477,7 +15740,7 @@
       heightSegments = Math.max(2, Math.floor(heightSegments));
       const thetaEnd = Math.min(thetaStart + thetaLength, Math.PI);
       let index = 0;
-      const grid = [];
+      const grid2 = [];
       const vertex2 = new Vector3();
       const normal = new Vector3();
       const indices = [];
@@ -16504,14 +15767,14 @@
           uvs.push(u + uOffset, 1 - v);
           verticesRow.push(index++);
         }
-        grid.push(verticesRow);
+        grid2.push(verticesRow);
       }
       for (let iy = 0; iy < heightSegments; iy++) {
         for (let ix = 0; ix < widthSegments; ix++) {
-          const a = grid[iy][ix + 1];
-          const b = grid[iy][ix];
-          const c = grid[iy + 1][ix];
-          const d = grid[iy + 1][ix + 1];
+          const a = grid2[iy][ix + 1];
+          const b = grid2[iy][ix];
+          const c = grid2[iy + 1][ix];
+          const d = grid2[iy + 1][ix + 1];
           if (iy !== 0 || thetaStart > 0) indices.push(a, b, d);
           if (iy !== heightSegments - 1 || thetaEnd < Math.PI) indices.push(b, c, d);
         }
@@ -16737,206 +16000,6 @@
       this.wireframeLinejoin = source.wireframeLinejoin;
       this.flatShading = source.flatShading;
       this.fog = source.fog;
-      return this;
-    }
-  };
-  var MeshPhysicalMaterial = class extends MeshStandardMaterial {
-    /**
-     * Constructs a new mesh physical material.
-     *
-     * @param {Object} [parameters] - An object with one or more properties
-     * defining the material's appearance. Any property of the material
-     * (including any property from inherited materials) can be passed
-     * in here. Color values can be passed any type of value accepted
-     * by {@link Color#set}.
-     */
-    constructor(parameters) {
-      super();
-      this.isMeshPhysicalMaterial = true;
-      this.defines = {
-        "STANDARD": "",
-        "PHYSICAL": ""
-      };
-      this.type = "MeshPhysicalMaterial";
-      this.anisotropyRotation = 0;
-      this.anisotropyMap = null;
-      this.clearcoatMap = null;
-      this.clearcoatRoughness = 0;
-      this.clearcoatRoughnessMap = null;
-      this.clearcoatNormalScale = new Vector2(1, 1);
-      this.clearcoatNormalMap = null;
-      this.ior = 1.5;
-      Object.defineProperty(this, "reflectivity", {
-        get: function() {
-          return clamp(2.5 * (this.ior - 1) / (this.ior + 1), 0, 1);
-        },
-        set: function(reflectivity) {
-          this.ior = (1 + 0.4 * reflectivity) / (1 - 0.4 * reflectivity);
-        }
-      });
-      this.iridescenceMap = null;
-      this.iridescenceIOR = 1.3;
-      this.iridescenceThicknessRange = [100, 400];
-      this.iridescenceThicknessMap = null;
-      this.sheenColor = new Color(0);
-      this.sheenColorMap = null;
-      this.sheenRoughness = 1;
-      this.sheenRoughnessMap = null;
-      this.transmissionMap = null;
-      this.thickness = 0;
-      this.thicknessMap = null;
-      this.attenuationDistance = Infinity;
-      this.attenuationColor = new Color(1, 1, 1);
-      this.specularIntensity = 1;
-      this.specularIntensityMap = null;
-      this.specularColor = new Color(1, 1, 1);
-      this.specularColorMap = null;
-      this._anisotropy = 0;
-      this._clearcoat = 0;
-      this._dispersion = 0;
-      this._iridescence = 0;
-      this._sheen = 0;
-      this._transmission = 0;
-      this.setValues(parameters);
-    }
-    /**
-     * The anisotropy strength.
-     *
-     * @type {number}
-     * @default 0
-     */
-    get anisotropy() {
-      return this._anisotropy;
-    }
-    set anisotropy(value) {
-      if (this._anisotropy > 0 !== value > 0) {
-        this.version++;
-      }
-      this._anisotropy = value;
-    }
-    /**
-     * Represents the intensity of the clear coat layer, from `0.0` to `1.0`. Use
-     * clear coat related properties to enable multilayer materials that have a
-     * thin translucent layer over the base layer.
-     *
-     * @type {number}
-     * @default 0
-     */
-    get clearcoat() {
-      return this._clearcoat;
-    }
-    set clearcoat(value) {
-      if (this._clearcoat > 0 !== value > 0) {
-        this.version++;
-      }
-      this._clearcoat = value;
-    }
-    /**
-     * The intensity of the iridescence layer, simulating RGB color shift based on the angle between
-     * the surface and the viewer, from `0.0` to `1.0`.
-     *
-     * @type {number}
-     * @default 0
-     */
-    get iridescence() {
-      return this._iridescence;
-    }
-    set iridescence(value) {
-      if (this._iridescence > 0 !== value > 0) {
-        this.version++;
-      }
-      this._iridescence = value;
-    }
-    /**
-     * Defines the strength of the angular separation of colors (chromatic aberration) transmitting
-     * through a relatively clear volume. Any value zero or larger is valid, the typical range of
-     * realistic values is `[0, 1]`. This property can be only be used with transmissive objects.
-     *
-     * @type {number}
-     * @default 0
-     */
-    get dispersion() {
-      return this._dispersion;
-    }
-    set dispersion(value) {
-      if (this._dispersion > 0 !== value > 0) {
-        this.version++;
-      }
-      this._dispersion = value;
-    }
-    /**
-     * The intensity of the sheen layer, from `0.0` to `1.0`.
-     *
-     * @type {number}
-     * @default 0
-     */
-    get sheen() {
-      return this._sheen;
-    }
-    set sheen(value) {
-      if (this._sheen > 0 !== value > 0) {
-        this.version++;
-      }
-      this._sheen = value;
-    }
-    /**
-     * Degree of transmission (or optical transparency), from `0.0` to `1.0`.
-     *
-     * Thin, transparent or semitransparent, plastic or glass materials remain
-     * largely reflective even if they are fully transmissive. The transmission
-     * property can be used to model these materials.
-     *
-     * When transmission is non-zero, `opacity` should be  set to `1`.
-     *
-     * @type {number}
-     * @default 0
-     */
-    get transmission() {
-      return this._transmission;
-    }
-    set transmission(value) {
-      if (this._transmission > 0 !== value > 0) {
-        this.version++;
-      }
-      this._transmission = value;
-    }
-    copy(source) {
-      super.copy(source);
-      this.defines = {
-        "STANDARD": "",
-        "PHYSICAL": ""
-      };
-      this.anisotropy = source.anisotropy;
-      this.anisotropyRotation = source.anisotropyRotation;
-      this.anisotropyMap = source.anisotropyMap;
-      this.clearcoat = source.clearcoat;
-      this.clearcoatMap = source.clearcoatMap;
-      this.clearcoatRoughness = source.clearcoatRoughness;
-      this.clearcoatRoughnessMap = source.clearcoatRoughnessMap;
-      this.clearcoatNormalMap = source.clearcoatNormalMap;
-      this.clearcoatNormalScale.copy(source.clearcoatNormalScale);
-      this.dispersion = source.dispersion;
-      this.ior = source.ior;
-      this.iridescence = source.iridescence;
-      this.iridescenceMap = source.iridescenceMap;
-      this.iridescenceIOR = source.iridescenceIOR;
-      this.iridescenceThicknessRange = [...source.iridescenceThicknessRange];
-      this.iridescenceThicknessMap = source.iridescenceThicknessMap;
-      this.sheen = source.sheen;
-      this.sheenColor.copy(source.sheenColor);
-      this.sheenColorMap = source.sheenColorMap;
-      this.sheenRoughness = source.sheenRoughness;
-      this.sheenRoughnessMap = source.sheenRoughnessMap;
-      this.transmission = source.transmission;
-      this.transmissionMap = source.transmissionMap;
-      this.thickness = source.thickness;
-      this.thicknessMap = source.thicknessMap;
-      this.attenuationDistance = source.attenuationDistance;
-      this.attenuationColor.copy(source.attenuationColor);
-      this.specularIntensity = source.specularIntensity;
-      this.specularIntensityMap = source.specularIntensityMap;
-      this.specularColor.copy(source.specularColor);
-      this.specularColorMap = source.specularColorMap;
       return this;
     }
   };
@@ -17945,6 +17008,28 @@
       return data;
     }
   };
+  var HemisphereLight = class extends Light {
+    /**
+     * Constructs a new hemisphere light.
+     *
+     * @param {(number|Color|string)} [skyColor=0xffffff] - The light's sky color.
+     * @param {(number|Color|string)} [groundColor=0xffffff] - The light's ground color.
+     * @param {number} [intensity=1] - The light's strength/intensity.
+     */
+    constructor(skyColor, groundColor, intensity) {
+      super(skyColor, intensity);
+      this.isHemisphereLight = true;
+      this.type = "HemisphereLight";
+      this.position.copy(Object3D.DEFAULT_UP);
+      this.updateMatrix();
+      this.groundColor = new Color(groundColor);
+    }
+    copy(source, recursive) {
+      super.copy(source, recursive);
+      this.groundColor.copy(source.groundColor);
+      return this;
+    }
+  };
   var _projScreenMatrix$1 = /* @__PURE__ */ new Matrix4();
   var _lightPositionWorld$1 = /* @__PURE__ */ new Vector3();
   var _lookTarget$1 = /* @__PURE__ */ new Vector3();
@@ -18119,6 +17204,127 @@
       object.camera = this.camera.toJSON(false).object;
       delete object.camera.matrix;
       return object;
+    }
+  };
+  var _projScreenMatrix = /* @__PURE__ */ new Matrix4();
+  var _lightPositionWorld = /* @__PURE__ */ new Vector3();
+  var _lookTarget = /* @__PURE__ */ new Vector3();
+  var PointLightShadow = class extends LightShadow {
+    /**
+     * Constructs a new point light shadow.
+     */
+    constructor() {
+      super(new PerspectiveCamera(90, 1, 0.5, 500));
+      this.isPointLightShadow = true;
+      this._frameExtents = new Vector2(4, 2);
+      this._viewportCount = 6;
+      this._viewports = [
+        // These viewports map a cube-map onto a 2D texture with the
+        // following orientation:
+        //
+        //  xzXZ
+        //   y Y
+        //
+        // X - Positive x direction
+        // x - Negative x direction
+        // Y - Positive y direction
+        // y - Negative y direction
+        // Z - Positive z direction
+        // z - Negative z direction
+        // positive X
+        new Vector4(2, 1, 1, 1),
+        // negative X
+        new Vector4(0, 1, 1, 1),
+        // positive Z
+        new Vector4(3, 1, 1, 1),
+        // negative Z
+        new Vector4(1, 1, 1, 1),
+        // positive Y
+        new Vector4(3, 0, 1, 1),
+        // negative Y
+        new Vector4(1, 0, 1, 1)
+      ];
+      this._cubeDirections = [
+        new Vector3(1, 0, 0),
+        new Vector3(-1, 0, 0),
+        new Vector3(0, 0, 1),
+        new Vector3(0, 0, -1),
+        new Vector3(0, 1, 0),
+        new Vector3(0, -1, 0)
+      ];
+      this._cubeUps = [
+        new Vector3(0, 1, 0),
+        new Vector3(0, 1, 0),
+        new Vector3(0, 1, 0),
+        new Vector3(0, 1, 0),
+        new Vector3(0, 0, 1),
+        new Vector3(0, 0, -1)
+      ];
+    }
+    /**
+     * Update the matrices for the camera and shadow, used internally by the renderer.
+     *
+     * @param {Light} light - The light for which the shadow is being rendered.
+     * @param {number} [viewportIndex=0] - The viewport index.
+     */
+    updateMatrices(light, viewportIndex = 0) {
+      const camera2 = this.camera;
+      const shadowMatrix = this.matrix;
+      const far = light.distance || camera2.far;
+      if (far !== camera2.far) {
+        camera2.far = far;
+        camera2.updateProjectionMatrix();
+      }
+      _lightPositionWorld.setFromMatrixPosition(light.matrixWorld);
+      camera2.position.copy(_lightPositionWorld);
+      _lookTarget.copy(camera2.position);
+      _lookTarget.add(this._cubeDirections[viewportIndex]);
+      camera2.up.copy(this._cubeUps[viewportIndex]);
+      camera2.lookAt(_lookTarget);
+      camera2.updateMatrixWorld();
+      shadowMatrix.makeTranslation(-_lightPositionWorld.x, -_lightPositionWorld.y, -_lightPositionWorld.z);
+      _projScreenMatrix.multiplyMatrices(camera2.projectionMatrix, camera2.matrixWorldInverse);
+      this._frustum.setFromProjectionMatrix(_projScreenMatrix, camera2.coordinateSystem, camera2.reversedDepth);
+    }
+  };
+  var PointLight = class extends Light {
+    /**
+     * Constructs a new point light.
+     *
+     * @param {(number|Color|string)} [color=0xffffff] - The light's color.
+     * @param {number} [intensity=1] - The light's strength/intensity measured in candela (cd).
+     * @param {number} [distance=0] - Maximum range of the light. `0` means no limit.
+     * @param {number} [decay=2] - The amount the light dims along the distance of the light.
+     */
+    constructor(color, intensity, distance = 0, decay = 2) {
+      super(color, intensity);
+      this.isPointLight = true;
+      this.type = "PointLight";
+      this.distance = distance;
+      this.decay = decay;
+      this.shadow = new PointLightShadow();
+    }
+    /**
+     * The light's power. Power is the luminous power of the light measured in lumens (lm).
+     * Changing the power will also change the light's intensity.
+     *
+     * @type {number}
+     */
+    get power() {
+      return this.intensity * 4 * Math.PI;
+    }
+    set power(power) {
+      this.intensity = power / (4 * Math.PI);
+    }
+    dispose() {
+      this.shadow.dispose();
+    }
+    copy(source, recursive) {
+      super.copy(source, recursive);
+      this.distance = source.distance;
+      this.decay = source.decay;
+      this.shadow = source.shadow.clone();
+      return this;
     }
   };
   var OrthographicCamera = class extends Camera {
@@ -20980,13 +20186,13 @@
         }
       }
       const material = isCubeTexture ? this._cubemapMaterial : this._equirectMaterial;
-      const mesh2 = new Mesh(this._lodPlanes[0], material);
+      const mesh = new Mesh(this._lodPlanes[0], material);
       const uniforms = material.uniforms;
       uniforms["envMap"].value = texture;
       const size = this._cubeSize;
       _setViewport(cubeUVRenderTarget, 0, 0, 3 * size, 2 * size);
       renderer2.setRenderTarget(cubeUVRenderTarget);
-      renderer2.render(mesh2, _flatCamera);
+      renderer2.render(mesh, _flatCamera);
     }
     _applyPMREM(cubeUVRenderTarget) {
       const renderer2 = this._renderer;
@@ -24496,8 +23702,8 @@
             currentColorMask = colorMask;
           }
         },
-        setLocked: function(lock2) {
-          locked = lock2;
+        setLocked: function(lock) {
+          locked = lock;
         },
         setClear: function(r, g, b, a, premultipliedAlpha) {
           if (premultipliedAlpha === true) {
@@ -24589,8 +23795,8 @@
             currentDepthFunc = depthFunc;
           }
         },
-        setLocked: function(lock2) {
-          locked = lock2;
+        setLocked: function(lock) {
+          locked = lock;
         },
         setClear: function(depth) {
           if (currentDepthClear !== depth) {
@@ -24652,8 +23858,8 @@
             currentStencilZPass = stencilZPass;
           }
         },
-        setLocked: function(lock2) {
-          locked = lock2;
+        setLocked: function(lock) {
+          locked = lock;
         },
         setClear: function(stencil) {
           if (currentStencilClear !== stencil) {
@@ -27739,7 +26945,7 @@ void main() {
       const _frustum = new Frustum();
       let _clippingEnabled = false;
       let _localClippingEnabled = false;
-      const _projScreenMatrix = new Matrix4();
+      const _projScreenMatrix2 = new Matrix4();
       const _vector3 = new Vector3();
       const _vector4 = new Vector4();
       const _emptyScene = { background: null, fog: null, environment: null, overrideMaterial: null, isScene: true };
@@ -28248,8 +27454,8 @@ void main() {
         currentRenderState = renderStates.get(scene2, renderStateStack.length);
         currentRenderState.init(camera2);
         renderStateStack.push(currentRenderState);
-        _projScreenMatrix.multiplyMatrices(camera2.projectionMatrix, camera2.matrixWorldInverse);
-        _frustum.setFromProjectionMatrix(_projScreenMatrix, WebGLCoordinateSystem, camera2.reversedDepth);
+        _projScreenMatrix2.multiplyMatrices(camera2.projectionMatrix, camera2.matrixWorldInverse);
+        _frustum.setFromProjectionMatrix(_projScreenMatrix2, WebGLCoordinateSystem, camera2.reversedDepth);
         _localClippingEnabled = this.localClippingEnabled;
         _clippingEnabled = clipping.init(this.clippingPlanes, _localClippingEnabled);
         currentRenderList = renderLists.get(scene2, renderListStack.length);
@@ -28335,7 +27541,7 @@ void main() {
           } else if (object.isSprite) {
             if (!object.frustumCulled || _frustum.intersectsSprite(object)) {
               if (sortObjects) {
-                _vector4.setFromMatrixPosition(object.matrixWorld).applyMatrix4(_projScreenMatrix);
+                _vector4.setFromMatrixPosition(object.matrixWorld).applyMatrix4(_projScreenMatrix2);
               }
               const geometry = objects.update(object);
               const material = object.material;
@@ -28355,7 +27561,7 @@ void main() {
                   if (geometry.boundingSphere === null) geometry.computeBoundingSphere();
                   _vector4.copy(geometry.boundingSphere.center);
                 }
-                _vector4.applyMatrix4(object.matrixWorld).applyMatrix4(_projScreenMatrix);
+                _vector4.applyMatrix4(object.matrixWorld).applyMatrix4(_projScreenMatrix2);
               }
               if (Array.isArray(material)) {
                 const groups = geometry.groups;
@@ -29221,93 +28427,6 @@ void main() {
     t2.needsUpdate = true;
     return t2;
   }
-  function normalTex(size = 256, { octaves = 4, seed = 11, strength = 1.5 } = {}) {
-    const h = fbm(size, octaves, seed);
-    const d = new Uint8Array(size * size * 4);
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const l = h[y * size + (x - 1 + size) % size], r = h[y * size + (x + 1) % size];
-        const u = h[(y - 1 + size) % size * size + x], v = h[(y + 1) % size * size + x];
-        const nx = (l - r) * strength, ny = (u - v) * strength, nz = 1;
-        const il = 1 / Math.hypot(nx, ny, nz), i = (y * size + x) * 4;
-        d[i] = (nx * il * 0.5 + 0.5) * 255;
-        d[i + 1] = (ny * il * 0.5 + 0.5) * 255;
-        d[i + 2] = (nz * il * 0.5 + 0.5) * 255;
-        d[i + 3] = 255;
-      }
-    }
-    return dataTex(d, size);
-  }
-  function tapeMaps(size = 512, cut2 = 0.02) {
-    const r = rng(1234);
-    const h = new Float32Array(size * size);
-    const row = new Float32Array(size);
-    let cur2 = 0.5, tgt = 0.5;
-    for (let y = 0; y < size; y++) {
-      if (r() > 0.965) tgt = r();
-      cur2 += (tgt - cur2) * 0.55;
-      row[y] = cur2;
-    }
-    const line = new Float32Array(size);
-    for (let y = 0; y < size; y++) {
-      let v = row[y], t2 = v, run = 0, first = 0;
-      for (let x = 0; x < size; x++) {
-        if (run-- <= 0) {
-          t2 = row[(y + ((r() * 7 | 0) - 3) + size) % size];
-          run = 40 + (r() * 280 | 0);
-        }
-        v += (t2 - v) * 0.35;
-        if (x === 0) first = v;
-        line[x] = v;
-      }
-      const drift = line[size - 1] - first;
-      for (let x = 0; x < size; x++) h[y * size + x] = line[x] - drift * (x / (size - 1));
-    }
-    const mottle = fbm(size, 4, 77);
-    for (let i = 0; i < h.length; i++) h[i] = h[i] * 0.72 + mottle[i] * 0.28;
-    const BAND = [
-      { c: [102, 92, 80], coarse: 30, rough: [0.2, 0.34], nrm: 0.6 },
-      // cut edge
-      { c: [55, 49, 45], coarse: 14, rough: [0.58, 0.82], nrm: 1.4 },
-      // back coating
-      { c: [102, 92, 80], coarse: 30, rough: [0.2, 0.34], nrm: 0.6 },
-      // cut edge
-      { c: [43, 35, 31], coarse: 11, rough: [0.26, 0.54], nrm: 1 }
-      // oxide face
-    ];
-    const bandOf = (v) => v < cut2 || v >= 0.5 && v < 0.5 + cut2 ? 0 : v < 0.5 ? 1 : 3;
-    const col = new Uint8Array(size * size * 4);
-    const rgh = new Uint8Array(size * size * 4);
-    const nrm = new Uint8Array(size * size * 4);
-    const at = (x, y) => h[(y + size) % size * size + (x + size) % size];
-    for (let y = 0; y < size; y++) {
-      const b = BAND[bandOf(y / size)];
-      for (let x = 0; x < size; x++) {
-        const i = y * size + x, o = i * 4, v = h[i];
-        const d = (v - 0.5) * b.coarse * 2;
-        col[o] = clamp8(b.c[0] + d);
-        col[o + 1] = clamp8(b.c[1] + d * 0.92);
-        col[o + 2] = clamp8(b.c[2] + d * 0.85);
-        col[o + 3] = 255;
-        const rr = (b.rough[0] + (b.rough[1] - b.rough[0]) * v) * 255;
-        rgh[o] = rgh[o + 1] = rgh[o + 2] = rr;
-        rgh[o + 3] = 255;
-        const nx = (at(x - 1, y) - at(x + 1, y)) * 1.5 * b.nrm;
-        const ny = (at(x, y - 1) - at(x, y + 1)) * 1.5 * b.nrm;
-        const nz = 1, il = 1 / Math.hypot(nx, ny, nz);
-        nrm[o] = (nx * il * 0.5 + 0.5) * 255;
-        nrm[o + 1] = (ny * il * 0.5 + 0.5) * 255;
-        nrm[o + 2] = (nz * il * 0.5 + 0.5) * 255;
-        nrm[o + 3] = 255;
-      }
-    }
-    return {
-      map: dataTex(col, size, true),
-      roughnessMap: dataTex(rgh, size, false),
-      normalMap: dataTex(nrm, size, false)
-    };
-  }
-  var clamp8 = (v) => v < 0 ? 0 : v > 255 ? 255 : v;
   function roughTex(size = 512, { lo = 0.4, hi = 0.8, octaves = 5, seed = 5 } = {}) {
     const h = fbm(size, octaves, seed);
     const d = new Uint8Array(size * size * 4);
@@ -29333,40 +28452,6 @@ void main() {
     t2.needsUpdate = true;
     return t2;
   }
-  function tracked(ctx, text, x, y, { track = 0, align = "left" } = {}) {
-    const chars = [...text];
-    let w = 0;
-    for (const ch of chars) w += ctx.measureText(ch).width + track;
-    w -= track;
-    let cx = align === "center" ? x - w / 2 : align === "right" ? x - w : x;
-    const prev = ctx.textAlign;
-    ctx.textAlign = "left";
-    for (const ch of chars) {
-      ctx.fillText(ch, cx, y);
-      cx += ctx.measureText(ch).width + track;
-    }
-    ctx.textAlign = prev;
-    return w;
-  }
-  function fitRun(ctx, text, font, size, maxW, { track = 0, min = 0.62 } = {}) {
-    const width = (s2) => ctx.measureText(s2).width + track * Math.max(0, [...s2].length - 1);
-    ctx.font = font(size);
-    let s = size;
-    while (s > size * min + 1e-6 && width(text) > maxW) {
-      s = Math.max(size * min, s * 0.94);
-      ctx.font = font(s);
-    }
-    let out = text;
-    if (width(out) > maxW) {
-      out = "";
-      for (const ch of text) {
-        if (width(out + ch + "\u2026") > maxW) break;
-        out += ch;
-      }
-      out = out.replace(/\s+$/, "") + "\u2026";
-    }
-    return { text: out, size: s, w: width(out) };
-  }
   function grain(ctx, w, h, amount = 0.06, seed = 3) {
     const r = rng(seed);
     const img = ctx.getImageData(0, 0, w, h);
@@ -29379,934 +28464,8 @@ void main() {
     }
     ctx.putImageData(img, 0, 0);
   }
-  function blobPath(g, cx, cy, rx, ry, rot, rnd2, wob = 0.2) {
-    const n = 64;
-    const p0 = rnd2() * 6.2832, p1 = rnd2() * 6.2832, p22 = rnd2() * 6.2832;
-    const j = new Float32Array(n);
-    for (let i = 0; i < n; i++) j[i] = rnd2() - 0.5;
-    for (let k = 0; k < 3; k++)
-      for (let i = 0; i < n; i++)
-        j[i] = (j[(i - 1 + n) % n] + j[i] * 2 + j[(i + 1) % n]) * 0.25;
-    const cs = Math.cos(rot), sn = Math.sin(rot);
-    const px2 = new Float32Array(n), py2 = new Float32Array(n);
-    for (let i = 0; i < n; i++) {
-      const a = i / n * 6.2832;
-      const k = 1 + wob * (Math.sin(a * 2 + p0) * 0.42 + Math.sin(a * 3 + p1) * 0.3 + Math.sin(a * 5 + p22) * 0.2 + j[i] * 1.1);
-      const u = Math.cos(a) * rx * k, v = Math.sin(a) * ry * k;
-      px2[i] = cx + u * cs - v * sn;
-      py2[i] = cy + u * sn + v * cs;
-    }
-    g.beginPath();
-    g.moveTo((px2[n - 1] + px2[0]) * 0.5, (py2[n - 1] + py2[0]) * 0.5);
-    for (let i = 0; i < n; i++) {
-      const k = (i + 1) % n;
-      g.quadraticCurveTo(px2[i], py2[i], (px2[i] + px2[k]) * 0.5, (py2[i] + py2[k]) * 0.5);
-    }
-    g.closePath();
-  }
-  function wash(g, o) {
-    const {
-      x,
-      y,
-      rx,
-      ry,
-      rot = 0,
-      color = [58, 112, 146],
-      alpha = 0.28,
-      seed = 1,
-      wob = 0.2,
-      rim = 0.3,
-      layers = 3
-    } = o;
-    const rnd2 = rng(seed), col = color.join(",");
-    g.save();
-    for (let i = 0; i < layers; i++) {
-      const f = layers > 1 ? i / (layers - 1) : 0;
-      const cx = x + (rnd2() - 0.5) * rx * 0.5, cy = y + (rnd2() - 0.5) * ry * 0.5;
-      const s = 1 - f * 0.3;
-      blobPath(g, cx, cy, rx * s, ry * s, rot + (rnd2() - 0.5) * 0.5, rnd2, wob + f * 0.12);
-      g.fillStyle = `rgba(${col},${alpha * (0.55 + f * 0.45)})`;
-      g.fill();
-      if (rim > 0) {
-        const w0 = Math.max(1, Math.min(rx, ry) * 0.012) + f;
-        g.strokeStyle = `rgba(${col},${alpha * rim * 0.5})`;
-        g.lineWidth = w0 * 2.4;
-        g.stroke();
-        g.strokeStyle = `rgba(${col},${alpha * rim * (0.5 + f)})`;
-        g.lineWidth = w0;
-        g.stroke();
-      }
-    }
-    g.restore();
-  }
-  function dissolve(c, w, h) {
-    const g = c.getContext("2d");
-    const img = g.getImageData(0, 0, w, h), d = img.data;
-    const fine = noiseField(w, 9, 71, 0.74);
-    const coarse = noiseField(w, 4, 83, 0.8);
-    let fn = Infinity, fx = -Infinity, cn = Infinity, cx = -Infinity;
-    for (let i = 0; i < fine.length; i++) {
-      if (fine[i] < fn) fn = fine[i];
-      if (fine[i] > fx) fx = fine[i];
-      if (coarse[i] < cn) cn = coarse[i];
-      if (coarse[i] > cx) cx = coarse[i];
-    }
-    const fs = 1 / (fx - fn || 1), cs = 1 / (cx - cn || 1);
-    const knee = 0.24;
-    const floor = 0.2;
-    const wet = 0.14;
-    const body = 0.55;
-    const bodyGain = 0.85;
-    const peak = 0.8;
-    const peakGain = 0.35;
-    for (let k = 0; k < w * h; k++) {
-      const i = k * 4, a = d[i + 3];
-      if (a === 0) continue;
-      const n = (fine[k] - fn) * fs, m = (coarse[k] - cn) * cs;
-      const t2 = floor + wet * m;
-      let v = a / 255 * (body + bodyGain * n);
-      v = (v - t2) / knee;
-      v = v < 0 ? 0 : v > 1 ? 1 : v;
-      d[i + 3] = v * v * (3 - 2 * v) * (peak + peakGain * m) * 255;
-      const s = 0.95 + 0.1 * m;
-      d[i] = Math.min(255, d[i] * s);
-      d[i + 2] = Math.min(255, d[i + 2] * (1.04 - 0.08 * m));
-    }
-    g.putImageData(img, 0, 0);
-  }
-  var noiseCache = /* @__PURE__ */ new Map();
-  function noiseField(size, octaves, seed, gain = 0.75) {
-    const key = `${size}:${octaves}:${seed}:${gain}`;
-    if (!noiseCache.has(key)) noiseCache.set(key, fbm(size, octaves, seed, gain));
-    return noiseCache.get(key);
-  }
-  function resample(pts, n = 72) {
-    const out = [], segs = pts.length - 1;
-    const at = (i) => pts[Math.max(0, Math.min(pts.length - 1, i))];
-    const k = (a, b, c, d, u) => 0.5 * (2 * b + (-a + c) * u + (2 * a - 5 * b + 4 * c - d) * u * u + (-a + 3 * b - 3 * c + d) * u * u * u);
-    for (let i = 0; i < n; i++) {
-      const t2 = i / (n - 1) * segs, s = Math.min(segs - 1, Math.floor(t2)), u = t2 - s;
-      const P = [at(s - 1), at(s), at(s + 1), at(s + 2)];
-      out.push([k(P[0][0], P[1][0], P[2][0], P[3][0], u), k(P[0][1], P[1][1], P[2][1], P[3][1], u)]);
-    }
-    return out;
-  }
-  function inkStroke(g, pts, o = {}) {
-    const {
-      color = "46,49,55",
-      alpha = 0.4,
-      width = 4,
-      seed = 5,
-      blend = "multiply",
-      passes = 4,
-      flecks = true
-    } = o;
-    const p = resample(pts), n = p.length, rnd2 = rng(seed);
-    g.save();
-    g.globalCompositeOperation = blend;
-    g.lineCap = "round";
-    g.lineJoin = "round";
-    for (let i = 0; i < passes; i++) {
-      const f = i / Math.max(1, passes - 1);
-      const a = Math.floor((n - 1) * 0.3 * f), b = n - 1 - Math.floor((n - 1) * 0.4 * f);
-      const off = (rnd2() - 0.5) * width * 0.8;
-      g.beginPath();
-      for (let q = a; q <= b; q++) {
-        const jx = (rnd2() - 0.5) * width * 0.5, jy = (rnd2() - 0.5) * width * 0.5 + off;
-        q === a ? g.moveTo(p[q][0] + jx, p[q][1] + jy) : g.lineTo(p[q][0] + jx, p[q][1] + jy);
-      }
-      g.strokeStyle = `rgba(${color},${alpha * (0.55 - f * 0.32)})`;
-      g.lineWidth = width * (0.4 + f * 0.8);
-      g.stroke();
-    }
-    if (flecks) {
-      g.fillStyle = `rgba(${color},${alpha * 0.35})`;
-      for (let i = 0; i < 40; i++) {
-        const q = rnd2() * (n - 1) | 0;
-        g.fillRect(
-          p[q][0] + (rnd2() - 0.5) * width * 6,
-          p[q][1] + (rnd2() - 0.5) * width * 6,
-          1 + rnd2() * 3,
-          1 + rnd2() * 2
-        );
-      }
-    }
-    g.restore();
-  }
-  function tooth(g, W, H, { size = 512, seed = 3, dark = 0.1, light = 0.09 } = {}) {
-    const h = noiseField(size, 8, seed, 0.78);
-    const up = canvas(size, size), dn = canvas(size, size);
-    const ug = up.getContext("2d"), dg = dn.getContext("2d");
-    const a = ug.createImageData(size, size), b = dg.createImageData(size, size);
-    for (let i = 0; i < h.length; i++) {
-      const v = h[i] - 0.5;
-      a.data[i * 4] = 255;
-      a.data[i * 4 + 1] = 250;
-      a.data[i * 4 + 2] = 240;
-      a.data[i * 4 + 3] = Math.max(0, v) * 2 * light * 255;
-      b.data[i * 4] = 42;
-      b.data[i * 4 + 1] = 40;
-      b.data[i * 4 + 2] = 36;
-      b.data[i * 4 + 3] = Math.max(0, -v) * 2 * dark * 255;
-    }
-    ug.putImageData(a, 0, 0);
-    dg.putImageData(b, 0, 0);
-    g.save();
-    g.imageSmoothingEnabled = true;
-    g.globalCompositeOperation = "screen";
-    g.drawImage(up, 0, 0, W, H);
-    g.globalCompositeOperation = "multiply";
-    g.drawImage(dn, 0, 0, W, H);
-    g.restore();
-  }
-  var LX = 4.76;
-  var LZ = 2.93;
-  var WIN = { x0: -3.5, x1: 3.5, z0: -1.85, z1: 1.65 };
-  var PALETTE = {
-    blue: [70, 104, 132],
-    cyan: [62, 124, 142],
-    rose: [148, 118, 116],
-    coral: [152, 84, 72],
-    ochre: [128, 118, 96],
-    olive: [110, 114, 98]
-  };
-  function hairFall(g, W, H, o) {
-    const {
-      x0,
-      y0,
-      x1,
-      y1,
-      wx = 0,
-      wy = 0,
-      wx2 = wx,
-      wy2 = wy,
-      n = 7,
-      seed = 1,
-      blend = "multiply",
-      color = "58,64,78",
-      alpha = 0.3,
-      width = 0.026,
-      bow = 0.05
-    } = o;
-    const X = (f) => f * W, Y = (f) => f * H, U = (u) => u * W / (LX * 2);
-    const rnd2 = rng(seed);
-    for (let i = 0; i < n; i++) {
-      const f = n > 1 ? i / (n - 1) - 0.5 : 0;
-      const s = 0.55 + rnd2() * 0.9;
-      const ax = X(x0 + f * wx), ay = Y(y0 + f * wy);
-      const ex = X(x0 + (x1 - x0) * s + f * wx2 * s), ey = Y(y0 + (y1 - y0) * s + f * wy2 * s);
-      const mx = (ax + ex) * 0.5 + X(bow) * (rnd2() - 0.5) * 2;
-      const my = (ay + ey) * 0.5 + Y(bow) * (rnd2() - 0.5) * 2;
-      inkStroke(g, [[ax, ay], [mx, my], [ex, ey]], {
-        color,
-        alpha: alpha * (0.55 + rnd2() * 0.7),
-        width: U(width * (0.55 + rnd2() * 0.85)),
-        seed: seed * 31 + i * 7 | 0,
-        blend,
-        passes: 3,
-        flecks: i % 3 === 0
-      });
-    }
-  }
-  function birdSketch(g, W, H) {
-    const X = (f) => f * W, Y = (f) => f * H, U = (u) => u * W / (LX * 2);
-    const ink = "52,58,72";
-    inkStroke(
-      g,
-      [[X(0.848), Y(0.22)], [X(0.812), Y(0.162)], [X(0.792), Y(0.106)]],
-      { color: ink, alpha: 0.4, width: U(0.03), seed: 1151, blend: "multiply", passes: 3, flecks: false }
-    );
-    inkStroke(
-      g,
-      [[X(0.818), Y(0.08)], [X(0.788), Y(0.056)], [X(0.752), Y(0.062)], [X(0.74), Y(0.082)]],
-      { color: ink, alpha: 0.5, width: U(0.034), seed: 1152, blend: "multiply", passes: 3, flecks: false }
-    );
-    inkStroke(
-      g,
-      [[X(0.806), Y(0.07)], [X(0.778), Y(0.062)], [X(0.748), Y(0.072)]],
-      { color: ink, alpha: 0.4, width: U(0.03), seed: 1156, blend: "multiply", passes: 2, flecks: false }
-    );
-    inkStroke(
-      g,
-      [[X(0.744), Y(0.092)], [X(0.704), Y(0.11)], [X(0.66), Y(0.124)]],
-      { color: ink, alpha: 0.46, width: U(0.03), seed: 1153, blend: "multiply", passes: 3, flecks: false }
-    );
-    inkStroke(
-      g,
-      [[X(0.788), Y(0.058)], [X(0.822), Y(0.034)], [X(0.85), Y(0.022)]],
-      { color: ink, alpha: 0.34, width: U(0.022), seed: 1154, blend: "multiply", passes: 2, flecks: false }
-    );
-    g.fillStyle = "rgba(44,50,62,.80)";
-    g.beginPath();
-    g.ellipse(X(0.778), Y(0.084), U(0.015), U(0.015), 0, 0, 6.2832);
-    g.fill();
-  }
-  var WASH = { gw: 448, gh: 276 };
-  function noise2(gw, gh, cellsX, cellsY, octaves, seed, gain = 0.68) {
-    const out = new Float32Array(gw * gh);
-    let amp = 1, norm = 0, cx = cellsX, cy = cellsY;
-    for (let o = 0; o < octaves; o++) {
-      const r = rng(seed + o * 977);
-      const cw = Math.max(2, Math.round(cx)), ch = Math.max(2, Math.round(cy));
-      const g = new Float32Array(cw * ch);
-      for (let i = 0; i < g.length; i++) g[i] = r();
-      for (let y = 0; y < gh; y++) {
-        const fy = y / gh * ch, y0 = fy | 0, ty = fy - y0, sy = ty * ty * (3 - 2 * ty), y1 = (y0 + 1) % ch;
-        for (let x = 0; x < gw; x++) {
-          const fx = x / gw * cw, x0 = fx | 0, tx = fx - x0, sx = tx * tx * (3 - 2 * tx), x1 = (x0 + 1) % cw;
-          const a = g[y0 * cw + x0], b = g[y0 * cw + x1], c = g[y1 * cw + x0], d = g[y1 * cw + x1];
-          out[y * gw + x] += amp * ((a * (1 - sx) + b * sx) * (1 - sy) + (c * (1 - sx) + d * sx) * sy);
-        }
-      }
-      norm += amp;
-      amp *= gain;
-      cx *= 2;
-      cy *= 2;
-    }
-    const k = 1 / norm;
-    for (let i = 0; i < out.length; i++) out[i] *= k;
-    return out;
-  }
-  function unitField(a) {
-    let lo = Infinity, hi = -Infinity;
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] < lo) lo = a[i];
-      if (a[i] > hi) hi = a[i];
-    }
-    const s = 1 / (hi - lo || 1);
-    for (let i = 0; i < a.length; i++) a[i] = (a[i] - lo) * s;
-    return a;
-  }
-  var paperCache = /* @__PURE__ */ new Map();
-  function washPaper(gw, gh, seed = 7) {
-    const key = `${gw}:${gh}:${seed}`;
-    if (paperCache.has(key)) return paperCache.get(key);
-    const fibA = noise2(gw, gh, 3, 34, 3, seed + 23, 0.78);
-    const fibB = noise2(gw, gh, 34, 3, 3, seed + 29, 0.78);
-    const fib = new Float32Array(gw * gh);
-    for (let i = 0; i < fib.length; i++) fib[i] = fibA[i] - fibB[i];
-    const paper = {
-      perm: noise2(gw, gh, 9, 9, 5, seed + 11, 0.74),
-      fib,
-      fine: unitField(noise2(gw, gh, 90, 90, 3, seed + 31, 0.78)),
-      blotch: unitField(noise2(gw, gh, 46, 46, 3, seed + 37, 0.78)),
-      streakH: unitField(noise2(gw, gh, 3, 60, 3, seed + 41, 0.78)),
-      streakV: unitField(noise2(gw, gh, 60, 3, 3, seed + 43, 0.78))
-    };
-    paperCache.set(key, paper);
-    return paper;
-  }
-  var washClamp = (v, a, b) => v < a ? a : v > b ? b : v;
-  function inkWash(gw, gh, strokes, P = {}) {
-    const {
-      give = 0.15,
-      // share of its water a cell offers outward, per step
-      evap = 0.948,
-      // per step
-      need = 0.2,
-      // the paper's resistance to the front
-      amp = 0.9,
-      // how much the fibres steer it
-      open = 0.5,
-      // how far into the tooth's rough side the front reaches
-      dep = 0.22,
-      // deposition rate as the film thins
-      whalf = 0.26,
-      // film thickness at which deposition is half rate
-      light = 0.45,
-      // share of the load that is the travelling pigment
-      carryH = 0.85,
-      // how much of each species the moving water takes
-      carryL = 0.97,
-      kH = 0.05,
-      // the two species wander at different rates, which is
-      kL = 0.16,
-      // the whole of chromatography
-      dis = 0.35,
-      // re-dissolve rate where water arrives later
-      drain = 0.16,
-      // capillary drain toward the rim
-      dry = 0.75,
-      // share of what a drying cell holds that it drops
-      gran = 0.16,
-      // how unevenly the pigment settles
-      steps = 66,
-      load = 1,
-      // how much paint the brush was carrying
-      paper = washPaper(gw, gh)
-    } = P;
-    const N = gw * gh;
-    const { perm, fib, fine, streakH, streakV } = paper;
-    const w = new Float32Array(N);
-    const p = new Float32Array(N), q = new Float32Array(N);
-    const dH = new Float32Array(N), dL = new Float32Array(N);
-    const wd = new Float32Array(N), pd = new Float32Array(N), qd = new Float32Array(N);
-    function stamp(o) {
-      const {
-        x,
-        y,
-        rx,
-        ry = rx,
-        rot = 0,
-        water = 1,
-        mass = 1,
-        wob = 0.42,
-        seed = 1,
-        drops = 0,
-        dropR = 0.2,
-        only = false,
-        gx = 0,
-        gy = 0,
-        streak = 0
-      } = o;
-      const rnd2 = rng(seed);
-      const cs = Math.cos(rot), sn = Math.sin(rot);
-      const px2 = x * gw, py2 = y * gh, prx = rx * gw, pry = ry * gh;
-      const x0 = Math.max(1, Math.floor(px2 - prx * 1.7)), x1 = Math.min(gw - 2, Math.ceil(px2 + prx * 1.7));
-      const y0 = Math.max(1, Math.floor(py2 - pry * 1.7)), y1 = Math.min(gh - 2, Math.ceil(py2 + pry * 1.7));
-      for (let cy = y0; cy <= y1; cy++) {
-        for (let cx = x0; cx <= x1; cx++) {
-          const i = cy * gw + cx;
-          const u = cx - px2, v = cy - py2;
-          const a = (u * cs + v * sn) / prx, b = (-u * sn + v * cs) / pry;
-          const warp = fib[i] * 0.5 + (perm[i] - 0.5) * 1.2;
-          const r = Math.hypot(a, b) * (1 + wob * warp);
-          if (r >= 1.04) continue;
-          const t2 = r <= 0.42 ? 1 : 1 - (r - 0.42) / 0.62;
-          let m = t2 * t2 * (3 - 2 * t2);
-          if (streak > 0) {
-            const s = fib[i] > 0 ? streakH[i] : streakV[i];
-            const k = s < 0.34 ? 0 : s > 0.62 ? 1 : (s - 0.34) / 0.28;
-            m *= 1 - streak * (1 - k * k * (3 - 2 * k));
-          }
-          const ramp = Math.max(0.15, 1 + gx * (a * 0.5) + gy * (b * 0.5));
-          w[i] += m * water * load;
-          if (!only) {
-            p[i] += m * mass * ramp * (1 - light) * load;
-            q[i] += m * mass * ramp * light * load;
-          }
-        }
-      }
-      for (let d = 0; d < drops; d++) {
-        const ang = rnd2() * 6.2832, dist = (0.75 + rnd2() * 0.75) * prx;
-        const dx = px2 + Math.cos(ang) * dist, dy = py2 + Math.sin(ang) * dist * (pry / prx);
-        const rr = Math.max(1.5, prx * dropR * (0.3 + rnd2() * 0.85));
-        const ax = Math.max(1, Math.floor(dx - rr * 2)), bx = Math.min(gw - 2, Math.ceil(dx + rr * 2));
-        const ay = Math.max(1, Math.floor(dy - rr * 2)), by = Math.min(gh - 2, Math.ceil(dy + rr * 2));
-        for (let cy = ay; cy <= by; cy++) {
-          for (let cx = ax; cx <= bx; cx++) {
-            const i = cy * gw + cx;
-            const r = Math.hypot(cx - dx, cy - dy) / rr;
-            if (r >= 1) continue;
-            const m = (1 - r * r) * 0.85;
-            w[i] += m * water * load;
-            if (!only) {
-              p[i] += m * mass * load * (1 - light);
-              q[i] += m * mass * load * light;
-            }
-          }
-        }
-      }
-    }
-    for (const s of strokes) if ((s.at || 0) <= 0) stamp(s);
-    for (let step2 = 1; step2 <= steps; step2++) {
-      for (const s of strokes) if (s.at === step2) stamp(s);
-      wd.set(w);
-      for (let y = 1; y < gh - 1; y++) {
-        for (let x = 1; x < gw - 1; x++) {
-          const j = y * gw + x;
-          if (w[j] > 0) continue;
-          const f = fib[j], tooth2 = fine[j];
-          let best = 0, src = -1;
-          for (let k = 0; k < 4; k++) {
-            const i = k === 0 ? j - 1 : k === 1 ? j + 1 : k === 2 ? j - gw : j + gw;
-            const wi = wd[i];
-            if (wi <= 0) continue;
-            const along = k < 2 ? f : -f;
-            const resist = need * (0.45 + 1.1 * perm[j]) * (1 - amp * along * 0.45);
-            const excess = wi * give - resist;
-            if (excess <= 0) continue;
-            if (tooth2 > washClamp(open * (excess / resist), 0.05, 0.97)) continue;
-            const flow = Math.min(wi * 0.45, resist * 1.05);
-            if (flow > best) {
-              best = flow;
-              src = i;
-            }
-          }
-          if (src >= 0) {
-            const wi = wd[src];
-            w[j] = best;
-            const ch = best * (p[src] / wi) * carryH;
-            const cl = best * (q[src] / wi) * carryL;
-            p[j] += ch;
-            p[src] -= ch;
-            q[j] += cl;
-            q[src] -= cl;
-            wd[src] = wi - best;
-            w[src] = wd[src];
-          }
-        }
-      }
-      if (drain > 0) {
-        wd.set(w);
-        pd.set(p);
-        qd.set(q);
-        for (let y = 1; y < gh - 1; y++) {
-          for (let x = 1; x < gw - 1; x++) {
-            const i = y * gw + x;
-            const wi = wd[i];
-            if (wi <= 1e-3) continue;
-            let low = -1, lw = wi;
-            for (let k = 0; k < 4; k++) {
-              const j = k === 0 ? i - 1 : k === 1 ? i + 1 : k === 2 ? i - gw : i + gw;
-              if (wd[j] < lw) {
-                lw = wd[j];
-                low = j;
-              }
-            }
-            if (low < 0) continue;
-            const flow = (wi - lw) * drain;
-            const ch = flow * (pd[i] / wi), cl = flow * (qd[i] / wi);
-            w[i] -= flow;
-            w[low] += flow;
-            p[i] -= ch;
-            p[low] += ch;
-            q[i] -= cl;
-            q[low] += cl;
-          }
-        }
-      }
-      pd.set(p);
-      qd.set(q);
-      for (let y = 1; y < gh - 1; y++) {
-        for (let x = 1; x < gw - 1; x++) {
-          const i = y * gw + x;
-          if (w[i] <= 0 && p[i] <= 0 && q[i] <= 0) continue;
-          const wasWet = w[i] > 0;
-          w[i] *= evap;
-          if (w[i] < 4e-3) w[i] = 0;
-          if (kH > 0) {
-            const a = (pd[i - 1] + pd[i + 1] + pd[i - gw] + pd[i + gw]) * 0.25;
-            p[i] += (a - pd[i]) * kH;
-          }
-          if (kL > 0) {
-            const a = (qd[i - 1] + qd[i + 1] + qd[i - gw] + qd[i + gw]) * 0.25;
-            q[i] += (a - qd[i]) * kL;
-          }
-          const t2 = w[i] / (w[i] + whalf);
-          const sink = (1 - t2) * (0.68 + 0.52 * perm[i]);
-          const dh = p[i] * dep * sink;
-          const dl = q[i] * dep * 0.35 * sink;
-          p[i] -= dh;
-          dH[i] += dh;
-          q[i] -= dl;
-          dL[i] += dl;
-          if (wasWet && w[i] === 0) {
-            dH[i] += p[i] * dry;
-            p[i] *= 1 - dry;
-            dL[i] += q[i] * dry * 0.6;
-            q[i] *= 1 - dry * 0.6;
-          }
-          const lift = dis * Math.min(1, w[i] * 3);
-          const rh = dH[i] * lift, rl = dL[i] * lift;
-          dH[i] -= rh;
-          p[i] += rh;
-          dL[i] -= rl;
-          q[i] += rl;
-        }
-      }
-    }
-    for (let i = 0; i < N; i++) {
-      dH[i] += p[i];
-      dL[i] += q[i];
-    }
-    if (gran > 0) {
-      const { blotch, fine: f2 } = paper;
-      for (let i = 0; i < N; i++) {
-        const m = 1 + gran * ((blotch[i] - 0.5) * 1.5 + (f2[i] - 0.5) * 0.5);
-        dH[i] *= m;
-        dL[i] *= m;
-      }
-    }
-    return { dH, dL };
-  }
-  function glazeCanvas(W, H, sim, core, halo, K = 0.95) {
-    const { gw, gh } = WASH;
-    const c = canvas(W, H), g = c.getContext("2d");
-    const img = g.createImageData(W, H), d = img.data;
-    for (let y = 0; y < H; y++) {
-      const fy = (y + 0.5) / H * gh - 0.5;
-      const y0 = Math.max(0, Math.min(gh - 2, Math.floor(fy))), ty = Math.max(0, Math.min(1, fy - y0));
-      for (let x = 0; x < W; x++) {
-        const fx = (x + 0.5) / W * gw - 0.5;
-        const x0 = Math.max(0, Math.min(gw - 2, Math.floor(fx))), tx = Math.max(0, Math.min(1, fx - x0));
-        const i00 = y0 * gw + x0, i10 = i00 + 1, i01 = i00 + gw, i11 = i01 + 1;
-        const bl = (a, tx2, ty2) => a[i00] * (1 - tx2) * (1 - ty2) + a[i10] * tx2 * (1 - ty2) + a[i01] * (1 - tx2) * ty2 + a[i11] * tx2 * ty2;
-        const h = bl(sim.dH, tx, ty), l = bl(sim.dL, tx, ty);
-        const total = h + l;
-        const o = (y * W + x) * 4;
-        if (total <= 0) {
-          d[o + 3] = 0;
-          continue;
-        }
-        const f = h / total;
-        d[o] = halo[0] + (core[0] - halo[0]) * f;
-        d[o + 1] = halo[1] + (core[1] - halo[1]) * f;
-        d[o + 2] = halo[2] + (core[2] - halo[2]) * f;
-        d[o + 3] = (1 - Math.exp(-total * K)) * 255;
-      }
-    }
-    g.putImageData(img, 0, 0);
-    return c;
-  }
-  var DAY_GLAZES = [
-    { core: [88, 116, 158], halo: [126, 156, 190], strokes: [
-      { x: 0.022, y: 0.2, rx: 0.052, ry: 0.19, rot: 0.04, seed: 803, water: 1.1, mass: 0.9, wob: 0.44, drops: 3, gx: -0.35, gy: -0.25 },
-      { x: 0.028, y: 0.62, rx: 0.05, ry: 0.215, rot: -0.03, seed: 804, water: 0.9, mass: 1.25, wob: 0.46, drops: 4, gx: 0.25, gy: 0.2 },
-      { x: 0.026, y: 0.9, rx: 0.04, ry: 0.075, rot: -0.02, seed: 807, water: 1, mass: 0.7, wob: 0.42, drops: 3, gx: -0.3, streak: 0.35 },
-      { x: 0.075, y: 0.075, rx: 0.11, ry: 0.058, rot: -0.02, seed: 810, water: 0.85, mass: 0.38, wob: 0.44, drops: 4, gx: -0.45, streak: 0.45 },
-      { x: 0.29, y: 0.112, rx: 0.105, ry: 0.048, rot: -0.01, seed: 811, water: 0.72, mass: 0.26, wob: 0.46, drops: 3, streak: 0.4 },
-      { x: 0.075, y: 0.866, rx: 0.1, ry: 0.058, rot: -0.02, seed: 815, water: 0.95, mass: 0.55, wob: 0.42, drops: 4, gx: -0.35, streak: 0.4 },
-      { x: 0.31, y: 0.892, rx: 0.1, ry: 0.04, rot: -0.01, seed: 816, water: 0.7, mass: 0.26, wob: 0.46, drops: 3, streak: 0.3 },
-      { x: 0.952, y: 0.15, rx: 0.03, ry: 0.09, rot: 0.02, seed: 819, water: 0.75, mass: 0.42, wob: 0.48, drops: 2, streak: 0.3 },
-      // the bird's own wash, and a clean drop of water into the drying margin —
-      // the drop is what lifts the pigment that is already down and blooms
-      { x: 0.775, y: 0.128, rx: 0.038, ry: 0.056, rot: 0.05, seed: 822, water: 0.8, mass: 0.45, wob: 0.46, drops: 2 },
-      { x: 0.046, y: 0.43, rx: 0.026, ry: 0.07, rot: 0.02, seed: 831, water: 1.2, mass: 0, drops: 3, at: 20, only: true }
-    ] },
-    { core: [76, 124, 142], halo: [112, 152, 164], strokes: [
-      { x: 0.04, y: 0.48, rx: 0.03, ry: 0.07, rot: -0.05, seed: 826, water: 0.9, mass: 0.62, wob: 0.5, drops: 2 },
-      { x: 0.03, y: 0.7, rx: 0.024, ry: 0.05, rot: 0.04, seed: 827, water: 0.8, mass: 0.45, wob: 0.5, drops: 2 },
-      { x: 0.21, y: 0.89, rx: 0.07, ry: 0.032, rot: -0.01, seed: 828, water: 0.7, mass: 0.28, wob: 0.48, drops: 2, streak: 0.45 }
-    ] },
-    { core: [156, 124, 118], halo: [186, 166, 160], strokes: [
-      { x: 0.095, y: 0.028, rx: 0.1, ry: 0.036, rot: -0.02, seed: 836, water: 0.85, mass: 0.48, wob: 0.44, drops: 3, streak: 0.35 },
-      { x: 0.145, y: 0.108, rx: 0.085, ry: 0.05, rot: -0.04, seed: 837, water: 0.8, mass: 0.32, wob: 0.46, drops: 3 },
-      { x: 0.78, y: 0.9, rx: 0.15, ry: 0.046, rot: 0.01, seed: 838, water: 0.85, mass: 0.3, wob: 0.5, drops: 3, streak: 0.4 },
-      { x: 0.028, y: 0.95, rx: 0.062, ry: 0.052, rot: 0.04, seed: 839, water: 0.7, mass: 0.3, wob: 0.44, drops: 2 }
-    ] }
-  ];
-  var DAY_LOAD = 1.45;
-  var DAY_DENSITY = 1.9;
-  var glazeCache = [];
-  function dayGlazes(W, H) {
-    if (glazeCache.length) return glazeCache;
-    const { gw, gh } = WASH;
-    const paper = washPaper(gw, gh, 7);
-    const lw = Math.min(LAYER_W, W), lh = Math.round(lw * H / W);
-    for (const G of DAY_GLAZES) {
-      const sim = inkWash(gw, gh, G.strokes, { paper, load: DAY_LOAD });
-      glazeCache.push(glazeCanvas(lw, lh, sim, G.core, G.halo, DAY_DENSITY));
-    }
-    return glazeCache;
-  }
-  function paintDayInk(g, W, H) {
-    const X = (f) => f * W, Y = (f) => f * H, U = (u) => u * W / (LX * 2);
-    g.save();
-    g.globalCompositeOperation = "multiply";
-    hairFall(g, W, H, { x0: 0.012, y0: 0.045, x1: 0.046, y1: 0.905, wx2: 0.03, wy2: 0.07, n: 9, seed: 1010, alpha: 0.36, width: 0.015, bow: 0.02 });
-    hairFall(g, W, H, { x0: 8e-3, y0: 0.07, x1: 0.026, y1: 0.3, wx2: 0.028, wy2: 0.1, n: 6, seed: 1020, alpha: 0.3, width: 0.013, bow: 0.016 });
-    hairFall(g, W, H, { x0: 0.034, y0: 0.04, x1: 0.058, y1: 0.15, wx2: 0.02, wy2: 0.07, n: 4, seed: 1030, alpha: 0.26, width: 0.012, bow: 0.014 });
-    hairFall(g, W, H, { x0: 0.02, y0: 0.32, x1: 0.044, y1: 0.7, wx2: 0.014, wy2: 0.06, n: 2, seed: 1050, blend: "screen", color: "240,236,224", alpha: 0.26, width: 0.01, bow: 0.012 });
-    inkStroke(
-      g,
-      [[X(0.112), Y(0.014)], [X(0.1), Y(0.08)], [X(0.108), Y(0.15)], [X(0.098), Y(0.206)]],
-      { color: "58,64,78", alpha: 0.18, width: U(0.012), seed: 1060, blend: "multiply", passes: 3, flecks: false }
-    );
-    birdSketch(g, W, H);
-    g.restore();
-  }
-  function paintMasses(g, W, H) {
-    const X = (f) => f * W, Y = (f) => f * H;
-    const U = (u) => u * W / (LX * 2);
-    g.globalCompositeOperation = "multiply";
-    const P = (o) => wash(g, { ...o, color: PALETTE[o.c] });
-    P({ c: "blue", x: X(0.27), y: Y(0.44), rx: X(0.15), ry: Y(0.24), rot: -0.26, alpha: 0.3, seed: 11 });
-    P({ c: "cyan", x: X(0.2), y: Y(0.28), rx: X(0.085), ry: Y(0.12), rot: -0.3, alpha: 0.34, seed: 19, layers: 2 });
-    P({ c: "rose", x: X(0.33), y: Y(0.55), rx: X(0.12), ry: Y(0.16), rot: 0.1, alpha: 0.26, seed: 13 });
-    P({ c: "coral", x: X(0.3), y: Y(0.48), rx: X(0.042), ry: Y(0.048), rot: -0.1, alpha: 0.38, seed: 23, layers: 2 });
-    P({ c: "blue", x: X(0.8), y: Y(0.72), rx: X(0.1), ry: Y(0.16), rot: 0.2, alpha: 0.2, seed: 12, layers: 2 });
-    P({ c: "ochre", x: X(0.17), y: Y(0.9), rx: X(0.11), ry: Y(0.075), rot: -0.06, alpha: 0.26, seed: 14 });
-    P({ c: "olive", x: X(0.31), y: Y(0.94), rx: X(0.085), ry: Y(0.055), rot: 0.05, alpha: 0.2, seed: 15, layers: 2 });
-    P({ c: "blue", x: X(0.44), y: Y(0.105), rx: X(0.44), ry: Y(0.075), alpha: 0.12, seed: 31, wob: 0.08, layers: 2, rim: 0.2 });
-    P({ c: "ochre", x: X(0.3), y: Y(0.013), rx: X(0.26), ry: Y(0.02), alpha: 0.3, seed: 34, wob: 0.1, layers: 2 });
-    P({ c: "cyan", x: X(0.66), y: Y(0.011), rx: X(0.2), ry: Y(0.018), alpha: 0.28, seed: 35, wob: 0.12, layers: 2 });
-    P({ c: "ochre", x: X(0.2), y: Y(0.188), rx: X(0.17), ry: Y(0.026), alpha: 0.34, seed: 36, wob: 0.14, layers: 2 });
-    P({ c: "cyan", x: X(0.6), y: Y(0.19), rx: X(0.2), ry: Y(0.022), alpha: 0.28, seed: 37, wob: 0.12, layers: 2 });
-    for (const [fx, c, sd] of [[0.028, "cyan", 41], [0.062, "blue", 42], [0.094, "rose", 43]])
-      P({ c, x: X(fx), y: Y(0.5), rx: X(0.011), ry: Y(0.3), rot: 0.02, alpha: 0.2, seed: sd, wob: 0.55, layers: 1, rim: 0 });
-    for (const [fx, c, sd] of [[0.884, "blue", 44], [0.918, "cyan", 45], [0.95, "rose", 46]])
-      P({ c, x: X(fx), y: Y(0.44), rx: X(0.01), ry: Y(0.26), rot: -0.02, alpha: 0.18, seed: sd, wob: 0.55, layers: 1, rim: 0 });
-    const dx = X(0.905), dy = Y(0.495);
-    blobPath(g, dx, dy, U(0.115), U(0.125), 0.3, rng(52), 0.34);
-    g.fillStyle = "rgba(188,62,32,.88)";
-    g.fill();
-    g.strokeStyle = "rgba(188,62,32,.42)";
-    g.lineWidth = U(0.02);
-    g.stroke();
-  }
-  var LAYER_W = 1024;
-  var paintCacheB = null;
-  function paintLayer(W, H) {
-    if (paintCacheB) return paintCacheB;
-    const lw = Math.min(LAYER_W, W), lh = Math.round(lw * H / W);
-    const c = canvas(lw, lh), g = c.getContext("2d");
-    g.save();
-    g.scale(lw / W, lh / H);
-    paintMasses(g, W, H);
-    g.restore();
-    dissolve(c, lw, lh);
-    paintCacheB = c;
-    return c;
-  }
-  function labelTexture(face = "A", { title = "", artist = "", album = "", minutes = "60" } = {}) {
-    const S = 2048 / (LX * 2), W = 2048, H = Math.round(LZ * 2 * S);
-    const c = canvas(W, H);
-    const g = c.getContext("2d");
-    const X = (x) => (x + LX) * S;
-    const Y = (z) => (LZ - z) * S;
-    const U = (u) => u * S;
-    const dark = face === "B";
-    const base = dark ? ["#1b1e23", "#0e1013"] : ["#f8f6f1", "#eeebe3"];
-    const lg = g.createLinearGradient(0, 0, W * 0.34, H);
-    lg.addColorStop(0, base[0]);
-    lg.addColorStop(1, base[1]);
-    g.fillStyle = lg;
-    g.fillRect(0, 0, W, H);
-    if (!dark) {
-      const cool = g.createLinearGradient(0, 0, 0, H * 0.42);
-      cool.addColorStop(0, "rgba(142,152,168,.14)");
-      cool.addColorStop(1, "rgba(142,152,168,0)");
-      g.globalCompositeOperation = "multiply";
-      g.fillStyle = cool;
-      g.fillRect(0, 0, W, H * 0.42);
-      g.globalCompositeOperation = "source-over";
-    }
-    const ink = dark ? "#eeece7" : "#1b1b1d";
-    const sub = dark ? "rgba(210,210,208,.68)" : "rgba(46,48,52,.80)";
-    const accent = dark ? "#d94a3d" : "#c8362b";
-    const lead = dark ? "208,212,218" : "44,46,50";
-    const blend = dark ? "screen" : "multiply";
-    const r = rng(face === "A" ? 21 : 33);
-    const bandZ0 = WIN.z1, bandZ1 = LZ - 0.02;
-    const bandTop = Y(bandZ1), bandH = Y(bandZ0) - bandTop;
-    const rz0 = -LZ + 0.02, rz1 = WIN.z0;
-    const backTop = Y(rz1), backH = Y(rz0) - backTop;
-    tooth(g, W, H, { seed: face === "A" ? 21 : 33, dark: dark ? 0.16 : 0.1, light: dark ? 0.07 : 0.09 });
-    if (dark) {
-      g.save();
-      g.globalCompositeOperation = "screen";
-      g.globalAlpha = 0.68;
-      g.drawImage(paintLayer(W, H), 0, 0, W, H);
-      g.globalCompositeOperation = "color";
-      g.globalAlpha = 0.42;
-      g.fillStyle = "#2b3138";
-      g.fillRect(0, 0, W, H);
-      g.restore();
-    } else {
-      g.save();
-      g.globalCompositeOperation = "multiply";
-      for (const glaze of dayGlazes(W, H)) g.drawImage(glaze, 0, 0, W, H);
-      g.restore();
-      paintDayInk(g, W, H);
-    }
-    inkStroke(
-      g,
-      [[W * 0.03, H * 0.205], [W * 0.26, H * 0.176], [W * 0.5, H * 0.198], [W * 0.72, H * 0.173], [W * 0.9, H * 0.196]],
-      { color: lead, alpha: dark ? 0.4 : 0.42, width: U(0.03), seed: 5, blend }
-    );
-    inkStroke(
-      g,
-      [[W * 0.1, H * 0.055], [W * 0.3, H * 0.07], [W * 0.46, H * 0.048]],
-      { color: lead, alpha: 0.24, width: U(0.014), seed: 7, blend }
-    );
-    inkStroke(
-      g,
-      [[W * 0.58, H * 0.042], [W * 0.74, H * 0.058], [W * 0.93, H * 0.036]],
-      { color: lead, alpha: 0.2, width: U(0.012), seed: 8, blend }
-    );
-    inkStroke(
-      g,
-      [[W * 0.05, H * 0.23], [W * 0.04, H * 0.44], [W * 0.058, H * 0.62]],
-      { color: lead, alpha: 0.28, width: U(0.011), seed: 9, blend }
-    );
-    inkStroke(
-      g,
-      [[W * 0.898, H * 0.28], [W * 0.914, H * 0.5], [W * 0.9, H * 0.7]],
-      { color: lead, alpha: 0.24, width: U(0.01), seed: 10, blend }
-    );
-    inkStroke(
-      g,
-      [
-        [X(-4.62), bandTop + bandH * 0.99],
-        [X(-1.6), bandTop + bandH * 0.972],
-        [X(1.7), bandTop + bandH * 0.996],
-        [X(4.62), bandTop + bandH * 0.978]
-      ],
-      { color: lead, alpha: dark ? 0.34 : 0.38, width: U(0.05), seed: 61, blend, flecks: false }
-    );
-    g.fillStyle = ink;
-    g.font = `600 ${U(0.46)}px Helvetica, "Segoe UI", Arial, sans-serif`;
-    tracked(g, face === "A" ? "FACE A" : "FACE B", X(-4.5), bandTop + bandH * 0.34, { track: U(0.05) });
-    g.fillStyle = sub;
-    g.font = `300 ${U(0.2)}px Helvetica, "Segoe UI", Arial, sans-serif`;
-    tracked(g, "TYPE II  \xB7  ARCHIVAL", X(-4.5), bandTop + bandH * 0.63, { track: U(0.06) });
-    g.fillStyle = ink;
-    g.font = `600 ${U(0.56)}px Helvetica, "Segoe UI", Arial, sans-serif`;
-    tracked(g, minutes, X(4.5), bandTop + bandH * 0.84, { track: U(0.02), align: "right" });
-    g.fillStyle = sub;
-    g.font = `300 ${U(0.18)}px Helvetica, "Segoe UI", Arial, sans-serif`;
-    tracked(g, "DURATION", X(4.5), bandTop + bandH * 0.3, { track: U(0.08), align: "right" });
-    const SCRIPT = 'Gabriola, "Segoe Script", "Lucida Handwriting", "Brush Script MT", cursive';
-    const titleY = backTop + backH * 0.48;
-    const titleBox = X(4.5) - X(-4.32);
-    const creditBox = X(4.5) - X(-4.3);
-    if (title) {
-      const script = (s) => `400 ${s}px ${SCRIPT}`;
-      const sans = (s) => `300 ${s}px Helvetica, "Segoe UI", Arial, sans-serif`;
-      const fit = fitRun(g, title, script, U(0.46), titleBox);
-      const tw = fit.w;
-      g.font = script(fit.size);
-      g.fillStyle = dark ? "rgba(230,228,222,.26)" : "rgba(52,54,58,.26)";
-      g.fillText(fit.text, X(-4.32) + U(0.014), titleY + U(0.014));
-      g.fillStyle = ink;
-      g.fillText(fit.text, X(-4.32), titleY);
-      inkStroke(
-        g,
-        [
-          [X(-4.32) - U(0.07), titleY + U(0.17)],
-          [X(-4.32) + tw * 0.56, titleY + U(0.185)],
-          [X(-4.32) + tw + U(0.12), titleY + U(0.165)]
-        ],
-        { color: lead, alpha: 0.24, width: U(0.016), seed: 62, blend }
-      );
-      const credits = fitRun(
-        g,
-        [artist, album].filter(Boolean).join("  \xB7  "),
-        sans,
-        U(0.145),
-        creditBox,
-        { track: U(0.05), min: 0.72 }
-      );
-      g.fillStyle = sub;
-      g.font = sans(credits.size);
-      tracked(g, credits.text, X(-4.3), backTop + backH * 0.77, { track: U(0.05) });
-      g.font = `300 ${U(0.125)}px "Menlo", "Consolas", monospace`;
-      tracked(g, face === "A" ? "SIDE A \xB7 4.76 cm/s" : "SIDE B \xB7 4.76 cm/s", X(-4.3), backTop + backH * 0.92, { track: U(0.04) });
-    }
-    const strip = face === "A" ? ["\u03B3-Fe\u2082O\u2083  \xB7  3.81 mm", "POLYESTER  \xB7  3.81 mm"] : ["ARCHIVAL SHELL", "ANTI-STATIC  \xB7  \u2300 12 mm HUB"];
-    g.fillStyle = sub;
-    g.font = `300 ${U(0.17)}px Helvetica, "Segoe UI", Arial, sans-serif`;
-    strip.forEach((s, i) => {
-      g.save();
-      g.translate(X(-3.82 + i * 0.28), Y(WIN.z0) - U(0.16));
-      g.rotate(-Math.PI / 2);
-      tracked(g, s, 0, -U(0.24), { track: U(0.055) });
-      g.restore();
-    });
-    g.save();
-    g.translate(X(3.72), Y(WIN.z1));
-    g.rotate(Math.PI / 2);
-    g.fillStyle = sub;
-    g.font = `300 ${U(0.17)}px Helvetica, "Segoe UI", Arial, sans-serif`;
-    tracked(g, face === "A" ? "\u25B7  PLAY THIS FACE" : "\u25C1  PLAY THIS FACE", 0, -U(0.24), { track: U(0.055) });
-    g.restore();
-    g.fillStyle = dark ? "rgba(238,236,231,.74)" : "rgba(27,27,29,.74)";
-    g.font = `300 ${U(0.15)}px "Menlo", "Consolas", monospace`;
-    tracked(g, "4.76 cm/s  \xB7  EQ 70 \xB5s", X(-0.78), bandTop + bandH * 0.34, { track: U(0.035) });
-    g.fillStyle = dark ? "rgba(238,236,231,.5)" : "rgba(27,27,29,.52)";
-    g.font = `300 ${U(0.14)}px "Menlo", "Consolas", monospace`;
-    tracked(g, face === "A" ? "LUX TAPE MFG.  \u2116 000-A" : "LUX TAPE MFG.  \u2116 000-B", X(-0.78), bandTop + bandH * 0.64, { track: U(0.035) });
-    if (dark) {
-      let bx = X(2.65);
-      const bh = U(0.72), by = Y(rz0) - U(0.9);
-      while (bx < X(4.4)) {
-        const bw = U(0.02 + r() * 0.05);
-        g.fillStyle = r() > 0.32 ? "rgba(232,230,226,.50)" : "transparent";
-        g.fillRect(bx, by, bw, bh);
-        bx += bw + U(0.02);
-      }
-    }
-    grain(g, W, H, dark ? 0.055 : 0.035, face === "A" ? 9 : 17);
-    const vg = g.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, W * 0.62);
-    vg.addColorStop(0, "rgba(0,0,0,0)");
-    vg.addColorStop(1, dark ? "rgba(0,0,0,.42)" : "rgba(46,46,48,.20)");
-    g.fillStyle = vg;
-    g.fillRect(0, 0, W, H);
-    return tex(c, { srgb: true });
-  }
   var EDGE_RINGS = 200;
   var EDGE_PITCH = 0.5 / EDGE_RINGS;
-  function tapeEdgeTexture(size = 1024, bore = 0) {
-    const c = canvas(size, size), g = c.getContext("2d");
-    const R = size / 2;
-    g.fillStyle = "#2e2a24";
-    g.fillRect(0, 0, size, size);
-    const r = rng(77);
-    const R0 = R * bore;
-    g.globalCompositeOperation = "destination-out";
-    g.beginPath();
-    g.arc(R, R, R0, 0, Math.PI * 2);
-    g.fill();
-    g.globalCompositeOperation = "source-over";
-    const rings = Math.round((1 - bore) * EDGE_RINGS);
-    for (let i = rings; i > 0; i--) {
-      const f = bore + i / rings * (1 - bore);
-      const v = 0.5 + 0.5 * Math.sin(i * 2.1);
-      const l = 56 + v * 24 + f * 14;
-      g.beginPath();
-      g.arc(R, R, R * f, 0, Math.PI * 2);
-      g.lineWidth = 1.4;
-      g.strokeStyle = `rgb(${l * 1.444 | 0},${l * 1.222 | 0},${l | 0})`;
-      g.stroke();
-    }
-    g.globalAlpha = 0.45;
-    for (let i = 0; i < 2600; i++) {
-      const a = r() * Math.PI * 2, rr = R * (bore + (1 - bore) * Math.sqrt(r()));
-      g.fillStyle = r() > 0.5 ? "#6a5849" : "#24201b";
-      g.fillRect(R + Math.cos(a) * rr, R + Math.sin(a) * rr, 2, 1);
-    }
-    g.globalAlpha = 1;
-    g.beginPath();
-    for (let t2 = 0; t2 <= 1.0001; t2 += 15e-4) {
-      const a = t2 * Math.PI * 24, rad = R * (bore + (1 - bore) * t2);
-      const x = R + Math.cos(a) * rad, y = R + Math.sin(a) * rad;
-      t2 === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
-    }
-    g.lineWidth = 2.2;
-    g.strokeStyle = "rgba(255,232,204,0.16)";
-    g.stroke();
-    g.save();
-    g.translate(R, R);
-    g.rotate(2.1);
-    const step2 = g.createLinearGradient(0, -R, 0, R);
-    step2.addColorStop(0, "rgba(255,236,208,0.20)");
-    step2.addColorStop(1, "rgba(0,0,0,0.28)");
-    g.fillStyle = step2;
-    g.fillRect(-1.6, -R * 0.98, 3.2, R * (0.98 - bore));
-    g.restore();
-    return tex(c, { srgb: true });
-  }
-  function brushedTexture(size = 512, tint = [150, 152, 158], rot = 0) {
-    const c = canvas(size, size), g = c.getContext("2d");
-    g.fillStyle = `rgb(${tint[0] * 0.7 | 0},${tint[1] * 0.7 | 0},${tint[2] * 0.72 | 0})`;
-    g.fillRect(0, 0, size, size);
-    const r = rng(41);
-    g.translate(size / 2, size / 2);
-    g.rotate(rot);
-    g.translate(-size / 2, -size / 2);
-    for (let i = 0; i < 5200; i++) {
-      const y = r() * size, x = r() * size, len = 20 + r() * 190;
-      const a = 0.04 + r() * 0.12;
-      g.strokeStyle = r() > 0.5 ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`;
-      g.lineWidth = 0.6 + r() * 1.1;
-      g.beginPath();
-      g.moveTo(x, y);
-      g.lineTo(x + len, y + (r() - 0.5) * 2);
-      g.stroke();
-    }
-    return tex(c, { srgb: false, rep: 2 });
-  }
   function radialTexture(size = 512, { inner = "rgba(0,0,0,1)", outer = "rgba(0,0,0,0)", p = 0.55, color = "0,0,0" } = {}) {
     const c = canvas(size, size), g = c.getContext("2d");
     const gr = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
@@ -30393,65 +28552,6 @@ void main() {
     g.fillStyle = lg;
     g.fillRect(0, 0, size, size);
     return tex(c, { srgb: true });
-  }
-  function sweepAlpha(w = 64, h = 4) {
-    const c = canvas(w, h);
-    const g = c.getContext("2d");
-    const grad = g.createLinearGradient(0, 0, w, 0);
-    grad.addColorStop(0, "#fff");
-    grad.addColorStop(0.88, "#fff");
-    grad.addColorStop(1, "#000");
-    g.fillStyle = grad;
-    g.fillRect(0, 0, w, h);
-    g.globalCompositeOperation = "multiply";
-    for (let i = 0; i < 3; i++) {
-      g.fillStyle = `rgba(0,0,0,${0.11 + i * 0.13})`;
-      g.fillRect(Math.round(w * (0.9 + i * 0.032)), 0, 1, h);
-    }
-    g.globalCompositeOperation = "source-over";
-    const t2 = tex(c, { srgb: false, aniso: 1 });
-    t2.wrapS = t2.wrapT = ClampToEdgeWrapping;
-    return t2;
-  }
-  function leaderAlpha(w = 2048, h = 128, { lead = 0.01, cut: cut2 = 0.02, edge = 0.62, face = 0.18 } = {}) {
-    const c = canvas(w, h), g = c.getContext("2d");
-    const grey = (x2) => {
-      const n = Math.round(x2 * 255);
-      return `rgb(${n},${n},${n})`;
-    };
-    const e = Math.max(1, Math.round(h * cut2)), f = Math.round(h * (0.5 - cut2));
-    for (const [y0, y1, k] of [[0, e, edge], [e, e + f, face], [e + f, 2 * e + f, edge], [2 * e + f, h, face]]) {
-      g.fillStyle = grey(k);
-      g.fillRect(0, y0, w, y1 - y0);
-    }
-    const x = Math.max(1, Math.round(lead * w));
-    g.fillStyle = "#fff";
-    g.fillRect(x, 0, w - 2 * x, h);
-    const t2 = tex(c, { srgb: false, aniso: 1 });
-    t2.wrapS = t2.wrapT = ClampToEdgeWrapping;
-    return t2;
-  }
-  function headStreak(w = 64, h = 32) {
-    const c = canvas(w, h);
-    const g = c.getContext("2d");
-    const gx = g.createLinearGradient(0, 0, w, 0);
-    gx.addColorStop(0, "rgba(255,255,255,0)");
-    gx.addColorStop(0.34, "rgba(255,255,255,0.42)");
-    gx.addColorStop(0.48, "rgba(255,255,255,1)");
-    gx.addColorStop(0.52, "rgba(255,255,255,1)");
-    gx.addColorStop(0.66, "rgba(255,255,255,0.42)");
-    gx.addColorStop(1, "rgba(255,255,255,0)");
-    g.fillStyle = gx;
-    g.fillRect(0, 0, w, h);
-    g.globalCompositeOperation = "destination-in";
-    const gy = g.createLinearGradient(0, 0, 0, h);
-    gy.addColorStop(0, "rgba(255,255,255,0)");
-    gy.addColorStop(0.18, "rgba(255,255,255,1)");
-    gy.addColorStop(0.82, "rgba(255,255,255,1)");
-    gy.addColorStop(1, "rgba(255,255,255,0)");
-    g.fillStyle = gy;
-    g.fillRect(0, 0, w, h);
-    return tex(c, { srgb: true, aniso: 2 });
   }
 
   // src/env.js
@@ -30657,11 +28757,7 @@ void main() {
   // src/anim.js
   var clamp2 = (v, a, b) => Math.min(b, Math.max(a, v));
   var lerp2 = (a, b, t2) => a + (b - a) * t2;
-  var damp2 = (a, b, l, dt) => lerp2(a, b, 1 - Math.exp(-l * dt));
-  var smoothstep2 = (a, b, x) => {
-    const t2 = clamp2((x - a) / (b - a), 0, 1);
-    return t2 * t2 * (3 - 2 * t2);
-  };
+  var damp = (a, b, l, dt) => lerp2(a, b, 1 - Math.exp(-l * dt));
   var ease = {
     out: (t2) => 1 - Math.pow(1 - t2, 3),
     outQuint: (t2) => 1 - Math.pow(1 - t2, 5),
@@ -30724,25 +28820,54 @@ void main() {
 
   // src/lights.js
   var RIG = {
+    /* 紫夜 — the dark room, keyed to the character: a gold key (the hat band is
+       the only saturated thing on her), a violet fill (the hat's own colour
+       bounced back off the walls) and an ice rim (the glow inside the sheet).
+       The three hues are the three colours of the model, which is what makes a
+       one-lamp room read as *her* room rather than a generic black box. */
     noir: {
       exposure: 0.95,
       envInt: 0.45,
-      key: { c: 16771528, i: 1.9, w: 9, h: 6, p: [-6.4, 5.2, 6.6] },
-      fill: { c: 14083327, i: 0.45, w: 12, h: 8, p: [8.6, 1.8, 5.2] },
-      rim: { c: 12901119, i: 1.6, w: 1.3, h: 13, p: [4.2, 4.6, -8.6] },
-      bounce: { c: 16766888, i: 0.4, w: 12, h: 12, p: [0.5, -3.4, 3.8] },
-      top: { c: 15660031, i: 0.22, w: 12, h: 12, p: [-0.8, 8.8, 1.2] },
+      key: { c: 16768942, i: 1.9, w: 9, h: 6, p: [-6.4, 5.2, 6.6] },
+      fill: { c: 12560639, i: 0.45, w: 12, h: 8, p: [8.6, 1.8, 5.2] },
+      rim: { c: 10478847, i: 1.6, w: 1.3, h: 13, p: [4.2, 4.6, -8.6] },
+      bounce: { c: 13215999, i: 0.4, w: 12, h: 12, p: [0.5, -3.4, 3.8] },
+      top: { c: 15129855, i: 0.22, w: 12, h: 12, p: [-0.8, 8.8, 1.2] },
       shadow: { i: 0.75, p: [-6.4, 5.2, 6.6] }
     },
+    /* 霜厅 — the same five positions as the black box; what changed is the
+         *ratios*.
+    
+         A room where every lamp is nearly as strong as the key is a room with no
+         key. Measured off the render at the old numbers, the crown came back
+         (248,244,238), the shirt (248,246,240), and the groove between two fringe
+         locks (247,243,239) — a surface facing the key and a surface turned away
+         from it were lit by two different softboxes of the same size and the same
+         brightness, so the model had three levels of shading across its whole head.
+         Nothing about a solid can be seen in that light: the fringe read as one
+         smooth white shell no matter how many locks it was built from, and the
+         first diagnosis blamed the geometry and rewrote it.
+    
+         So the fill, the top and the bounce come down and the key goes up. The hall
+         is still bright — the exposure carries that, and it went up with them — but
+         it now has a direction, and a direction is what makes a crease a crease.
+         `envInt` comes down for the same reason: an IBL is the most directionless
+         light there is. */
     studio: {
-      exposure: 0.8,
-      envInt: 0.56,
-      key: { c: 16777215, i: 1.5, w: 14, h: 10, p: [-7.6, 6.6, 7.6] },
-      fill: { c: 15791354, i: 0.95, w: 15, h: 11, p: [9.4, 2.6, 5.8] },
-      rim: { c: 16777215, i: 1.05, w: 1.8, h: 16, p: [0.8, 6.2, -10.5] },
-      bounce: { c: 16775922, i: 0.55, w: 13, h: 13, p: [0.4, -3.2, 4.2] },
-      top: { c: 16777215, i: 0.5, w: 15, h: 15, p: [0, 10.5, 1] },
-      shadow: { i: 0.34, p: [-7.6, 6.6, 7.6] }
+      exposure: 0.86,
+      envInt: 0.46,
+      /* Only the *hue* moved here — the ratios are the ones the shading analysis
+         settled on (see below), and they are what makes the fringe read as locks
+         rather than as one shell. The hall's white goes cold and faintly violet
+         so the sheet does not disappear into the wall it is standing in front of;
+         the bounce is the one warm lamp left, because a room with no warm source
+         at all reads as a colour cast rather than as a room. */
+      key: { c: 16316159, i: 1.72, w: 14, h: 10, p: [-7.6, 6.6, 7.6] },
+      fill: { c: 15001855, i: 0.46, w: 15, h: 11, p: [9.4, 2.6, 5.8] },
+      rim: { c: 13693183, i: 1, w: 1.8, h: 16, p: [0.8, 6.2, -10.5] },
+      bounce: { c: 16774372, i: 0.34, w: 13, h: 13, p: [0.4, -3.2, 4.2] },
+      top: { c: 15790847, i: 0.26, w: 15, h: 15, p: [0, 10.5, 1] },
+      shadow: { i: 0.4, p: [-7.6, 6.6, 7.6] }
     },
     /* 蓝厅 — the same five positions as the hall next door, with the colour of
        north light on every one of them: nothing here is warm, and the fill is
@@ -30751,11 +28876,15 @@ void main() {
     abyss: {
       exposure: 0.8,
       envInt: 0.54,
-      key: { c: 15923455, i: 1.45, w: 12, h: 8.5, p: [-6.2, 7.8, 5.6] },
-      fill: { c: 12111840, i: 0.8, w: 14, h: 10, p: [9, 1.6, 5.4] },
-      rim: { c: 13626111, i: 1.3, w: 1.2, h: 15, p: [3.6, 5.4, -9.6] },
-      bounce: { c: 9087164, i: 0.45, w: 12, h: 12, p: [0.4, -3.6, 4] },
-      top: { c: 15004415, i: 0.48, w: 14, h: 14, p: [-0.6, 9.8, 1] },
+      /* 冰渊 — the room lit the way the ghost is lit from inside. Every lamp is
+         pushed toward the cyan of the sheet's own glow, and the rim is the most
+         saturated one in the whole rig: in a room this cold the contour is the
+         only place a warm object could hide, and there is no warm object. */
+      key: { c: 15530495, i: 1.45, w: 12, h: 8.5, p: [-6.2, 7.8, 5.6] },
+      fill: { c: 10932189, i: 0.8, w: 14, h: 10, p: [9, 1.6, 5.4] },
+      rim: { c: 10479871, i: 1.3, w: 1.2, h: 15, p: [3.6, 5.4, -9.6] },
+      bounce: { c: 9090756, i: 0.45, w: 12, h: 12, p: [0.4, -3.6, 4] },
+      top: { c: 14086399, i: 0.48, w: 14, h: 14, p: [-0.6, 9.8, 1] },
       shadow: { i: 0.4, p: [-6.2, 7.8, 5.6] }
     }
   };
@@ -30824,1277 +28953,196 @@ void main() {
     return { lights, shadow, apply, dump: () => target };
   }
 
-  // node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js
-  var _tempNormal = new Vector3();
-  function getUv(faceDirVector, normal, uvAxis, projectionAxis, radius, sideLength) {
-    const totArcLength = 2 * Math.PI * radius / 4;
-    const centerLength = Math.max(sideLength - 2 * radius, 0);
-    const halfArc = Math.PI / 4;
-    _tempNormal.copy(normal);
-    _tempNormal[projectionAxis] = 0;
-    _tempNormal.normalize();
-    const arcUvRatio = 0.5 * totArcLength / (totArcLength + centerLength);
-    const arcAngleRatio = 1 - _tempNormal.angleTo(faceDirVector) / halfArc;
-    if (Math.sign(_tempNormal[uvAxis]) === 1) {
-      return arcAngleRatio * arcUvRatio;
-    } else {
-      const lenUv = centerLength / (totArcLength + centerLength);
-      return lenUv + arcUvRatio + arcUvRatio * (1 - arcAngleRatio);
-    }
-  }
-  var RoundedBoxGeometry = class _RoundedBoxGeometry extends BoxGeometry {
-    /**
-     * Constructs a new rounded box geometry.
-     *
-     * @param {number} [width=1] - The width. That is, the length of the edges parallel to the X axis.
-     * @param {number} [height=1] - The height. That is, the length of the edges parallel to the Y axis.
-     * @param {number} [depth=1] - The depth. That is, the length of the edges parallel to the Z axis.
-     * @param {number} [segments=2] - Number of segments that form the rounded corners.
-     * @param {number} [radius=0.1] - The radius of the rounded corners.
-     */
-    constructor(width = 1, height = 1, depth = 1, segments = 2, radius = 0.1) {
-      const totalSegments = segments * 2 + 1;
-      radius = Math.min(width / 2, height / 2, depth / 2, radius);
-      super(1, 1, 1, totalSegments, totalSegments, totalSegments);
-      this.type = "RoundedBoxGeometry";
-      this.parameters = {
-        width,
-        height,
-        depth,
-        segments,
-        radius
-      };
-      if (totalSegments === 1) return;
-      const geometry2 = this.toNonIndexed();
-      this.index = null;
-      this.attributes.position = geometry2.attributes.position;
-      this.attributes.normal = geometry2.attributes.normal;
-      this.attributes.uv = geometry2.attributes.uv;
-      const position = new Vector3();
-      const normal = new Vector3();
-      const box2 = new Vector3(width, height, depth).divideScalar(2).subScalar(radius);
-      const positions = this.attributes.position.array;
-      const normals = this.attributes.normal.array;
-      const uvs = this.attributes.uv.array;
-      const faceTris = positions.length / 6;
-      const faceDirVector = new Vector3();
-      const halfSegmentSize = 0.5 / totalSegments;
-      for (let i = 0, j = 0; i < positions.length; i += 3, j += 2) {
-        position.fromArray(positions, i);
-        normal.copy(position);
-        normal.x -= Math.sign(normal.x) * halfSegmentSize;
-        normal.y -= Math.sign(normal.y) * halfSegmentSize;
-        normal.z -= Math.sign(normal.z) * halfSegmentSize;
-        normal.normalize();
-        positions[i + 0] = box2.x * Math.sign(position.x) + normal.x * radius;
-        positions[i + 1] = box2.y * Math.sign(position.y) + normal.y * radius;
-        positions[i + 2] = box2.z * Math.sign(position.z) + normal.z * radius;
-        normals[i + 0] = normal.x;
-        normals[i + 1] = normal.y;
-        normals[i + 2] = normal.z;
-        const side = Math.floor(i / faceTris);
-        switch (side) {
-          case 0:
-            faceDirVector.set(1, 0, 0);
-            uvs[j + 0] = getUv(faceDirVector, normal, "z", "y", radius, depth);
-            uvs[j + 1] = 1 - getUv(faceDirVector, normal, "y", "z", radius, height);
-            break;
-          case 1:
-            faceDirVector.set(-1, 0, 0);
-            uvs[j + 0] = 1 - getUv(faceDirVector, normal, "z", "y", radius, depth);
-            uvs[j + 1] = 1 - getUv(faceDirVector, normal, "y", "z", radius, height);
-            break;
-          case 2:
-            faceDirVector.set(0, 1, 0);
-            uvs[j + 0] = 1 - getUv(faceDirVector, normal, "x", "z", radius, width);
-            uvs[j + 1] = getUv(faceDirVector, normal, "z", "x", radius, depth);
-            break;
-          case 3:
-            faceDirVector.set(0, -1, 0);
-            uvs[j + 0] = 1 - getUv(faceDirVector, normal, "x", "z", radius, width);
-            uvs[j + 1] = 1 - getUv(faceDirVector, normal, "z", "x", radius, depth);
-            break;
-          case 4:
-            faceDirVector.set(0, 0, 1);
-            uvs[j + 0] = 1 - getUv(faceDirVector, normal, "x", "y", radius, width);
-            uvs[j + 1] = 1 - getUv(faceDirVector, normal, "y", "x", radius, height);
-            break;
-          case 5:
-            faceDirVector.set(0, 0, -1);
-            uvs[j + 0] = getUv(faceDirVector, normal, "x", "y", radius, width);
-            uvs[j + 1] = 1 - getUv(faceDirVector, normal, "y", "x", radius, height);
-            break;
-        }
-      }
-    }
-    /**
-     * Factory method for creating an instance of this class from the given
-     * JSON object.
-     *
-     * @param {Object} data - A JSON object representing the serialized geometry.
-     * @returns {RoundedBoxGeometry} A new instance.
-     */
-    static fromJSON(data) {
-      return new _RoundedBoxGeometry(
-        data.width,
-        data.height,
-        data.depth,
-        data.segments,
-        data.radius
-      );
-    }
-  };
-
-  // node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
-  function mergeGeometries(geometries, useGroups = false) {
-    const isIndexed = geometries[0].index !== null;
-    const attributesUsed = new Set(Object.keys(geometries[0].attributes));
-    const morphAttributesUsed = new Set(Object.keys(geometries[0].morphAttributes));
-    const attributes = {};
-    const morphAttributes = {};
-    const morphTargetsRelative = geometries[0].morphTargetsRelative;
-    const mergedGeometry = new BufferGeometry();
-    let offset = 0;
-    for (let i = 0; i < geometries.length; ++i) {
-      const geometry = geometries[i];
-      let attributesCount = 0;
-      if (isIndexed !== (geometry.index !== null)) {
-        console.error("THREE.BufferGeometryUtils: .mergeGeometries() failed with geometry at index " + i + ". All geometries must have compatible attributes; make sure index attribute exists among all geometries, or in none of them.");
-        return null;
-      }
-      for (const name in geometry.attributes) {
-        if (!attributesUsed.has(name)) {
-          console.error("THREE.BufferGeometryUtils: .mergeGeometries() failed with geometry at index " + i + '. All geometries must have compatible attributes; make sure "' + name + '" attribute exists among all geometries, or in none of them.');
-          return null;
-        }
-        if (attributes[name] === void 0) attributes[name] = [];
-        attributes[name].push(geometry.attributes[name]);
-        attributesCount++;
-      }
-      if (attributesCount !== attributesUsed.size) {
-        console.error("THREE.BufferGeometryUtils: .mergeGeometries() failed with geometry at index " + i + ". Make sure all geometries have the same number of attributes.");
-        return null;
-      }
-      if (morphTargetsRelative !== geometry.morphTargetsRelative) {
-        console.error("THREE.BufferGeometryUtils: .mergeGeometries() failed with geometry at index " + i + ". .morphTargetsRelative must be consistent throughout all geometries.");
-        return null;
-      }
-      for (const name in geometry.morphAttributes) {
-        if (!morphAttributesUsed.has(name)) {
-          console.error("THREE.BufferGeometryUtils: .mergeGeometries() failed with geometry at index " + i + ".  .morphAttributes must be consistent throughout all geometries.");
-          return null;
-        }
-        if (morphAttributes[name] === void 0) morphAttributes[name] = [];
-        morphAttributes[name].push(geometry.morphAttributes[name]);
-      }
-      if (useGroups) {
-        let count;
-        if (isIndexed) {
-          count = geometry.index.count;
-        } else if (geometry.attributes.position !== void 0) {
-          count = geometry.attributes.position.count;
-        } else {
-          console.error("THREE.BufferGeometryUtils: .mergeGeometries() failed with geometry at index " + i + ". The geometry must have either an index or a position attribute");
-          return null;
-        }
-        mergedGeometry.addGroup(offset, count, i);
-        offset += count;
-      }
-    }
-    if (isIndexed) {
-      let indexOffset = 0;
-      const mergedIndex = [];
-      for (let i = 0; i < geometries.length; ++i) {
-        const index = geometries[i].index;
-        for (let j = 0; j < index.count; ++j) {
-          mergedIndex.push(index.getX(j) + indexOffset);
-        }
-        indexOffset += geometries[i].attributes.position.count;
-      }
-      mergedGeometry.setIndex(mergedIndex);
-    }
-    for (const name in attributes) {
-      const mergedAttribute = mergeAttributes(attributes[name]);
-      if (!mergedAttribute) {
-        console.error("THREE.BufferGeometryUtils: .mergeGeometries() failed while trying to merge the " + name + " attribute.");
-        return null;
-      }
-      mergedGeometry.setAttribute(name, mergedAttribute);
-    }
-    for (const name in morphAttributes) {
-      const numMorphTargets = morphAttributes[name][0].length;
-      if (numMorphTargets === 0) break;
-      mergedGeometry.morphAttributes = mergedGeometry.morphAttributes || {};
-      mergedGeometry.morphAttributes[name] = [];
-      for (let i = 0; i < numMorphTargets; ++i) {
-        const morphAttributesToMerge = [];
-        for (let j = 0; j < morphAttributes[name].length; ++j) {
-          morphAttributesToMerge.push(morphAttributes[name][j][i]);
-        }
-        const mergedMorphAttribute = mergeAttributes(morphAttributesToMerge);
-        if (!mergedMorphAttribute) {
-          console.error("THREE.BufferGeometryUtils: .mergeGeometries() failed while trying to merge the " + name + " morphAttribute.");
-          return null;
-        }
-        mergedGeometry.morphAttributes[name].push(mergedMorphAttribute);
-      }
-    }
-    return mergedGeometry;
-  }
-  function mergeAttributes(attributes) {
-    let TypedArray;
-    let itemSize;
-    let normalized;
-    let gpuType = -1;
-    let arrayLength = 0;
-    for (let i = 0; i < attributes.length; ++i) {
-      const attribute = attributes[i];
-      if (TypedArray === void 0) TypedArray = attribute.array.constructor;
-      if (TypedArray !== attribute.array.constructor) {
-        console.error("THREE.BufferGeometryUtils: .mergeAttributes() failed. BufferAttribute.array must be of consistent array types across matching attributes.");
-        return null;
-      }
-      if (itemSize === void 0) itemSize = attribute.itemSize;
-      if (itemSize !== attribute.itemSize) {
-        console.error("THREE.BufferGeometryUtils: .mergeAttributes() failed. BufferAttribute.itemSize must be consistent across matching attributes.");
-        return null;
-      }
-      if (normalized === void 0) normalized = attribute.normalized;
-      if (normalized !== attribute.normalized) {
-        console.error("THREE.BufferGeometryUtils: .mergeAttributes() failed. BufferAttribute.normalized must be consistent across matching attributes.");
-        return null;
-      }
-      if (gpuType === -1) gpuType = attribute.gpuType;
-      if (gpuType !== attribute.gpuType) {
-        console.error("THREE.BufferGeometryUtils: .mergeAttributes() failed. BufferAttribute.gpuType must be consistent across matching attributes.");
-        return null;
-      }
-      arrayLength += attribute.count * itemSize;
-    }
-    const array = new TypedArray(arrayLength);
-    const result = new BufferAttribute(array, itemSize, normalized);
-    let offset = 0;
-    for (let i = 0; i < attributes.length; ++i) {
-      const attribute = attributes[i];
-      if (attribute.isInterleavedBufferAttribute) {
-        const tupleOffset = offset / itemSize;
-        for (let j = 0, l = attribute.count; j < l; j++) {
-          for (let c = 0; c < itemSize; c++) {
-            const value = attribute.getComponent(j, c);
-            result.setComponent(j + tupleOffset, c, value);
-          }
-        }
-      } else {
-        array.set(attribute.array, offset);
-      }
-      offset += attribute.count * itemSize;
-    }
-    if (gpuType !== void 0) {
-      result.gpuType = gpuType;
-    }
-    return result;
-  }
-  function toCreasedNormals(geometry, creaseAngle = Math.PI / 3) {
-    const creaseDot = Math.cos(creaseAngle);
-    const hashMultiplier = (1 + 1e-10) * 100;
-    const verts = [new Vector3(), new Vector3(), new Vector3()];
-    const tempVec1 = new Vector3();
-    const tempVec2 = new Vector3();
-    const tempNorm = new Vector3();
-    const tempNorm2 = new Vector3();
-    function hashVertex(v) {
-      const x = ~~(v.x * hashMultiplier);
-      const y = ~~(v.y * hashMultiplier);
-      const z = ~~(v.z * hashMultiplier);
-      return `${x},${y},${z}`;
-    }
-    const resultGeometry = geometry.index ? geometry.toNonIndexed() : geometry;
-    const posAttr = resultGeometry.attributes.position;
-    const vertexMap = {};
-    for (let i = 0, l = posAttr.count / 3; i < l; i++) {
-      const i3 = 3 * i;
-      const a = verts[0].fromBufferAttribute(posAttr, i3 + 0);
-      const b = verts[1].fromBufferAttribute(posAttr, i3 + 1);
-      const c = verts[2].fromBufferAttribute(posAttr, i3 + 2);
-      tempVec1.subVectors(c, b);
-      tempVec2.subVectors(a, b);
-      const normal = new Vector3().crossVectors(tempVec1, tempVec2).normalize();
-      for (let n = 0; n < 3; n++) {
-        const vert = verts[n];
-        const hash = hashVertex(vert);
-        if (!(hash in vertexMap)) {
-          vertexMap[hash] = [];
-        }
-        vertexMap[hash].push(normal);
-      }
-    }
-    const normalArray = new Float32Array(posAttr.count * 3);
-    const normAttr = new BufferAttribute(normalArray, 3, false);
-    for (let i = 0, l = posAttr.count / 3; i < l; i++) {
-      const i3 = 3 * i;
-      const a = verts[0].fromBufferAttribute(posAttr, i3 + 0);
-      const b = verts[1].fromBufferAttribute(posAttr, i3 + 1);
-      const c = verts[2].fromBufferAttribute(posAttr, i3 + 2);
-      tempVec1.subVectors(c, b);
-      tempVec2.subVectors(a, b);
-      tempNorm.crossVectors(tempVec1, tempVec2).normalize();
-      for (let n = 0; n < 3; n++) {
-        const vert = verts[n];
-        const hash = hashVertex(vert);
-        const otherNormals = vertexMap[hash];
-        tempNorm2.set(0, 0, 0);
-        for (let k = 0, lk = otherNormals.length; k < lk; k++) {
-          const otherNorm = otherNormals[k];
-          if (tempNorm.dot(otherNorm) > creaseDot) {
-            tempNorm2.add(otherNorm);
-          }
-        }
-        tempNorm2.normalize();
-        normAttr.setXYZ(i3 + n, tempNorm2.x, tempNorm2.y, tempNorm2.z);
-      }
-    }
-    resultGeometry.setAttribute("normal", normAttr);
-    return resultGeometry;
-  }
-
-  // src/cassette.js
-  var DIM = {
-    W: 10.04,
-    H: 6.38,
-    D: 1.2,
-    hw: 5.02,
-    hh: 3.19,
-    hd: 0.6,
-    rOut: 0.3,
-    PT: 0.11,
-    BV: 0.03,
-    // plate thickness / bevel
-    wall: 0.3,
-    labelInset: 0.26,
-    win: { hw: 3.5, hz0: -1.85, hz1: 1.65, r: 0.26 },
-    hub: { x: 2.15, z: -0.3, r: 0.62, h: 0.88 },
-    tapeW: 0.381,
-    guide: { x: 1.78, z: 2.42, r: 0.085 },
-    head: 1.48,
-    slot: [2.62, 3.98],
-    rHub: 0.615,
-    rMax: 2.02,
-    tTape: 0.03,
-    // visual layer thickness (transfer rate)
-    v: 4.76,
-    // cm/s
-    tile: 0.2,
-    // cm of tape per repeat of the coating texture
-    lead: 0.01,
-    // the clear leader, as a share of the tape's length
-    podX: 4.3,
-    podZ: 2.4
-  };
-  var D = DIM;
-  var PODS = [[-D.podX, -D.podZ], [D.podX, -D.podZ], [-D.podX, D.podZ], [D.podX, D.podZ], [0, -D.podZ]];
-  var CREASE = MathUtils.degToRad(18);
-  var autoSmooth = (g, crease = CREASE) => toCreasedNormals(g, crease);
-  function rrect(w, h, r, cx = 0, cz = 0) {
-    const s = new Shape();
-    const x = cx - w / 2, y = cz - h / 2;
-    r = Math.min(r, w / 2, h / 2);
-    s.moveTo(x + r, y);
-    s.lineTo(x + w - r, y);
-    s.absarc(x + w - r, y + r, r, -Math.PI / 2, 0, false);
-    s.lineTo(x + w, y + h - r);
-    s.absarc(x + w - r, y + h - r, r, 0, Math.PI / 2, false);
-    s.lineTo(x + r, y + h);
-    s.absarc(x + r, y + h - r, r, Math.PI / 2, Math.PI, false);
-    s.lineTo(x, y + r);
-    s.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5, false);
-    return s;
-  }
-  var win = (shape, w, h, r, cx, cz) => (shape.holes.push(rrect(w, h, r, cx, cz)), shape);
-  function extrudeY(shape, depth, bevel = D.BV) {
-    const g = new ExtrudeGeometry(shape, {
-      depth,
-      bevelEnabled: bevel > 0,
-      bevelThickness: bevel,
-      bevelSize: bevel,
-      bevelOffset: 0,
-      bevelSegments: 2,
-      curveSegments: 10
-    });
-    g.rotateX(Math.PI / 2);
-    return autoSmooth(g);
-  }
-  function extrudeZ(shape, depth, bevel = 0) {
-    const g = new ExtrudeGeometry(shape, {
-      depth: bevel > 0 ? depth - bevel * 2 : depth,
-      bevelEnabled: bevel > 0,
-      bevelThickness: bevel,
-      bevelSize: bevel,
-      bevelOffset: 0,
-      bevelSegments: 2,
-      curveSegments: 10
-    });
-    return autoSmooth(g);
-  }
-  function latheCyl(rTop, rBot, h, chamfer = 0.03, segs = 32) {
-    const c = Math.min(chamfer, h / 2 - 1e-3, Math.min(rTop, rBot) * 0.5);
-    const pts = [
-      new Vector2(0, -h / 2),
-      new Vector2(Math.max(1e-4, rBot - c), -h / 2),
-      new Vector2(rBot, -h / 2 + c),
-      new Vector2(rTop, h / 2 - c),
-      new Vector2(Math.max(1e-4, rTop - c), h / 2),
-      new Vector2(0, h / 2)
-    ];
-    const g = new LatheGeometry(pts, segs);
-    return autoSmooth(g);
-  }
-  var alignTop = (g, y) => (g.computeBoundingBox(), g.translate(0, y - g.boundingBox.max.y, 0), g);
-  var alignBottom = (g, y) => (g.computeBoundingBox(), g.translate(0, y - g.boundingBox.min.y, 0), g);
-  var box = (w, h, d, r = 0.03) => r > 0 ? new RoundedBoxGeometry(w, h, d, 2, Math.min(r, Math.min(w, h, d) / 2)) : new BoxGeometry(w, h, d);
-  function mesh(g, m, x = 0, y = 0, z = 0) {
-    const o = new Mesh(g, m);
-    o.position.set(x, y, z);
-    o.castShadow = o.receiveShadow = true;
-    return o;
-  }
-  function hubShell(r, bore, h, chamfer = 0.045, segs = 48) {
-    const c = Math.min(chamfer, h / 2 - 1e-3, (r - bore) / 3);
-    const v = (a, b) => new Vector2(a, b);
-    const profile = [
-      v(bore, -h / 2 + c),
-      v(bore + c, -h / 2),
-      v(r - c, -h / 2),
-      v(r, -h / 2 + c),
-      v(r, h / 2 - c),
-      v(r - c, h / 2),
-      v(bore + c, h / 2),
-      v(bore, h / 2 - c),
-      v(bore, -h / 2 + c)
-      // closes the loop
-    ];
-    return autoSmooth(new LatheGeometry(profile, segs));
-  }
-  function bake(meshes, material, castShadow = true) {
-    const geos = [];
-    for (const m of meshes) {
-      m.updateMatrix();
-      const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
-      g.applyMatrix4(m.matrix);
-      for (const k of Object.keys(g.attributes)) {
-        if (k !== "position" && k !== "normal" && k !== "uv") g.deleteAttribute(k);
-      }
-      if (!g.attributes.normal) g.computeVertexNormals();
-      if (!g.attributes.uv) {
-        g.setAttribute("uv", new BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
-      }
-      geos.push(g);
-    }
-    const merged = mergeGeometries(geos, false);
-    geos.forEach((g) => g.dispose());
-    if (!merged) return meshes;
-    const out = new Mesh(merged, material);
-    out.castShadow = castShadow;
-    out.receiveShadow = true;
-    return out;
-  }
-  function bakeInto(parent, meshes, castShadow = true) {
-    const byMat = /* @__PURE__ */ new Map();
-    for (const m of meshes) {
-      if (!byMat.has(m.material)) byMat.set(m.material, []);
-      byMat.get(m.material).push(m);
-    }
-    for (const [mat, list] of byMat) {
-      if (list.length === 1) parent.add(list[0]);
-      else {
-        const baked = bake(list, mat, castShadow);
-        if (Array.isArray(baked)) list.forEach((m) => parent.add(m));
-        else parent.add(baked);
-      }
-    }
-  }
-  function makeLabelMap(face, opts) {
-    const t2 = labelTexture(face, opts);
-    t2.repeat.set(1 / 9.52, face === "A" ? -1 / 5.86 : 1 / 5.86);
-    t2.offset.set(0.5, 0.5);
-    return t2;
-  }
-  function createMaterials(labelOpts = {}) {
-    const micro = normalTex(256, { octaves: 5, strength: 1.7, seed: 11 });
-    const micro2 = normalTex(256, { octaves: 5, strength: 2.6, seed: 23 });
-    const rgh = roughTex(512, { lo: 0.4, hi: 0.72, seed: 5 });
-    const paperN = normalTex(512, { octaves: 6, strength: 2.6, seed: 31 });
-    const brush = brushedTexture(512, [152, 154, 160]);
-    const tapeM = tapeMaps(512, RIB_EDGE);
-    for (const m of [tapeM.map, tapeM.roughnessMap, tapeM.normalMap]) {
-      m.wrapS = m.wrapT = RepeatWrapping;
-      m.repeat.set(1, 1);
-      m.anisotropy = 16;
-      m.needsUpdate = true;
-    }
-    const leadA = leaderAlpha(2048, 128, { lead: D.lead / (1 + 2 * D.lead), cut: RIB_EDGE });
-    leadA.channel = 1;
-    const tape = new MeshPhysicalMaterial({
-      color: 16777215,
-      map: tapeM.map,
-      alphaMap: leadA,
-      transparent: true,
-      forceSinglePass: true,
-      roughness: 1,
-      roughnessMap: tapeM.roughnessMap,
-      metalness: 0.08,
-      normalMap: tapeM.normalMap,
-      normalScale: new Vector2(0.55, 0.55),
-      // the coating is drawn on lengthwise, so the highlight streaks along the
-      // tape rather than sitting as a round blob
-      anisotropy: 0.55,
-      anisotropyRotation: 0,
-      sheen: 0.45,
-      sheenColor: new Color(9071172),
-      sheenRoughness: 0.45,
-      iridescence: 0.12,
-      iridescenceIOR: 1.28,
-      iridescenceThicknessRange: [120, 420],
-      clearcoat: 0.18,
-      clearcoatRoughness: 0.42,
-      envMapIntensity: 0.9,
-      side: DoubleSide
-    });
-    const packSide = tape.clone();
-    packSide.alphaMap = null;
-    packSide.transparent = false;
-    packSide.forceSinglePass = false;
-    packSide.side = FrontSide;
-    for (const k of ["map", "roughnessMap", "normalMap"]) packSide[k] = tape[k].clone();
-    const labelMap = (face) => makeLabelMap(face, labelOpts);
-    return {
-      micro,
-      micro2,
-      rgh,
-      paperN,
-      brush,
-      /* Ivory, not charcoal. The galleries are white rooms, and a black shell in
-         one reads as a hole; a lacquered bone-white body with a cool sheen sits in
-         them the way a vitrine object does. Everything below moves with it — the
-         window is a pale grey now rather than smoked, and the interior is a mid
-         grey so the cutout still reads as depth. */
-      shell: new MeshPhysicalMaterial({
-        color: 15328991,
-        metalness: 0,
-        roughness: 0.34,
-        roughnessMap: rgh,
-        clearcoat: 0.72,
-        clearcoatRoughness: 0.16,
-        normalMap: micro,
-        normalScale: new Vector2(0.2, 0.2),
-        envMapIntensity: 0.95,
-        sheen: 0.18,
-        sheenRoughness: 0.6,
-        sheenColor: new Color(10135220)
-      }),
-      shellMatt: new MeshPhysicalMaterial({
-        color: 14605010,
-        metalness: 0,
-        roughness: 0.66,
-        roughnessMap: rgh,
-        clearcoat: 0.22,
-        clearcoatRoughness: 0.65,
-        normalMap: micro2,
-        normalScale: new Vector2(0.34, 0.34),
-        envMapIntensity: 0.95
-      }),
-      inner: new MeshStandardMaterial({
-        color: 10131086,
-        metalness: 0.05,
-        roughness: 0.82,
-        normalMap: micro2,
-        normalScale: new Vector2(0.5, 0.5),
-        envMapIntensity: 0.5
-      }),
-      // Smoked window. This used to be a real transmission material, which costs
-      // an entire extra scene render per frame (three renders all opaque objects
-      // into a separate target so the glass can refract them). At 0.055 thickness
-      // the refraction was invisible anyway, so a transparent clearcoat surface
-      // gets the same look for none of the cost.
-      glass: new MeshPhysicalMaterial({
-        color: 12174024,
-        metalness: 0,
-        roughness: 0.06,
-        transparent: true,
-        opacity: 0.22,
-        depthWrite: false,
-        clearcoat: 1,
-        clearcoatRoughness: 0.03,
-        envMapIntensity: 1.6,
-        specularIntensity: 1
-      }),
-      hub: new MeshPhysicalMaterial({
-        color: 15921128,
-        metalness: 0,
-        roughness: 0.42,
-        clearcoat: 0.28,
-        clearcoatRoughness: 0.45,
-        sheen: 0.2,
-        envMapIntensity: 0.85
-      }),
-      metal: new MeshPhysicalMaterial({
-        color: 13224132,
-        metalness: 1,
-        roughness: 0.3,
-        roughnessMap: brush,
-        anisotropy: 0.55,
-        envMapIntensity: 1.35
-      }),
-      metalDark: new MeshPhysicalMaterial({
-        color: 9210502,
-        metalness: 1,
-        roughness: 0.62,
-        roughnessMap: brush,
-        envMapIntensity: 0.85
-      }),
-      rubber: new MeshStandardMaterial({
-        color: 2763304,
-        metalness: 0,
-        roughness: 0.93,
-        normalMap: micro2,
-        normalScale: new Vector2(0.7, 0.7),
-        envMapIntensity: 0.5
-      }),
-      // physical, not standard: sheen only exists on MeshPhysicalMaterial, and on
-      // a Standard one three drops all three properties with a console warning —
-      // the felt pad was rendering as flat black rubber
-      felt: new MeshPhysicalMaterial({
-        color: 3486254,
-        metalness: 0,
-        roughness: 0.97,
-        normalMap: micro2,
-        normalScale: new Vector2(1.3, 1.3),
-        envMapIntensity: 0.35,
-        sheen: 0.5,
-        sheenColor: new Color(9077368),
-        sheenRoughness: 0.9
-      }),
-      tape,
-      packSide,
-      /* The pack's top face: the stacked cut edges of every layer on it, so it is
-         lit like the cut edges are — the tape's metalness, the tape's sheen, the
-         gloss the cut band has in `tapeMaps` (0.20–0.34 → 0.28 here). Only the
-         *rings* in it are the pack's own, and their colour is that same band's:
-         see tapeEdgeTexture. Two of the tape's properties are deliberately not
-         carried over: anisotropy, because a disc's grain runs round it and an
-         anisotropy rotation is one direction for a whole mesh; and iridescence,
-         which models the coating's thin film — and this disc is the PET between
-         the layers, not the coating. */
-      packFace: new MeshPhysicalMaterial({
-        map: tapeEdgeTexture(1024, BORE_V),
-        metalness: 0.08,
-        roughness: 0.28,
-        /* The disc's bore is *erased* in the texture (see tapeEdgeTexture), and
-           this is what turns erased alpha into a hole rather than into black. The
-           faces stay opaque geometry — they keep writing depth and sorting exactly
-           as they did — but the fragment that used to be the black cap over the
-           hub's bore is simply not drawn, so you look down the bore to the opening
-           in the shell. The hub is a tube and the spindle hole is a hole; a pencil
-           goes through a real cassette here. */
-        alphaTest: 0.5,
-        sheen: 0.45,
-        sheenColor: new Color(9071172),
-        sheenRoughness: 0.45,
-        clearcoat: 0.18,
-        clearcoatRoughness: 0.42,
-        envMapIntensity: 0.9
-      }),
-      labelA: new MeshPhysicalMaterial({
-        map: labelMap("A"),
-        metalness: 0,
-        roughness: 0.84,
-        normalMap: paperN,
-        normalScale: new Vector2(0.22, 0.22),
-        sheen: 0.12,
-        sheenColor: new Color(16052974),
-        sheenRoughness: 0.85,
-        envMapIntensity: 0.6,
-        clearcoat: 0.1,
-        clearcoatRoughness: 0.65
-      }),
-      labelB: new MeshPhysicalMaterial({
-        map: labelMap("B"),
-        metalness: 0,
-        roughness: 0.84,
-        normalMap: paperN,
-        normalScale: new Vector2(0.22, 0.22),
-        sheen: 0.12,
-        sheenColor: new Color(16052974),
-        sheenRoughness: 0.85,
-        envMapIntensity: 0.6,
-        clearcoat: 0.1,
-        clearcoatRoughness: 0.65
-      })
-    };
-  }
-  var RIB_EDGE = D.tTape / (2 * (D.tapeW + D.tTape));
-  var BORE_V = D.hub.r * 2 * EDGE_PITCH / D.tTape;
-  var RIB_CORNERS = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
-  var RIB_MAP = [0, 1, 1, 2, 2, 3, 3, 0];
-  var RIB_SN = RIB_MAP.map((i) => RIB_CORNERS[i][0]);
-  var RIB_SY = RIB_MAP.map((i) => RIB_CORNERS[i][1]);
-  var RIB_V = [0, RIB_EDGE, RIB_EDGE, 0.5, 0.5, 0.5 + RIB_EDGE, 0.5 + RIB_EDGE, 1];
-  var Ribbon = class {
-    constructor(n, hw, ht, headI) {
-      this.n = n;
-      this.hw = hw;
-      this.ht = ht;
-      this.headI = headI;
-      const g = new BufferGeometry();
-      const pos = new Float32Array(n * 8 * 3);
-      const nrm = new Float32Array(n * 8 * 3);
-      const uv = new Float32Array(n * 8 * 2);
-      const uv1 = new Float32Array(n * 8 * 2);
-      for (let i = 0; i < n; i++) {
-        for (let j = 0; j < 8; j++) {
-          uv[(i * 8 + j) * 2 + 1] = RIB_V[j];
-          uv1[(i * 8 + j) * 2 + 1] = RIB_V[j];
-        }
-      }
-      const idx = [];
-      for (let i = 0; i < n - 1; i++) {
-        for (let f = 0; f < 4; f++) {
-          const a = i * 8 + f * 2, b = a + 1;
-          const c = (i + 1) * 8 + f * 2 + 1, d = c - 1;
-          idx.push(a, b, c, a, c, d);
-        }
-      }
-      g.setAttribute("position", new BufferAttribute(pos, 3));
-      g.setAttribute("normal", new BufferAttribute(nrm, 3));
-      g.setAttribute("uv", new BufferAttribute(uv, 2));
-      g.setAttribute("uv1", new BufferAttribute(uv1, 2));
-      g.setIndex(idx);
-      g.boundingSphere = new Sphere(new Vector3(), 14);
-      this.geo = g;
-      this.nrm = nrm;
-      this.arc = new Float32Array(n);
-      this.headArc = 0;
-    }
-    setPath(pts) {
-      const { n, hw, ht, arc } = this;
-      const pos = this.geo.attributes.position.array;
-      const nrm = this.nrm;
-      let acc = 0, px0 = pts[0], pz0 = pts[1];
-      for (let i = 0; i < n; i++) {
-        const px2 = pts[i * 2], pz2 = pts[i * 2 + 1];
-        acc += Math.hypot(px2 - px0, pz2 - pz0);
-        px0 = px2;
-        pz0 = pz2;
-        arc[i] = acc;
-        const ai = Math.max(0, i - 1) * 2, bi = Math.min(n - 1, i + 1) * 2;
-        let tx = pts[bi] - pts[ai], tz = pts[bi + 1] - pts[ai + 1];
-        const l = Math.hypot(tx, tz) || 1;
-        tx /= l;
-        tz /= l;
-        const nx = -tz, nz = tx;
-        const o = i * 24;
-        for (let j = 0; j < 8; j++) {
-          const sn = RIB_SN[j], sy = RIB_SY[j];
-          pos[o + j * 3] = px2 + nx * ht * sn;
-          pos[o + j * 3 + 1] = hw * sy;
-          pos[o + j * 3 + 2] = pz2 + nz * ht * sn;
-          const f = j >> 1;
-          nrm[o + j * 3] = f === 1 ? -nx : f === 3 ? nx : 0;
-          nrm[o + j * 3 + 1] = f === 0 ? 1 : f === 2 ? -1 : 0;
-          nrm[o + j * 3 + 2] = f === 1 ? -nz : f === 3 ? nz : 0;
-        }
-      }
-      this.headArc = arc[this.headI];
-      const uv = this.geo.attributes.uv.array;
-      const uv1 = this.geo.attributes.uv1.array;
-      for (let i = 0; i < n; i++) {
-        const back = this.headArc - arc[i];
-        const u = back / D.tile;
-        for (let j = 0; j < 8; j++) {
-          uv[(i * 8 + j) * 2] = u;
-          uv1[(i * 8 + j) * 2] = back;
-        }
-      }
-      this.geo.attributes.position.needsUpdate = true;
-      this.geo.attributes.normal.needsUpdate = true;
-      this.geo.attributes.uv.needsUpdate = true;
-      this.geo.attributes.uv1.needsUpdate = true;
-    }
-  };
-  function createCassette(labelOpts = {}) {
-    const M = createMaterials(labelOpts);
+  // src/relic.js
+  var DIM = { H: 6.38, hd: 0.6 };
+  var TAU = Math.PI * 2;
+  function createRelic({ title = "", artist = "", album = "", minutes = "", floorY = 0 } = {}) {
     const root = new Group();
-    const assembly = new Group();
-    root.add(assembly);
-    const gTop = new Group();
-    const gBot = new Group();
-    const gMid = new Group();
-    const gTape = new Group();
-    assembly.add(gMid, gTop, gBot, gTape);
-    const yTopFace = D.hd, yBotFace = -D.hd;
-    const yIn = D.hd - D.PT;
-    const wallH = yIn * 2;
-    const winW = D.win.hw * 2, winH = D.win.hz1 - D.win.hz0;
-    const winCz = (D.win.hz0 + D.win.hz1) / 2;
-    const topShape = win(rrect(D.W, D.H, D.rOut), winW, winH, D.win.r, 0, winCz);
-    const topPlate = mesh(alignTop(extrudeY(topShape, D.PT - D.BV * 2), yTopFace), M.shell);
-    gTop.add(topPlate);
-    const glass = mesh(alignTop(extrudeY(rrect(winW + 0.02, winH + 0.02, D.win.r + 0.01, 0, winCz), 0.03, 0.01), yTopFace - 0.01), M.glass);
-    glass.castShadow = glass.receiveShadow = false;
-    glass.renderOrder = 10;
-    gTop.add(glass);
-    const labA = mesh(alignTop(extrudeY(win(rrect(D.W - D.labelInset * 2, D.H - D.labelInset * 2, 0.24), winW, winH, D.win.r, 0, winCz), 8e-3, 5e-3), yTopFace + 8e-3), M.labelA);
-    gTop.add(labA);
-    const botShape = rrect(D.W, D.H, D.rOut);
-    for (const sx of [-1, 1]) botShape.holes.push(rrect(D.hub.r * 2 + 0.1, D.hub.r * 2 + 0.1, D.hub.r + 0.05, sx * D.hub.x, D.hub.z));
-    for (const [px2, pz2] of PODS) botShape.holes.push(rrect(0.37, 0.37, 0.18, px2, pz2));
-    const botPlate = mesh(alignBottom(extrudeY(botShape, D.PT - D.BV * 2), yBotFace), M.shell);
-    gBot.add(botPlate);
-    const labBShape = rrect(D.W - D.labelInset * 2, D.H - D.labelInset * 2, 0.24);
-    for (const [px2, pz2] of PODS) labBShape.holes.push(rrect(0.4, 0.4, 0.2, px2, pz2));
-    for (const sx of [-1, 1]) labBShape.holes.push(rrect(D.hub.r * 2 + 0.2, D.hub.r * 2 + 0.2, D.hub.r + 0.1, sx * D.hub.x, D.hub.z));
-    const labB = mesh(alignBottom(extrudeY(labBShape, 8e-3, 5e-3), yBotFace - 8e-3), M.labelB);
-    gBot.add(labB);
-    const headLayers = [];
-    const headX = -(D.W - D.labelInset * 2) / 2;
-    const headW = (D.W - D.labelInset * 2) / 2;
-    const HEAD_W = 0.78;
-    const HEAD_STOP_X = headW - HEAD_W / 2;
-    const HEAD_END_X = HEAD_STOP_X - 0.55;
-    const HEAD_START_X = headX - HEAD_W / 2;
-    const HEAD_LIT = 0.3;
-    const HEAD_FADE = 0.8;
-    const head = { x: HEAD_START_X, enter: 0, dying: false, fade: 0 };
-    {
-      const mk2 = (src, dy, streakY, up) => {
-        const geo = src.geometry.clone();
-        geo.translate(0, dy, 0);
-        const mat = src.material.clone();
-        mat.transparent = true;
-        mat.depthWrite = false;
-        mat.alphaMap = sweepAlpha();
-        mat.alphaMap.repeat.copy(src.material.map.repeat);
-        mat.alphaMap.offset.copy(src.material.map.offset);
-        const o = new Mesh(geo, mat);
-        o.castShadow = false;
-        o.receiveShadow = true;
-        o.renderOrder = 8;
-        o.visible = false;
-        o.userData.noGhost = true;
-        const st2 = new Mesh(
-          new PlaneGeometry(HEAD_W, D.H - D.labelInset * 2 - 0.3),
-          new MeshBasicMaterial({
-            map: headStreak(),
-            transparent: true,
-            opacity: 0,
-            color: 15921129,
-            blending: AdditiveBlending,
-            depthWrite: false,
-            fog: false
-          })
-        );
-        st2.rotation.x = up ? -Math.PI / 2 : Math.PI / 2;
-        st2.position.set(HEAD_START_X, streakY, 0);
-        st2.renderOrder = 9;
-        st2.visible = false;
-        st2.userData.noGhost = true;
-        src.parent.add(o, st2);
-        headLayers.push({ o, mat, st: st2 });
-      };
-      mk2(labA, 4e-3, yTopFace + 0.014, true);
-      mk2(labB, -4e-3, yBotFace - 0.014, false);
-    }
-    function paintHead() {
-      const op = HEAD_LIT * head.enter * (1 - smoothstep2(0, 1, head.fade));
-      const wide = 1 + head.fade * 0.8;
-      for (const L of headLayers) {
-        L.st.material.opacity = op;
-        L.st.position.x = head.x;
-        L.st.scale.x = wide;
-      }
-    }
-    const screwd = new Group();
-    const screwBits = [];
-    for (const [px2, pz2] of PODS) {
-      screwBits.push(mesh(latheCyl(0.235, 0.26, 0.92, 0.035, 28), M.shellMatt, px2, -0.02, pz2));
-      screwBits.push(mesh(latheCyl(0.155, 0.155, 0.05, 0.014, 32), M.metal, px2, yBotFace + 0.03, pz2));
-      const ring = mesh(new TorusGeometry(0.148, 0.02, 8, 26), M.metalDark, px2, yBotFace + 0.05, pz2);
-      ring.rotation.x = Math.PI / 2;
-      screwBits.push(ring);
-      screwBits.push(mesh(box(0.21, 0.06, 0.038, 6e-3), M.inner, px2, yBotFace + 0.053, pz2));
-      screwBits.push(mesh(box(0.038, 0.06, 0.21, 6e-3), M.inner, px2, yBotFace + 0.053, pz2));
-    }
-    bakeInto(screwd, screwBits, false);
-    gBot.add(screwd);
-    const ribBits = [];
-    for (const rz of [-2.25, -1.4, 2.25]) ribBits.push(mesh(box(6.6, 0.1, 0.1, 0.03), M.inner, 0, -yIn + 0.07, rz));
-    for (const sx of [-1, 1]) ribBits.push(mesh(box(0.12, 0.1, 4.2, 0.03), M.inner, sx * 4.5, -yIn + 0.07, 0));
-    bakeInto(gBot, ribBits, false);
-    const frontShape = rrect(D.W - D.wall * 2, wallH, 0.1);
-    frontShape.holes.push(rrect(D.head * 2, 0.8, 0.06, 0, 0));
-    for (const sx of [1, -1]) {
-      const [a, b] = D.slot;
-      frontShape.holes.push(rrect(b - a, 0.68, 0.08, sx * (a + b) / 2, 0));
-    }
-    const frontG = extrudeZ(frontShape, D.wall, 0.022);
-    frontG.computeBoundingBox();
-    frontG.translate(0, 0, D.hh - D.wall - frontG.boundingBox.min.z);
-    const frameBits = [mesh(frontG, M.shellMatt)];
-    const TAB = { x: 1.3, w: 0.6, z: -D.hh + 0.06 };
-    const backSpans = [[-D.hw + D.wall, -TAB.x - TAB.w / 2], [-TAB.x + TAB.w / 2, TAB.x - TAB.w / 2], [TAB.x + TAB.w / 2, D.hw - D.wall]];
-    for (const [a, b] of backSpans) {
-      frameBits.push(mesh(box(b - a, wallH, D.wall, 0.05), M.shellMatt, (a + b) / 2, 0, -D.hh + D.wall / 2));
-    }
-    for (const sx of [-1, 1]) {
-      gBot.add(mesh(box(TAB.w, wallH - 0.1, 0.18, 0.03), M.shellMatt, sx * TAB.x, 0.02, -D.hh + 0.15));
-    }
-    for (const sx of [1, -1]) frameBits.push(mesh(box(D.wall, wallH, (D.hh - D.wall) * 2 + 0.06, 0.05), M.shellMatt, sx * (D.hw - D.wall / 2), 0, 0));
-    for (const sx of [1, -1]) {
-      for (const sz of [1, -1]) {
-        const a0 = sx > 0 ? sz > 0 ? 0 : Math.PI * 1.5 : sz > 0 ? Math.PI / 2 : Math.PI;
-        const s = new Shape();
-        s.moveTo(0, 0);
-        s.absarc(0, 0, D.rOut, a0, a0 + Math.PI / 2, false);
-        s.lineTo(0, 0);
-        const g = alignBottom(extrudeY(s, wallH, D.BV * 0.6), -yIn);
-        g.translate(sx * (D.hw - D.rOut), 0, sz * (D.hh - D.rOut));
-        frameBits.push(mesh(g, M.shellMatt));
-      }
-    }
-    bakeInto(gMid, frameBits);
-    const reels = [];
-    for (const sx of [-1, 1]) {
-      const grp = new Group();
-      grp.position.set(sx * D.hub.x, 0, D.hub.z);
-      const spin = new Group();
-      grp.add(spin);
-      const r = D.hub.r, bore = r - 0.28;
-      const hubBits = [mesh(hubShell(r, bore, D.hub.h), M.hub)];
-      for (let i = 0; i < 6; i++) {
-        const a = i / 6 * Math.PI * 2;
-        const t2 = mesh(box(0.19, D.hub.h, 0.115, 0.018), M.hub, Math.cos(a) * 0.325, 0, Math.sin(a) * 0.325);
-        t2.rotation.y = -a;
-        t2.castShadow = false;
-        hubBits.push(t2);
-      }
-      bakeInto(spin, hubBits, false);
-      const pack = new Group();
-      const side = new Mesh(new CylinderGeometry(0.998, 0.998, D.tapeW, 72, 1, true), M.packSide);
-      const fT = new Mesh(new CircleGeometry(1, 72), M.packFace);
-      fT.rotation.x = -Math.PI / 2;
-      fT.position.y = D.tapeW / 2;
-      const fB = new Mesh(new CircleGeometry(1, 72), M.packFace);
-      fB.rotation.x = Math.PI / 2;
-      fB.position.y = -D.tapeW / 2;
-      side.castShadow = fT.castShadow = fB.castShadow = false;
-      pack.add(side, fT, fB);
-      spin.add(pack);
-      gTape.add(grp);
-      const wuv = side.geometry.attributes.uv.array;
-      for (let k = 0; k < wuv.length; k += 2) {
-        wuv[k + 1] = 0.5 + RIB_EDGE + wuv[k + 1] * (0.5 - RIB_EDGE);
-      }
-      reels.push({
-        grp,
-        spin,
-        pack,
-        side,
-        faces: [fT, fB],
-        wall0: wuv.filter((_, k) => k % 2 === 0),
-        // the wall's u, as modelled
-        face0: Float32Array.from(fT.geometry.attributes.uv.array)
-        // and the disc's uv
-      });
-    }
-    const RG = D.guide.r;
-    const HT = D.tTape / 2;
-    const TURN = Math.PI * 2;
-    const C2 = [{ x: -D.hub.x, z: D.hub.z }, { x: D.hub.x, z: D.hub.z }];
-    const G = [{ x: -D.guide.x, z: D.guide.z }, { x: D.guide.x, z: D.guide.z }];
-    function tangentAngle(c, r, g, side, rg = RG + HT) {
-      const dx = g.x - c.x, dz = g.z - c.z, L = Math.hypot(dx, dz);
-      const a = Math.atan2(dz, dx), da = Math.acos(clamp2((r - rg) / L, -1, 1));
-      const c1 = Math.cos(a - da);
-      return (side < 0 ? c1 < 0 : c1 > 0) ? a - da : a + da;
-    }
-    const SEG = { p: 128, l: 10, g: 14, m: 14 };
-    const SAMPLES = SEG.p * 2 + SEG.l * 2 + SEG.g * 2 + SEG.m + 1;
-    const pts = new Float32Array(SAMPLES * 2);
-    function fillPath(rL, rR) {
-      const a1 = tangentAngle(C2[0], rL - HT, G[0], -1);
-      const a2 = tangentAngle(C2[1], rR - HT, G[1], 1);
-      let k = 0;
-      const arc = (cx, cz, r, from, to, steps, skip) => {
-        for (let i = skip ? 1 : 0; i <= steps; i++) {
-          const a = from + (to - from) * (i / steps);
-          pts[k++] = cx + Math.cos(a) * r;
-          pts[k++] = cz + Math.sin(a) * r;
-        }
-      };
-      const line = (x0, z0, x1, z1, steps) => {
-        for (let i = 1; i <= steps; i++) {
-          const t2 = i / steps;
-          pts[k++] = x0 + (x1 - x0) * t2;
-          pts[k++] = z0 + (z1 - z0) * t2;
-        }
-      };
-      const FRONT = Math.PI / 2;
-      const gR = RG + HT;
-      arc(C2[0].x, C2[0].z, rL - HT, a1 + TURN, a1, SEG.p, false);
-      line(
-        C2[0].x + Math.cos(a1) * (rL - HT),
-        C2[0].z + Math.sin(a1) * (rL - HT),
-        G[0].x + Math.cos(a1) * gR,
-        G[0].z + Math.sin(a1) * gR,
-        SEG.l
-      );
-      arc(G[0].x, G[0].z, gR, a1, FRONT, SEG.g, true);
-      line(G[0].x, G[0].z + gR, G[1].x, G[1].z + gR, SEG.m);
-      arc(G[1].x, G[1].z, gR, FRONT, a2, SEG.g, true);
-      line(
-        G[1].x + Math.cos(a2) * gR,
-        G[1].z + Math.sin(a2) * gR,
-        C2[1].x + Math.cos(a2) * (rR - HT),
-        C2[1].z + Math.sin(a2) * (rR - HT),
-        SEG.l
-      );
-      arc(C2[1].x, C2[1].z, rR - HT, a2, a2 - TURN, SEG.p, true);
-    }
-    const HEAD_I = SEG.p + SEG.l + SEG.g + SEG.m / 2;
-    const ribbon = new Ribbon(SAMPLES, D.tapeW / 2, D.tTape / 2, HEAD_I);
-    const tapeMesh = new Mesh(ribbon.geo, M.tape);
-    tapeMesh.castShadow = false;
-    gTape.add(tapeMesh);
-    for (const sx of [1, -1]) {
-      gMid.add(mesh(latheCyl(RG, RG, 0.92, 0.03, 28), M.metal, sx * D.guide.x, 0, D.guide.z));
-      gMid.add(mesh(latheCyl(RG + 0.045, RG + 0.045, 0.06, 0.018, 28), M.metalDark, sx * D.guide.x, 0.4, D.guide.z));
-      gMid.add(mesh(latheCyl(0.4, 0.4, 0.6, 0.05, 32), M.rubber, sx * (D.slot[0] + D.slot[1]) / 2, -0.02, D.guide.z - 0.06));
-    }
-    gMid.add(mesh(box(1.05, 0.58, 0.16, 0.05), M.felt, 0, 0, D.guide.z - 0.14));
-    const spring = mesh(box(1.3, 0.7, 0.035, 0.02), M.metalDark, 0, 0, D.guide.z - 0.28);
-    spring.rotation.x = 0.2;
-    gMid.add(spring);
-    gMid.add(mesh(box(2.42, 0.86, 0.035, 0.02), M.metalDark, 0, 0, D.guide.z - 0.4));
-    const A_TOTAL = Math.PI * (D.rMax ** 2 - D.rHub ** 2) * 2;
-    const radius = (a) => Math.sqrt(Math.max(a, 0) / Math.PI + D.rHub ** 2);
-    const TAPE_LEN = A_TOTAL / D.tTape;
-    const LEAD = TAPE_LEN * D.lead;
-    const STRIP = TAPE_LEN + LEAD * 2;
-    M.tape.alphaMap.repeat.x = 1 / STRIP;
-    const REW_SECONDS = 8.5;
     const st = {
-      areaL: A_TOTAL,
-      rL: 0,
-      rR: 0,
       playing: false,
+      time: 0,
+      duration: 0,
       dir: -1,
+      driven: false,
       explode: 0,
       explodeTarget: 0,
       flip: 0,
       flipTarget: 0,
-      time: 0,
-      duration: A_TOTAL / (D.tTape * D.v),
-      driven: false
+      label: { title, artist, album, minutes },
+      progress: 0,
+      flare: 0
     };
-    st.rL = radius(st.areaL);
-    st.rR = radius(A_TOTAL - st.areaL);
-    fillPath(st.rL, st.rR);
-    ribbon.setPath(pts);
-    function alignTape() {
-      const s0 = (A_TOTAL - st.areaL) / D.tTape;
-      const off = s0 / D.tile % 1;
-      M.tape.map.offset.x = off;
-      M.tape.roughnessMap.offset.x = off;
-      M.tape.normalMap.offset.x = off;
-      M.tape.alphaMap.offset.x = (LEAD + s0) / STRIP;
+    const materials = [];
+    const M = (opt) => {
+      const m = new MeshStandardMaterial({ toneMapped: true, ...opt });
+      materials.push(m);
+      return m;
+    };
+    const iron = M({ color: 2828080, roughness: 0.55, metalness: 0.72 });
+    const wax = M({ color: 15327178, roughness: 0.62 });
+    const flameMat = new MeshBasicMaterial({ color: 10482412, toneMapped: false });
+    const haloMat = new MeshBasicMaterial({
+      color: 9431280,
+      toneMapped: false,
+      transparent: true,
+      opacity: 0.85,
+      side: DoubleSide,
+      depthWrite: false
+    });
+    const flameOf = (h) => {
+      const g = new Group();
+      const outer = new Mesh(new ConeGeometry(0.1, h, 8), flameMat);
+      outer.position.y = h / 2;
+      const core = new Mesh(
+        new ConeGeometry(0.05, h * 0.55, 8),
+        new MeshBasicMaterial({ color: 15400957, toneMapped: false })
+      );
+      core.position.y = h * 0.3;
+      g.add(outer, core);
+      return g;
+    };
+    for (let i = 0; i < 3; i++) {
+      const a = i * TAU / 3 + 0.5;
+      const foot = new Mesh(new BoxGeometry(0.09, 0.08, 1.05), iron);
+      foot.position.set(Math.sin(a) * 0.42, 0.05, Math.cos(a) * 0.42);
+      foot.rotation.y = a + Math.PI / 2;
+      foot.castShadow = true;
+      const strut = new Mesh(new CylinderGeometry(0.035, 0.05, 0.85, 6), iron);
+      strut.position.set(Math.sin(a) * 0.26, 0.45, Math.cos(a) * 0.26);
+      strut.rotation.x = Math.sin(a) * 0.18;
+      strut.rotation.z = -Math.cos(a) * 0.18;
+      strut.castShadow = true;
+      root.add(foot, strut);
     }
-    alignTape();
-    const lastPack = [-1, -1];
-    function alignPack(i) {
-      const r = i ? st.rR : st.rL;
-      if (Math.abs(r - lastPack[i]) < 2e-3) return;
-      lastPack[i] = r;
-      const body = r - D.tTape;
-      const s = 2 * body * EDGE_PITCH / D.tTape;
-      const src = reels[i].face0;
-      for (const disc of reels[i].faces) {
-        const uv = disc.geometry.attributes.uv;
-        for (let k = 0; k < uv.array.length; k++) uv.array[k] = 0.5 + (src[k] - 0.5) * s;
-        uv.needsUpdate = true;
+    const pole = new Mesh(new CylinderGeometry(0.055, 0.075, 2.6, 8), iron);
+    pole.position.y = 1.3;
+    pole.castShadow = true;
+    root.add(pole);
+    const ringPivot = new Group();
+    ringPivot.position.y = 2.85;
+    const rim = new Mesh(new TorusGeometry(0.92, 0.075, 10, 40), iron);
+    rim.rotation.x = Math.PI / 2;
+    rim.castShadow = true;
+    ringPivot.add(rim);
+    const flames = [];
+    for (let i = 0; i < 5; i++) {
+      const a = i * TAU / 5;
+      const h = 0.42 + 0.13 * (i * 7 % 3);
+      const candle = new Mesh(new CylinderGeometry(0.085, 0.095, h, 10), wax);
+      candle.position.set(Math.sin(a) * 0.92, h / 2 + 0.06, Math.cos(a) * 0.92);
+      candle.castShadow = true;
+      const wick = new Mesh(new CylinderGeometry(0.012, 0.012, 0.09, 5), iron);
+      wick.position.set(Math.sin(a) * 0.92, h + 0.1, Math.cos(a) * 0.92);
+      const fl = flameOf(0.55);
+      fl.position.set(Math.sin(a) * 0.92, h + 0.12, Math.cos(a) * 0.92);
+      fl.scale.setScalar(0.16);
+      ringPivot.add(candle, wick, fl);
+      flames.push(fl);
+    }
+    root.add(ringPivot);
+    const haloPivot = new Group();
+    haloPivot.position.y = 2.85;
+    haloPivot.rotation.x = -Math.PI / 2;
+    let haloMesh = null, haloAt = -1;
+    function rebuildHalo(f) {
+      if (Math.abs(f - haloAt) < 4e-3 && haloMesh) return;
+      haloAt = f;
+      if (haloMesh) {
+        haloPivot.remove(haloMesh);
+        haloMesh.geometry.dispose();
       }
-      const wall = reels[i].side.geometry.attributes.uv;
-      const w0 = reels[i].wall0;
-      const tiles = Math.max(2, Math.round(Math.PI * 2 * body / D.tile));
-      for (let k = 0; k < w0.length; k++) wall.array[k * 2] = w0[k] * tiles;
-      wall.needsUpdate = true;
+      const geo = new RingGeometry(1.14, 1.26, 48, 1, Math.PI / 2, Math.max(1e-3, f * TAU));
+      haloMesh = new Mesh(geo, haloMat);
+      haloPivot.add(haloMesh);
     }
-    alignPack(0);
-    alignPack(1);
-    const anchor = (parent, x, y, z) => {
-      const o = new Object3D();
-      o.position.set(x, y, z);
-      parent.add(o);
-      return o;
-    };
-    const anchors = {
-      shell: anchor(topPlate, 4.3, 0.62, -2.15),
-      glass: anchor(glass, 1.35, 0.6, 1.05),
-      tape: anchor(tapeMesh, 0.05, 0.06, D.guide.z),
-      hub: anchor(reels[0].grp, 0.3, 0.45, 0.2),
-      pack: anchor(reels[1].grp, 0.95, 0.19, 0.35),
-      screw: anchor(screwd, D.podX, yBotFace - 0.02, -D.podZ)
-    };
-    const EXPLODE = [[labA, 3.7], [glass, 3.05], [topPlate, 2.25], [gTape, -1.1], [botPlate, -2.25], [labB, -3.7], [screwd, -2.25]];
-    const baseY = new Map(EXPLODE.map(([o]) => [o, o.position.y]));
-    function setProgress(frac) {
-      st.areaL = clamp2(A_TOTAL * (1 - clamp2(frac, 0, 1)), 0, A_TOTAL);
-      st.driven = true;
+    rebuildHalo(0);
+    root.add(haloPivot);
+    const glow = new PointLight(9431280, 0.12, 9, 2);
+    glow.position.y = 3.15;
+    root.add(glow);
+    const baseY = floorY;
+    const stand = new Group();
+    stand.position.set(5.6, baseY, 2.2);
+    root.add(stand);
+    for (const child of [...root.children]) {
+      if (child !== stand) stand.add(child);
     }
-    let lastR = -1;
-    let spinArea = st.areaL;
-    const foldAngle = (a) => a % (Math.PI * 2);
+    const assembly = root;
+    const parts = { reels: [{ spin: ringPivot }, { spin: haloPivot }] };
+    let t2 = 0;
+    const REW_SECONDS = 8.5;
     function update(dt) {
+      t2 += dt;
       if (st.playing && !st.driven) {
+        const dur = Number.isFinite(st.duration) && st.duration > 0 ? st.duration : 0;
+        const at = Number.isFinite(st.time) ? st.time : 0;
         if (st.dir < 0) {
-          st.areaL = Math.max(0, st.areaL - A_TOTAL / Math.max(st.duration, 1) * dt);
-          if (st.areaL <= 0) {
-            st.areaL = 0;
-            st.dir = 1;
-          }
+          if (dur > 0) st.time = Math.min(dur, at + dt);
         } else {
-          st.areaL = Math.min(A_TOTAL, st.areaL + A_TOTAL / REW_SECONDS * dt);
-          if (st.areaL >= A_TOTAL) {
-            st.areaL = A_TOTAL;
+          st.time = Math.max(0, at - dur / REW_SECONDS * dt);
+          if (st.time <= 0) {
+            st.time = 0;
             st.dir = -1;
           }
         }
       }
-      st.rL = radius(st.areaL);
-      st.rR = radius(A_TOTAL - st.areaL);
-      st.time = (A_TOTAL - st.areaL) / A_TOTAL * st.duration;
-      alignTape();
-      const dA = (st.areaL - spinArea) / Math.max(dt, 1e-4);
-      spinArea = st.areaL;
-      if (Math.abs(dA) > 1e-9) {
-        const vTape = -dA / D.tTape;
-        reels[0].spin.rotation.y = foldAngle(reels[0].spin.rotation.y + vTape / Math.max(st.rL, 0.25) * dt);
-        reels[1].spin.rotation.y = foldAngle(reels[1].spin.rotation.y + vTape / Math.max(st.rR, 0.25) * dt);
+      st.explode += (st.explodeTarget - st.explode) * Math.min(1, dt * 3.2);
+      st.flip += (st.flipTarget - st.flip) * Math.min(1, dt * 3.2);
+      const target = st.playing ? 1 : 0.16;
+      for (const f of flames) {
+        const cur2 = f.scale.x;
+        const next = cur2 + (target - cur2) * Math.min(1, dt * 2.2);
+        const n = 0.9 + 0.1 * Math.sin(t2 * 9.1 + f.position.x * 5.3) + 0.06 * Math.sin(t2 * 17.3 + f.position.z * 4.1);
+        const s = next * n * (1 + st.flare * 0.5);
+        f.scale.set(s, Math.max(0.05, s) * (0.92 + 0.16 * n), s);
       }
-      const bl = st.rL - D.tTape, br = st.rR - D.tTape;
-      reels[0].pack.scale.set(bl, 1, bl);
-      reels[1].pack.scale.set(br, 1, br);
-      alignPack(0);
-      alignPack(1);
-      if (lastR < 0 || Math.abs(st.rL - lastR) > 15e-4 || Math.abs(st.rR - lastR) > 15e-4) {
-        fillPath(st.rL, st.rR);
-        ribbon.setPath(pts);
-        lastR = st.rL;
-      }
-      st.explode = damp2(st.explode, st.explodeTarget, 3.4, dt);
-      st.flip = damp2(st.flip, st.flipTarget, 4.2, dt);
-      const e = st.explode;
-      for (const [o, y] of EXPLODE) o.position.y = baseY.get(o) + y * e;
-      assembly.rotation.x = -Math.PI * st.flip;
-      assembly.position.y = Math.sin(Math.PI * st.flip) * 2.75;
+      st.flare = Math.max(0, st.flare - dt * 1.4);
+      ringPivot.rotation.y += (st.playing ? 0.22 : 0.02) * dt * (1 + st.flare * 2);
+      glow.intensity = 0.12 + (st.playing ? 1.15 : 0) + st.flare * 0.8;
+      stand.position.y = baseY + Math.sin(t2 * 0.8) * 0.05;
       return st;
     }
     return {
       root,
       assembly,
-      materials: M,
-      anchors,
-      st,
+      materials,
+      headMaterials: [],
+      anchors: {},
+      parts,
+      ready: true,
+      get st() {
+        return st;
+      },
       update,
-      setProgress,
-      A_TOTAL,
-      /* The write head's own materials. They are copies of the label materials and
-         are *not* part of `materials`, which is what the probe and the room's IBL
-         walk — so main.js has to hand them the same envMap and the same
-         envMapIntensity the plates get, or the print they reveal is lit by a
-         different room than the plate under it (see bindProbe). */
-      headMaterials: headLayers.map((L) => L.mat),
-      setExplode: (on) => {
-        st.explodeTarget = on ? 1 : 0;
+      setProgress(f) {
+        st.progress = f;
+        if (st.duration > 0) st.time = f * st.duration;
+        rebuildHalo(f);
       },
-      setFlip: (on) => {
-        st.flipTarget = on ? 1 : 0;
-      },
-      /* ---- the write head, driven from outside ---------------------------
-         `setLabel` draws a new print and parks it off the leading edge,
-         `sweepLabel` walks the window across the card (0 → 1), and `commitLabel`
-         hands the print over to the plate itself. Nothing here animates on its
-         own — the caller owns the clock, so a sweep can be interrupted, skipped
-         or run instantly without this needing to know. */
-      setLabel(opts) {
-        const neu = [makeLabelMap("A", opts), makeLabelMap("B", opts)];
-        const old = [M.labelA.map, M.labelB.map];
-        head.x = HEAD_START_X;
-        head.enter = 0;
-        head.dying = false;
-        head.fade = 0;
-        for (let i = 0; i < 2; i++) {
-          headLayers[i].mat.map = neu[i];
-          headLayers[i].o.visible = true;
-          headLayers[i].st.visible = true;
+      setLabel(label) {
+        st.label = { ...st.label, ...label };
+        if (label.minutes) {
+          const d = parseFloat(label.minutes);
+          if (isFinite(d) && d > 0 && st.duration <= 0) st.duration = d;
         }
-        paintHead();
-        return { neu, old };
+        st.flare = Math.min(1, st.flare + 0.5);
       },
-      sweepLabel(p) {
-        const k = clamp2(p, 0, 1);
-        const off = 1.05 - k * 1.15;
-        for (const L of headLayers) {
-          L.mat.alphaMap.offset.x = 0.5 + off;
-        }
-        const x = (0.45 - off) * (D.W - D.labelInset * 2);
-        head.x = Math.min(x, HEAD_STOP_X);
-        head.enter = smoothstep2(0.03, 0.14, k);
-        if (x >= HEAD_END_X) head.dying = true;
-        paintHead();
-      },
-      /** The light's own clock, ticked once a frame by the caller. A no-op until
-          the head has reached the end of the label, and it keeps running after the
-          sweep has settled — the print is finished before the light is, and a light
-          that vanished on the frame the print landed read as a cut, not as a fade. */
-      stepHead(dt) {
-        if (!head.dying || head.fade >= 1) return;
-        head.fade = Math.min(1, head.fade + dt / HEAD_FADE);
-        paintHead();
-        if (head.fade >= 1) for (const L of headLayers) L.st.visible = false;
-      },
-      /** the print changes hands here, with the window already past the card. The
-          textures it replaces are handed back by `setLabel` and must be kept alive
-          until every material that points at them has been moved — the ghost
-          copies of these plates hold the same map.
-          The light is deliberately left alone: if it is still on its way out, it
-          finishes that on the card (stepHead). */
       commitLabel() {
-        M.labelA.map = headLayers[0].mat.map;
-        M.labelB.map = headLayers[1].mat.map;
-        for (const L of headLayers) L.o.visible = false;
+        st.flare = 1;
       },
-      /** One frame with both head layers on screen and the window wide open, over
-          the print that is already on the card — nothing changes on screen, but
-          the two programs then exist, instead of being built on the first frame of
-          the first sweep (which is a stutter in the middle of a move). Off is also
-          how a cancelled swap is put away. */
-      warmLabel(on) {
-        for (const L of headLayers) {
-          L.o.visible = on;
-          L.st.visible = on;
-          L.st.material.opacity = 0;
-          L.mat.alphaMap.offset.x = on ? 0.4 : 1.55;
-          L.st.position.x = HEAD_START_X;
-          L.st.scale.x = 1;
-        }
-        head.x = HEAD_START_X;
-        head.enter = 0;
-        head.dying = false;
-        head.fade = 0;
+      sweepLabel() {
       },
-      parts: { gTop, gBot, gMid, gTape, topPlate, botPlate, labA, labB, glass, tapeMesh, reels, screwd },
-      dispose: () => assembly.traverse((o) => {
-        if (o.isMesh) o.geometry.dispose?.();
-      })
+      // 写头的差事没有了：换曲的可见过渡归面板的雾涌
+      stepHead() {
+      },
+      warmLabel() {
+      },
+      setExplode(b) {
+        st.explodeTarget = b ? 1 : 0;
+      },
+      setFlip(b) {
+        st.flipTarget = b ? 1 : 0;
+      }
     };
   }
 
@@ -32211,10 +29259,10 @@ void main() {
       transparent: true,
       depthWrite: false
     });
-    const mesh2 = new Mesh(geo, material);
-    mesh2.position.y = y;
-    mesh2.renderOrder = 1;
-    mesh2.frustumCulled = false;
+    const mesh = new Mesh(geo, material);
+    mesh.position.y = y;
+    mesh.renderOrder = 1;
+    mesh.frustumCulled = false;
     const dpr = Math.min(devicePixelRatio || 1, 1.5);
     const rt = new WebGLRenderTarget(
       Math.round(innerWidth * 0.6 * dpr),
@@ -32257,14 +29305,14 @@ void main() {
       if (!force && warmed && tick++ % interval !== 0) return;
       warmed = true;
       camera2.updateMatrixWorld();
-      mesh2.updateMatrixWorld();
+      mesh.updateMatrixWorld();
       camPos.setFromMatrixPosition(camera2.matrixWorld);
-      if (camPos.y <= mesh2.position.y + 0.05) return;
+      if (camPos.y <= mesh.position.y + 0.05) return;
       rot.extractRotation(camera2.matrixWorld);
       t2.set(0, 0, -1).applyMatrix4(rot).add(camPos);
       v.copy(camPos);
-      v.y = 2 * mesh2.position.y - v.y;
-      t2.set(t2.x, 2 * mesh2.position.y - t2.y, t2.z);
+      v.y = 2 * mesh.position.y - v.y;
+      t2.set(t2.x, 2 * mesh.position.y - t2.y, t2.z);
       virtual.position.copy(v);
       virtual.up.set(0, 1, 0);
       virtual.lookAt(t2);
@@ -32289,22 +29337,22 @@ void main() {
         virtual.projectionMatrix.copy(camera2.projectionMatrix);
       }
       virtual.matrixWorldInverse.copy(virtual.matrixWorld).invert();
-      reflectMatrix.copy(bias).multiply(virtual.projectionMatrix).multiply(virtual.matrixWorldInverse).multiply(mesh2.matrixWorld);
+      reflectMatrix.copy(bias).multiply(virtual.projectionMatrix).multiply(virtual.matrixWorldInverse).multiply(mesh.matrixWorld);
       uniforms.textureMatrix.value.copy(reflectMatrix);
       const prev = renderer2.getRenderTarget();
-      mesh2.visible = false;
+      mesh.visible = false;
       renderer2.setRenderTarget(rt);
       renderer2.render(scene2, virtual);
       renderer2.setRenderTarget(prev);
-      mesh2.visible = true;
+      mesh.visible = true;
     }
     return {
-      mesh: mesh2,
+      mesh,
       uniforms,
       update,
       setEnabled(on) {
         enabled = on;
-        mesh2.visible = on;
+        mesh.visible = on;
         uniforms.uOpacity.value = on ? 1 : 0;
       },
       refresh() {
@@ -32318,7 +29366,7 @@ void main() {
       setTheme({ color, mix: m, y: yy }) {
         if (color !== void 0) uniforms.color.value.set(color);
         if (m !== void 0) uniforms.uMix.value = m;
-        if (yy !== void 0) mesh2.position.y = yy;
+        if (yy !== void 0) mesh.position.y = yy;
       },
       dispose() {
         rt.dispose();
@@ -33908,6 +30956,637 @@ void main() {
     return { composer: composer2, render: render2, ao, bloom: bloom2, glare, grade: grade2, output, depthTexture };
   }
 
+  // src/castle.js
+  function rng2(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a |= 0;
+      a = a + 1831565813 | 0;
+      let t2 = Math.imul(a ^ a >>> 15, 1 | a);
+      t2 = t2 + Math.imul(t2 ^ t2 >>> 7, 61 | t2) ^ t2;
+      return ((t2 ^ t2 >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  var TAU2 = Math.PI * 2;
+  function ashlarCanvas(w, h, base, seed) {
+    const cv = document.createElement("canvas");
+    cv.width = w;
+    cv.height = h;
+    const g = cv.getContext("2d");
+    g.fillStyle = "rgb(56,50,42)";
+    g.fillRect(0, 0, w, h);
+    const r = rng2(seed);
+    const rows = 7, rh = h / rows, n = 5, bw = w / n;
+    for (let row = 0; row < rows; row++) {
+      const off = row % 2 * bw * 0.5;
+      for (let i = -1; i <= n; i++) {
+        const x = i * bw + off, y = row * rh;
+        const j = (r() - 0.5) * 26;
+        g.fillStyle = `rgb(${base[0] + j | 0},${base[1] + j * 0.9 | 0},${base[2] + j * 0.8 | 0})`;
+        g.fillRect(x + 3, y + 3, bw - 6, rh - 6);
+        g.fillStyle = "rgba(255,250,238,0.16)";
+        g.fillRect(x + 3, y + 3, bw - 6, 3.5);
+        g.fillStyle = "rgba(20,16,10,0.22)";
+        g.fillRect(x + 3, y + rh - 6.5, bw - 6, 3.5);
+      }
+    }
+    const n256 = fbm(64, 4, seed + 7, 0.55);
+    for (let y = 0; y < 64; y++) {
+      for (let x = 0; x < 64; x++) {
+        const v = n256[y * 64 + x];
+        if (v > 0.62) {
+          g.fillStyle = `rgba(28,24,18,${((v - 0.62) * 0.55).toFixed(3)})`;
+          g.fillRect(x * (w / 64), y * (h / 64), w / 64 + 1, h / 64 + 1);
+        }
+      }
+    }
+    grain(g, w, h, 0.05, seed + 3);
+    return cv;
+  }
+  function flagstoneCanvas(size, base, seed) {
+    const cv = document.createElement("canvas");
+    cv.width = size;
+    cv.height = size;
+    const g = cv.getContext("2d");
+    g.fillStyle = "rgb(40,36,30)";
+    g.fillRect(0, 0, size, size);
+    const r = rng2(seed);
+    const n = 4, cell = size / n;
+    for (let row = 0; row < n; row++) {
+      for (let col = 0; col < n; col++) {
+        const j = (r() - 0.5) * 22;
+        g.fillStyle = `rgb(${base[0] + j | 0},${base[1] + j * 0.9 | 0},${base[2] + j * 0.8 | 0})`;
+        const inset = 3 + r() * 3;
+        g.fillRect(col * cell + inset, row * cell + inset, cell - inset * 2, cell - inset * 2);
+        g.fillStyle = "rgba(255,250,238,0.10)";
+        g.fillRect(col * cell + inset, row * cell + inset, cell - inset * 2, 3);
+      }
+    }
+    const n256 = fbm(64, 4, seed + 11, 0.55);
+    for (let y = 0; y < 64; y++) {
+      for (let x = 0; x < 64; x++) {
+        const v = n256[y * 64 + x];
+        if (v > 0.6) {
+          g.fillStyle = `rgba(24,20,16,${((v - 0.6) * 0.5).toFixed(3)})`;
+          g.fillRect(x * (size / 64), y * (size / 64), size / 64 + 1, size / 64 + 1);
+        }
+      }
+    }
+    grain(g, size, size, 0.05, seed + 5);
+    return cv;
+  }
+  function plankCanvas(w, h, seed) {
+    const cv = document.createElement("canvas");
+    cv.width = w;
+    cv.height = h;
+    const g = cv.getContext("2d");
+    const r = rng2(seed);
+    const boards = 6, bw = w / boards;
+    for (let i = 0; i < boards; i++) {
+      const j = (r() - 0.5) * 20;
+      g.fillStyle = `rgb(${96 + j | 0},${68 + j * 0.8 | 0},${44 + j * 0.6 | 0})`;
+      g.fillRect(i * bw, 0, bw, h);
+      g.strokeStyle = "rgba(30,20,12,0.55)";
+      g.lineWidth = 2.5;
+      g.strokeRect(i * bw + 1, -4, bw - 2, h + 8);
+      g.strokeStyle = "rgba(50,34,20,0.28)";
+      g.lineWidth = 1.2;
+      for (let k = 0; k < 5; k++) {
+        const x = i * bw + 4 + r() * (bw - 8);
+        g.beginPath();
+        g.moveTo(x, 0);
+        g.bezierCurveTo(x + 3, h * 0.33, x - 3, h * 0.66, x + 2, h);
+        g.stroke();
+      }
+    }
+    for (const y of [h * 0.22, h * 0.72]) {
+      g.fillStyle = "rgb(52,50,54)";
+      g.fillRect(0, y, w, h * 0.055);
+      g.fillStyle = "rgb(88,86,92)";
+      for (let x = w * 0.06; x < w; x += w / 9) {
+        g.beginPath();
+        g.arc(x, y + h * 0.027, h * 0.011, 0, TAU2);
+        g.fill();
+      }
+    }
+    grain(g, w, h, 0.05, seed + 9);
+    return cv;
+  }
+  function bannerCanvas(w, h, c1, c2, seed) {
+    const cv = document.createElement("canvas");
+    cv.width = w;
+    cv.height = h;
+    const g = cv.getContext("2d");
+    const A = "#" + c1.toString(16).padStart(6, "0");
+    const Bc = "#" + c2.toString(16).padStart(6, "0");
+    g.fillStyle = A;
+    g.fillRect(0, 0, w, h);
+    g.save();
+    g.beginPath();
+    g.rect(0, 0, w, h);
+    g.clip();
+    g.strokeStyle = Bc;
+    g.lineWidth = w * 0.3;
+    g.beginPath();
+    g.moveTo(-w * 0.1, h * 1.05);
+    g.lineTo(w * 1.1, -h * 0.05);
+    g.stroke();
+    g.restore();
+    g.fillStyle = Bc;
+    for (const t2 of [0.26, 0.52, 0.78]) {
+      g.beginPath();
+      g.arc(w * t2, h * (1.02 - t2 * 1.05), w * 0.115, 0, TAU2);
+      g.fill();
+      g.strokeStyle = "rgba(0,0,0,0.35)";
+      g.lineWidth = w * 0.02;
+      g.stroke();
+    }
+    g.strokeStyle = "rgba(0,0,0,0.4)";
+    g.lineWidth = w * 0.06;
+    g.strokeRect(g.lineWidth / 2, g.lineWidth / 2, w - g.lineWidth, h - g.lineWidth);
+    grain(g, w, h, 0.07, seed);
+    return cv;
+  }
+  function pointedArchShape(w, h, ys) {
+    const s = new Shape();
+    s.moveTo(-w / 2, 0);
+    s.lineTo(-w / 2, ys);
+    s.quadraticCurveTo(-w / 2, ys + (h - ys) * 0.42, 0, h);
+    s.quadraticCurveTo(w / 2, ys + (h - ys) * 0.42, w / 2, ys);
+    s.lineTo(w / 2, 0);
+    s.closePath();
+    return s;
+  }
+  function roundArchShape(w, h, ys, x0 = 0, y0 = 0) {
+    const s = new Shape();
+    s.moveTo(x0 - w / 2, y0);
+    s.lineTo(x0 - w / 2, ys);
+    s.absarc(x0, ys, w / 2, Math.PI, 0, true);
+    s.lineTo(x0 + w / 2, y0);
+    s.closePath();
+    return s;
+  }
+  function bannerShape(w, h, v) {
+    const s = new Shape();
+    s.moveTo(-w / 2, 0);
+    s.lineTo(-w / 2, -h);
+    s.lineTo(0, -h + v);
+    s.lineTo(w / 2, -h);
+    s.lineTo(w / 2, 0);
+    s.closePath();
+    return s;
+  }
+  function fitUV(geo, w) {
+    const uv = geo.attributes.uv, pos = geo.attributes.position;
+    let yMin = Infinity, yMax = -Infinity;
+    for (let i = 0; i < pos.count; i++) {
+      yMin = Math.min(yMin, pos.getY(i));
+      yMax = Math.max(yMax, pos.getY(i));
+    }
+    const span = Math.max(1e-6, yMax - yMin);
+    for (let i = 0; i < uv.count; i++) {
+      uv.setXY(i, uv.getX(i) / w + 0.5, (uv.getY(i) - yMin) / span);
+    }
+    uv.needsUpdate = true;
+  }
+  var PRESETS = {
+    /* 日光大厅：暖砂岩、高窗灌进白昼、火把熄着、挂毯红金。
+       `amb` 是厅自己的石壁漫射（HemisphereLight）—— RIG 在上一轮为救头发的
+       明暗范围调得很低，墙靠它读不出来；厅里的漫反射归城堡自己管。 */
+    studio: {
+      wall: 14208178,
+      floor: 12432026,
+      glow: 16774102,
+      glowI: 1.35,
+      torch: 0,
+      chand: 0.3,
+      fire: 0.9,
+      amb: 0.8,
+      shaft: 0.13,
+      shaftC: 16773330,
+      fog: 13616816,
+      fogN: 46,
+      fogF: 145,
+      bannerI: 1
+    },
+    /* 烛光夜厅：冷石浸在夜里，月亮从高窗进来一线，火把、壁炉与吊灯当家 */
+    noir: {
+      wall: 6972020,
+      floor: 5722210,
+      glow: 9676262,
+      glowI: 0.55,
+      torch: 2.4,
+      chand: 1.1,
+      fire: 2.8,
+      amb: 0.3,
+      shaft: 0.055,
+      shaftC: 10466047,
+      fog: 854803,
+      fogN: 30,
+      fogF: 98,
+      bannerI: 0.5
+    },
+    /* 冰渊晨雾：冷灰石、雾从窗缝里漫进来、火把只剩一点 */
+    abyss: {
+      wall: 11713727,
+      floor: 10266278,
+      glow: 14281972,
+      glowI: 1,
+      torch: 0.5,
+      chand: 0.15,
+      fire: 1,
+      amb: 0.55,
+      shaft: 0.15,
+      shaftC: 14478580,
+      fog: 11845830,
+      fogN: 38,
+      fogF: 128,
+      bannerI: 0.85
+    }
+  };
+  function createCastle({ floorY = 0 } = {}) {
+    const group = new Group();
+    const RW = 18.5;
+    const AP = RW * Math.cos(Math.PI / 8);
+    const WW = 2 * RW * Math.sin(Math.PI / 8) + 0.5;
+    const WH = 21;
+    const N_WALL = 8;
+    const FP = { wi: 5, x: -2.8, y: 0.05, z: 0.3, ow: 4.6, oh: 3.6, iw: 2.6, ih: 2.4, ys: 1.5 };
+    const lerpable = [];
+    const flameKinds = { torch: [], chand: [], fire: [] };
+    const torches = [];
+    const flicker = [];
+    const segs = [];
+    const C2 = (hex) => new Color(hex);
+    const v3 = (x, y, z) => new Vector3(x, y, z);
+    const wallTex = new CanvasTexture(ashlarCanvas(1024, 576, [206, 196, 172], 5));
+    wallTex.colorSpace = SRGBColorSpace;
+    wallTex.anisotropy = 8;
+    wallTex.wrapS = wallTex.wrapT = RepeatWrapping;
+    wallTex.repeat.set(1, 1.45);
+    const wallMat = new MeshStandardMaterial({ map: wallTex, roughness: 0.96, metalness: 0 });
+    lerpable.push({ color: wallMat.color, key: "wall" });
+    const pillarMat = new MeshStandardMaterial({ color: 9076840, roughness: 0.97 });
+    const frameMat = new MeshStandardMaterial({ color: 4867126, roughness: 0.95 });
+    const ironMat = new MeshStandardMaterial({ color: 2565162, roughness: 0.6, metalness: 0.6 });
+    const stickMat = new MeshStandardMaterial({ color: 4863268, roughness: 0.9 });
+    const flameMat = new MeshBasicMaterial({ color: 16757852, toneMapped: false });
+    const glowMat = new MeshBasicMaterial({ color: 16774102, toneMapped: false });
+    lerpable.push({ color: glowMat.color, key: "glow", mul: "glowI" });
+    const shaftMat = new MeshBasicMaterial({
+      color: 16773330,
+      transparent: true,
+      opacity: 0.12,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      side: DoubleSide
+    });
+    lerpable.push({ color: shaftMat.color, key: "shaftC" });
+    lerpable.push({ scalar: shaftMat, key: "shaft", prop: "opacity" });
+    function wallAngle(i) {
+      return i * TAU2 / N_WALL;
+    }
+    for (let i = 0; i < N_WALL; i++) {
+      const a = wallAngle(i);
+      const g = new Group();
+      g.position.set(Math.sin(a) * AP, floorY, Math.cos(a) * AP);
+      g.rotation.y = a + Math.PI;
+      let wallGeo;
+      if (i === FP.wi) {
+        const rect = new Shape();
+        rect.moveTo(-WW / 2, -WH / 2);
+        rect.lineTo(WW / 2, -WH / 2);
+        rect.lineTo(WW / 2, WH / 2);
+        rect.lineTo(-WW / 2, WH / 2);
+        rect.closePath();
+        rect.holes.push(roundArchShape(
+          FP.iw,
+          FP.ih,
+          FP.y + 1.1 - WH / 2,
+          FP.x,
+          FP.y + 0.05 - WH / 2
+        ));
+        wallGeo = new ShapeGeometry(rect, 24);
+        fitUV(wallGeo, WW);
+      } else {
+        wallGeo = new PlaneGeometry(WW, WH);
+      }
+      const wall = new Mesh(wallGeo, wallMat);
+      wall.position.y = WH / 2;
+      g.add(wall);
+      const pillar = new Mesh(new BoxGeometry(1, WH + 0.3, 1), pillarMat);
+      pillar.position.set(-WW / 2 + 0.2, (WH + 0.3) / 2 - 0.15, -0.1);
+      g.add(pillar);
+      const plinth = new Mesh(new BoxGeometry(WW - 0.6, 1, 0.55), pillarMat);
+      plinth.position.set(0, 0.5, 0.1);
+      g.add(plinth);
+      const cornice = new Mesh(new BoxGeometry(WW - 0.6, 0.6, 0.55), pillarMat);
+      cornice.position.set(0, WH - 0.3, 0.1);
+      g.add(cornice);
+      group.add(g);
+      segs.push({
+        group: g,
+        n: v3(-Math.sin(a), 0, -Math.cos(a)),
+        // 指向厅心的内法线
+        p: v3(Math.sin(a) * AP, floorY + WH / 2, Math.cos(a) * AP)
+      });
+    }
+    const above = new Group();
+    const ceil = new Mesh(
+      new PlaneGeometry(80, 80),
+      new MeshStandardMaterial({ color: 2367258, roughness: 1 })
+    );
+    ceil.rotation.x = Math.PI / 2;
+    ceil.position.y = WH + 0.2;
+    above.add(ceil);
+    const beamMat = new MeshStandardMaterial({ color: 3812384, roughness: 0.92 });
+    for (const ry of [0, Math.PI / 2, Math.PI / 4, -Math.PI / 4]) {
+      const beam = new Mesh(new BoxGeometry(64, 0.8, 1), beamMat);
+      beam.position.y = WH - 0.4;
+      beam.rotation.y = ry;
+      above.add(beam);
+    }
+    above.position.y = floorY;
+    group.add(above);
+    const floorTex = new CanvasTexture(flagstoneCanvas(1024, [148, 140, 124], 9));
+    floorTex.colorSpace = SRGBColorSpace;
+    floorTex.wrapS = floorTex.wrapT = RepeatWrapping;
+    floorTex.repeat.set(3, 3);
+    floorTex.anisotropy = 8;
+    const floorMat = new MeshStandardMaterial({ map: floorTex, roughness: 0.9, metalness: 0 });
+    lerpable.push({ color: floorMat.color, key: "floor" });
+    const floor = new Mesh(new CircleGeometry(RW + 2, 64), floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = floorY + 0.02;
+    floor.receiveShadow = true;
+    group.add(floor);
+    const winW = 4.6, winH = 8.8, winY = floorY + 4.4;
+    for (const wi of [4, 6]) {
+      const a = wallAngle(wi);
+      const g = new Group();
+      const arch = pointedArchShape(winW, winH, winH * 0.52);
+      const frame = new Mesh(new ShapeGeometry(arch), frameMat);
+      const pane = new Mesh(new ShapeGeometry(arch), glowMat);
+      pane.scale.set(0.84, 0.88, 1);
+      pane.position.set(0, 0.25, 0.05);
+      const mull = new Group();
+      for (const x of [-winW * 0.15, winW * 0.15]) {
+        const bar = new Mesh(new BoxGeometry(0.12, winH * 0.95, 0.1), ironMat);
+        bar.position.set(x, winH / 2, 0.11);
+        mull.add(bar);
+      }
+      for (const y of [winH * 0.32, winH * 0.56]) {
+        const bar = new Mesh(new BoxGeometry(winW * 0.6, 0.13, 0.1), ironMat);
+        bar.position.set(0, y, 0.11);
+        mull.add(bar);
+      }
+      const sill = new Mesh(new BoxGeometry(winW + 1.2, 0.42, 0.6), frameMat);
+      sill.position.set(0, -0.22, 0.15);
+      g.add(frame, pane, mull, sill);
+      g.position.set(winW * 0.18, winY - floorY, 0.4);
+      const bw = winW * 0.78, by = winH * 0.42;
+      const dy = floorY + 0.1 - winY - by;
+      const quad = new BufferGeometry();
+      const hw0 = bw / 2, hw1 = bw * 1.9 / 2;
+      quad.setAttribute("position", new Float32BufferAttribute([
+        -hw0,
+        0,
+        0,
+        hw0,
+        0,
+        0,
+        hw1,
+        dy,
+        7,
+        -hw1,
+        dy,
+        7
+      ], 3));
+      quad.setAttribute("uv", new Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2));
+      quad.setIndex([0, 1, 2, 0, 2, 3]);
+      quad.computeVertexNormals();
+      const shaft = new Mesh(quad, shaftMat);
+      shaft.position.set(0, by, 0.5);
+      g.add(shaft);
+      segs[wi].group.add(g);
+    }
+    {
+      const g = new Group();
+      const dw = 3.4, dh = 6.6, ys = dh - dw / 2;
+      const frame = new Mesh(new ShapeGeometry(roundArchShape(dw + 1, dh + 0.5, ys + 0.3)), frameMat);
+      const doorGeo = new ShapeGeometry(roundArchShape(dw, dh, ys));
+      const doorTex = new CanvasTexture(plankCanvas(512, 880, 13));
+      doorTex.colorSpace = SRGBColorSpace;
+      const door = new Mesh(doorGeo, new MeshStandardMaterial({ map: doorTex, roughness: 0.85 }));
+      fitUV(doorGeo, dw);
+      door.position.z = 0.14;
+      const ring2 = new Mesh(new TorusGeometry(0.3, 0.045, 8, 24), ironMat);
+      ring2.position.set(dw * 0.28, dh * 0.42, 0.24);
+      g.add(frame, door, ring2);
+      g.position.set(0, 0.02, 0.4);
+      segs[0].group.add(g);
+    }
+    const banMat = new MeshStandardMaterial({ roughness: 0.94 });
+    lerpable.push({ color: banMat.color, key: "banner", isMulti: true });
+    {
+      const texBanner = new CanvasTexture(bannerCanvas(256, 580, 9318191, 14201946, 17));
+      texBanner.colorSpace = SRGBColorSpace;
+      banMat.map = texBanner;
+      banMat.color.set(16777215);
+    }
+    const bannerGeo = new ShapeGeometry(bannerShape(2.2, 5.2, 1));
+    fitUV(bannerGeo, 2.2);
+    for (const wi of [3, 7]) {
+      const b = new Mesh(bannerGeo, banMat);
+      b.position.set(0, 11.6 - floorY, 0.45);
+      const rod = new Mesh(new CylinderGeometry(0.07, 0.07, 2.8, 10), ironMat);
+      rod.rotation.z = Math.PI / 2;
+      rod.position.set(0, 11.7 - floorY, 0.45);
+      segs[wi].group.add(b, rod);
+    }
+    for (const [wi, xoff] of [[5, -3.4], [5, 3.4], [0, WW * 0.3]]) {
+      const g = new Group();
+      const bracket = new Mesh(new BoxGeometry(0.34, 0.55, 0.3), ironMat);
+      const stick = new Mesh(new CylinderGeometry(0.055, 0.075, 0.95, 8), stickMat);
+      stick.position.set(0, 0.55, 0.24);
+      stick.rotation.x = -0.26;
+      const flame = new Mesh(new ConeGeometry(0.15, 0.5, 8), flameMat);
+      flame.position.set(0, 1.2, 0.38);
+      const flame2 = new Mesh(
+        new ConeGeometry(0.08, 0.27, 8),
+        new MeshBasicMaterial({ color: 16771504, toneMapped: false })
+      );
+      flame2.position.set(0, 1.15, 0.38);
+      const light = new PointLight(16751178, 0, 15, 2);
+      light.position.set(0, 1.45, 0.6);
+      g.add(bracket, stick, flame, flame2, light);
+      g.position.set(xoff, 4.9 - floorY, 0.5);
+      segs[wi].group.add(g);
+      flameKinds.torch.push(flame, flame2);
+      torches.push({ light, ph: wi * 3.1 });
+      flicker.push({ flame, ph: wi * 3.1 });
+    }
+    const chand = new Group();
+    const chandLight = new PointLight(16760954, 0, 20, 2);
+    chandLight.position.y = -0.4;
+    const ring = new Mesh(new TorusGeometry(1.7, 0.1, 10, 40), ironMat);
+    ring.rotation.x = Math.PI / 2;
+    chand.add(ring, chandLight);
+    lerpable.push({ scalar: chandLight, key: "chand", prop: "intensity" });
+    for (let i = 0; i < 6; i++) {
+      const a2 = i * TAU2 / 6;
+      const candle = new Mesh(
+        new CylinderGeometry(0.075, 0.085, 0.6, 8),
+        new MeshStandardMaterial({ color: 15260866, roughness: 0.7 })
+      );
+      candle.position.set(Math.sin(a2) * 1.7, 0.32, Math.cos(a2) * 1.7);
+      const cf = new Mesh(new ConeGeometry(0.07, 0.22, 8), flameMat);
+      cf.position.set(Math.sin(a2) * 1.7, 0.76, Math.cos(a2) * 1.7);
+      chand.add(candle, cf);
+      flameKinds.chand.push(cf);
+      flicker.push({ flame: cf, ph: a2 * 3 });
+    }
+    for (const dz of [-0.55, 0.55]) {
+      const chain = new Mesh(new CylinderGeometry(0.035, 0.035, 2.4, 6), ironMat);
+      chain.position.set(dz, 1.4, 0);
+      chand.add(chain);
+    }
+    chand.position.set(0, floorY + WH - 2.4, 0);
+    group.add(chand);
+    const fog = new Fog(13616816, 46, 145);
+    const hemi = new HemisphereLight(16774368, 6971214, 0.8);
+    group.add(hemi);
+    lerpable.push({ scalar: hemi, key: "amb", prop: "intensity" });
+    {
+      const a = wallAngle(FP.wi);
+      const g = new Group();
+      const { ow, oh, iw, ih, ys } = FP;
+      const outer = roundArchShape(ow, oh, ys);
+      outer.holes.push(roundArchShape(iw, ih, 1.1, 0, 0.05));
+      const ring2 = new Mesh(new ShapeGeometry(outer, 24), pillarMat);
+      ring2.position.z = 0.42;
+      g.add(ring2);
+      const charMat = new MeshStandardMaterial({ color: 1709072, roughness: 1 });
+      const back = new Mesh(new PlaneGeometry(iw, ih + 0.6), charMat);
+      back.position.set(0, (ih + 0.6) / 2, -1.05);
+      const sideL = new Mesh(new PlaneGeometry(1.1, ih), charMat);
+      sideL.position.set(-iw / 2, ih / 2, -0.5);
+      sideL.rotation.y = Math.PI / 2;
+      const sideR = sideL.clone();
+      sideR.position.x = iw / 2;
+      const topIn = new Mesh(new PlaneGeometry(iw, 1.1), charMat);
+      topIn.position.set(0, ih, -0.5);
+      topIn.rotation.x = Math.PI / 2;
+      const hearth = new Mesh(new BoxGeometry(iw, 0.22, 1.1), charMat);
+      hearth.position.set(0, 0.11, -0.5);
+      g.add(back, sideL, sideR, topIn, hearth);
+      const ember = new Mesh(
+        new PlaneGeometry(iw * 0.7, 0.5),
+        new MeshBasicMaterial({ color: 16742954, toneMapped: false })
+      );
+      ember.rotation.x = -Math.PI / 2;
+      ember.position.set(0, 0.24, -0.6);
+      g.add(ember);
+      const logMat = new MeshStandardMaterial({ color: 3022872, roughness: 0.95 });
+      for (const [lx, lr] of [[-0.35, 0.13], [0.3, 0.11]]) {
+        const log = new Mesh(new CylinderGeometry(lr, lr, 1.5, 7), logMat);
+        log.rotation.z = Math.PI / 2;
+        log.rotation.y = lx > 0 ? 0.35 : -0.3;
+        log.position.set(lx, 0.35, -0.55);
+        g.add(log);
+      }
+      const fireGroup = new Group();
+      for (const [fx, fh] of [[-0.32, 0.9], [0.05, 1.25], [0.4, 0.8]]) {
+        const fl = new Mesh(new ConeGeometry(0.22, fh, 8), flameMat);
+        fl.position.set(fx, 0.5 + fh / 2, -0.55);
+        fireGroup.add(fl);
+        flameKinds.fire.push(fl);
+        flicker.push({ flame: fl, ph: fx * 7 + 2 });
+      }
+      g.add(fireGroup);
+      const fireLight = new PointLight(16747068, 0, 13, 2);
+      fireLight.position.set(0, 1.1, 0.1);
+      g.add(fireLight);
+      torches.push({ light: fireLight, ph: 9.7, isFire: true });
+      const slab = new Mesh(new BoxGeometry(ow + 1.2, 0.16, 1.6), pillarMat);
+      slab.position.set(0, 0.08, 0.9);
+      g.add(slab);
+      const mantel = new Mesh(new BoxGeometry(ow + 0.8, 0.32, 0.8), beamMat);
+      mantel.position.set(0, oh + 0.5, 0.3);
+      g.add(mantel);
+      g.position.set(FP.x, FP.y, FP.z);
+      segs[FP.wi].group.add(g);
+    }
+    const targets = /* @__PURE__ */ new Map();
+    let themeName2 = "studio";
+    function setTheme2(name, k = 1) {
+      const P = PRESETS[name] || PRESETS.studio;
+      themeName2 = PRESETS[name] ? name : "studio";
+      for (const e of lerpable) {
+        if (e.scalar) {
+          const t2 = P[e.key];
+          e.scalar[e.prop] += (t2 - e.scalar[e.prop]) * k;
+        } else if (e.isMulti) {
+          const t2 = P.bannerI;
+          e.color.r += (t2 - e.color.r) * k;
+          e.color.g += (t2 - e.color.g) * k;
+          e.color.b += (t2 - e.color.b) * k;
+        } else {
+          if (!targets.has(e.key + (e.mul || ""))) targets.set(e.key + (e.mul || ""), new Color());
+          const tC = targets.get(e.key + (e.mul || ""));
+          tC.set(P[e.key]);
+          if (e.mul) tC.multiplyScalar(P[e.mul]);
+          e.color.lerp(tC, k);
+        }
+      }
+      for (const tor of torches) {
+        const t2 = P[tor.isFire ? "fire" : "torch"];
+        tor.baseT = tor.baseT === void 0 ? t2 : tor.baseT + (t2 - tor.baseT) * k;
+      }
+      for (const kind of ["torch", "chand", "fire"]) {
+        const lit = P[kind] > 0.05;
+        for (const f of flameKinds[kind]) f.visible = lit;
+      }
+      fog.color.lerp(C2(P.fog), k);
+      fog.near += (P.fogN - fog.near) * k;
+      fog.far += (P.fogF - fog.far) * k;
+    }
+    function update(t2, camPos) {
+      for (const f of flicker) {
+        const n = 0.72 + 0.28 * Math.sin(t2 * 11.3 + f.ph) * Math.sin(t2 * 6.1 + f.ph * 2.7) + 0.1 * Math.sin(t2 * 23.7 + f.ph * 5.1);
+        if (f.flame) f.flame.scale.y = 0.85 + 0.35 * n;
+      }
+      for (const tor of torches) {
+        const n = 0.5 + 0.5 * Math.sin(t2 * 12.7 + tor.ph) * Math.sin(t2 * 5.3 + tor.ph * 1.9);
+        tor.light.intensity = (tor.baseT ?? 0) * (0.72 + 0.5 * n);
+      }
+      if (camPos) {
+        for (const s of segs) {
+          const d = (camPos.x - s.p.x) * s.n.x + (camPos.z - s.p.z) * s.n.z;
+          s.group.visible = d > -0.6;
+        }
+        above.visible = camPos.y < floorY + WH - 0.8;
+      }
+    }
+    setTheme2("studio", 1);
+    const debug = () => ({
+      preset: Object.fromEntries(
+        ["torch", "chand", "fire"].map((k) => [k, PRESETS[themeName2]?.[k] ?? null])
+      ),
+      flameVisible: Object.fromEntries(
+        ["torch", "chand", "fire"].map((k) => [k, flameKinds[k].filter((f) => f.visible).length])
+      ),
+      flameTotal: Object.fromEntries(
+        ["torch", "chand", "fire"].map((k) => [k, flameKinds[k].length])
+      ),
+      light: torches.map((t2) => +((t2.baseT ?? 0) * 0.72).toFixed(3)),
+      wallVisible: segs.filter((s) => s.group.visible).length,
+      above: above.visible,
+      fog: [+fog.near.toFixed(1), +fog.far.toFixed(1), fog.color.getHexString()]
+    });
+    return { group, setTheme: setTheme2, update, fog, debug };
+  }
+
   // src/controls.js
   var Orbit = class {
     constructor(dom, camera2, opt = {}) {
@@ -33931,7 +31610,6 @@ void main() {
       this.aim = new Vector2();
       this.tween = null;
       this.onInteract = opt.onInteract;
-      this.onReset = opt.onReset;
       this._ptrs = /* @__PURE__ */ new Map();
       this._pinch = 0;
       this._last = new Vector3();
@@ -33990,17 +31668,11 @@ void main() {
         this.gRadius = clamp2(this.gRadius * Math.exp(e.deltaY * 11e-4), this.minR, this.maxR);
         this.onManual?.();
       };
-      this._onDbl = () => {
-        const home = this.home || { theta: 0.66, phi: 1.04, radius: 16.5 };
-        this.setPreset({ ...home, dur: 1.1 });
-        this.onReset?.();
-      };
       d.addEventListener("pointerdown", this._onDown);
       d.addEventListener("pointermove", this._onMove);
       addEventListener("pointerup", this._onUp);
       addEventListener("pointercancel", this._onUp);
       addEventListener("wheel", this._onWheel, { passive: false });
-      d.addEventListener("dblclick", this._onDbl);
       d.addEventListener("contextmenu", (e) => e.preventDefault());
     }
     _dist() {
@@ -34043,15 +31715,15 @@ void main() {
           if (Math.abs(this.vTheta) < 2e-3) this.vTheta = 0;
           if (Math.abs(this.vPhi) < 2e-3) this.vPhi = 0;
         }
-        this.auto = damp2(this.auto, this.autoOn ? 1 : 0, 2.2, dt);
+        this.auto = damp(this.auto, this.autoOn ? 1 : 0, 2.2, dt);
         if (this.idle > 1.6) this.gTheta += 0.075 * this.auto * dt;
       }
       const rate = this.dragging ? 14 : 7;
-      this.theta = damp2(this.theta, this.gTheta, rate, dt);
-      this.phi = damp2(this.phi, this.gPhi, rate, dt);
-      this.radius = damp2(this.radius, this.gRadius, 6, dt);
-      this.parallax.x = damp2(this.parallax.x, this.dragging ? 0 : this.aim.x, 3, dt);
-      this.parallax.y = damp2(this.parallax.y, this.dragging ? 0 : this.aim.y, 3, dt);
+      this.theta = damp(this.theta, this.gTheta, rate, dt);
+      this.phi = damp(this.phi, this.gPhi, rate, dt);
+      this.radius = damp(this.radius, this.gRadius, 6, dt);
+      this.parallax.x = damp(this.parallax.x, this.dragging ? 0 : this.aim.x, 3, dt);
+      this.parallax.y = damp(this.parallax.y, this.dragging ? 0 : this.aim.y, 3, dt);
       this.apply();
     }
     apply() {
@@ -34114,24 +31786,24 @@ void main() {
         const hiss = ctx.createBufferSource();
         hiss.buffer = this._noise(ctx, 3);
         hiss.loop = true;
-        const hp2 = ctx.createBiquadFilter();
-        hp2.type = "highpass";
-        hp2.frequency.value = 1600;
+        const hp = ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 1600;
         const lp = ctx.createBiquadFilter();
         lp.type = "lowpass";
         lp.frequency.value = 7200;
         this.hissGain = ctx.createGain();
         this.hissGain.gain.value = 0.34;
-        hiss.connect(hp2).connect(lp).connect(this.hissGain).connect(this.master);
+        hiss.connect(hp).connect(lp).connect(this.hissGain).connect(this.master);
         const hum = ctx.createOscillator();
-        hum.type = "sawtooth";
-        hum.frequency.value = 49.5;
+        hum.type = "sine";
+        hum.frequency.value = 62;
         const hlp = ctx.createBiquadFilter();
         hlp.type = "lowpass";
-        hlp.frequency.value = 220;
-        hlp.Q.value = 3;
+        hlp.frequency.value = 180;
+        hlp.Q.value = 1;
         this.humGain = ctx.createGain();
-        this.humGain.gain.value = 0.16;
+        this.humGain.gain.value = 0.05;
         hum.connect(hlp).connect(this.humGain).connect(this.master);
         const whir = ctx.createBufferSource();
         whir.buffer = this._noise(ctx, 2);
@@ -34552,7 +32224,7 @@ void main() {
     const hpC = 1 - Math.exp(-2 * Math.PI * 1500 / SR);
     const duckCoef = 1 - Math.exp(-1 / (0.055 * SR));
     kicks.sort((a, b) => a - b);
-    let lp = 0, hp2 = 0, duck = 1, ki = 0, lfoPh = 0;
+    let lp = 0, hp = 0, duck = 1, ki = 0, lfoPh = 0;
     for (let i = 0; i < N; i++) {
       dl[i] = bus[i];
       lfoPh += lfoInc;
@@ -34576,8 +32248,8 @@ void main() {
       }
       duck += (1 - duck) * duckCoef;
       v *= duck * 0.84;
-      hp2 += hpC * (v - hp2);
-      const side = (v - hp2) * 0.16;
+      hp += hpC * (v - hp);
+      const side = (v - hp) * 0.16;
       outL[i] = v + side;
       outR[i] = v - side;
     }
@@ -34656,7 +32328,7 @@ void main() {
   }
 
   // src/playlist.js
-  var ARTIST = "\u6821\u51C6\u5BA4";
+  var ARTIST = "\u70DB\u82AF";
   var A_TRACKS = [
     { no: "A1", title: "\u9759\u6C34", start: 0, len: 20 },
     { no: "A2", title: "\u6162\u901F\u5E26", start: 20, len: 20 },
@@ -34670,9 +32342,9 @@ void main() {
   var SIDES = [
     {
       id: "A",
-      cn: "A \u9762",
+      cn: "\u591C\u6B4C \xB7 \u4E00",
       /* what gets printed on the label for this side */
-      label: { title: "\u4F4E\u6E29\u88C5\u914D", artist: ARTIST, album: "\u7EB3\u897F\u59B2\u6F14\u793A\u66F2 \xB7 A \u9762" },
+      label: { title: "\u7089\u8FB9\u8C23", artist: ARTIST, album: "\u5C0F\u5E7D\u7075\u6F14\u793A\u66F2 \xB7 \u591C\u6B4C \xB7 \u4E00" },
       spec: {
         dur: 60,
         bpm: 92,
@@ -34684,8 +32356,8 @@ void main() {
     },
     {
       id: "B",
-      cn: "B \u9762",
-      label: { title: "\u6DF1\u6C34\u533A", artist: ARTIST, album: "\u7EB3\u897F\u59B2\u6F14\u793A\u66F2 \xB7 B \u9762" },
+      cn: "\u591C\u6B4C \xB7 \u4E8C",
+      label: { title: "\u6C89\u96FE", artist: ARTIST, album: "\u5C0F\u5E7D\u7075\u6F14\u793A\u66F2 \xB7 \u591C\u6B4C \xB7 \u4E8C" },
       spec: {
         dur: 60,
         bpm: 76,
@@ -34815,109 +32487,74 @@ void main() {
     };
   }
 
-  // src/nahida.js
-  var NOMINAL = 6.4;
-  var TAU = Math.PI * 2;
+  // src/ghost.js
+  var TAU3 = Math.PI * 2;
+  var NOMINAL = 6.38;
+  var FLOAT = 0.8;
+  var B = (NOMINAL - FLOAT) / 1.382;
+  var HEM = FLOAT;
+  var HEM_H = 0.465;
+  var HEM_RX = 1.32;
+  var HEM_RZ = 1.32;
+  var HEM_KEEP = 0.1;
+  var BH = 0.875 * B;
+  var TOP = HEM + BH;
+  var ARM = 0.505 * B;
+  var BRIM_R = 0.805 * B;
+  var BRIM_TIP = 0.055 * B;
+  var CONE_R = 0.28 * B;
   var C = {
-    hair: 15920878,
-    hairDark: 14867931,
-    hairTip: 11125976,
-    skin: 16114391,
-    skinDark: 14268584,
-    shirt: 16184559,
-    shirtDark: 14078665,
-    collar: 4810831,
-    collarLit: 7312471,
-    skirt: 16184559,
-    skirtInner: 9087100,
-    capeTop: 9416302,
-    capeBot: 10470620,
-    cream: 15261130,
-    silver: 14212322,
-    shoe: 16118766,
-    sole: 15263194,
-    ink: 2763551,
-    leaf: 7312471,
-    leafLit: 11849108,
-    leafDeep: 5464626,
-    gold: 14271625
+    body: 15266547,
+    // 床单：冷白，留一档给明暗
+    bodyDeep: 14083303,
+    // 下摆内侧/背面，让波浪边读得出来
+    glow: 8843509,
+    // 体内青光（成品图最亮处 #93FEFF，这里收一档当反照率）
+    /* 帽面靛紫：成品图上暗部 #1E103F、亮部 #2C1A71，反照率取中间偏亮一点。
+       上一版 0x3d2c6e 偏红偏亮，渲染出来是"紫帽子"而不是参考那种发蓝的靛。 */
+    hatTop: 3613552,
+    /* 檐底那抹红：成品图亮部直接顶到 #FF3C3C（纯红，很扎眼），暗部 #94212E。
+       反照率取 #C62B2B —— 再暗就沉成砖红，参考上它是一眼能看见的鲜红。 */
+    hatUnder: 12987179,
+    hatRim: 13578288,
+    // 檐口包边
+    band: 13214286,
+    // 金带（成品图上偏橄榄金 #8B8538，那是暗棚里的读数）
+    /* 两只眼睛**不是一个颜色**：观众左边那只是亮红，右边那只是更暗的酒褐
+       （参考的彩色渲染里右眼几乎读成黑褐色）。第一版给了同一个色，
+       右眼就失去了"更大更沉"的层次。 */
+    eye: 2757144,
+    // 右眼：近黑的酒褐（成品图 #220F18）
+    eyeL: 11547434,
+    // 左眼：亮红（成品图 #9E1E2A / 亮部 #A73950）
+    eyeHi: 16773866,
+    blush: 16345655,
+    // 腮红：橙红（成品图 #F96A37）
+    mouth: 9315104,
+    handle: 8004642,
+    // 帚柄红（成品图柄身 #5F1210，很暗）
+    bristle: 5907488,
+    // 帚穗深红
+    bristleLo: 4397592,
+    ribbon: 14166546
+    // 蝴蝶结（成品图 #E42F0C）
   };
-  function leafShape(len = 1, wid = 0.4, wide = 0.44) {
-    const s = new Shape();
-    s.moveTo(0, 0);
-    s.bezierCurveTo(wid, len * wide * 0.5, wid, len * (wide + (1 - wide) * 0.62), 0, len);
-    s.bezierCurveTo(-wid, len * (wide + (1 - wide) * 0.62), -wid, len * wide * 0.5, 0, 0);
-    return s;
-  }
-  function leafMesh(len, wid, mat, { curve = 0.18, seg = 12, arcR = 0 } = {}) {
-    const g = new ShapeGeometry(leafShape(len, wid), seg);
-    const p = g.attributes.position;
-    for (let i = 0; i < p.count; i++) {
-      const x = p.getX(i);
-      let y = p.getY(i);
-      const curl = -curve * 0.35 * (x / wid) * (x / wid);
-      if (arcR > 0) {
-        const chord = arcR * Math.sin(len / arcR);
-        y *= chord / len;
-        p.setY(i, y);
-        p.setZ(i, -(arcR - Math.sqrt(Math.max(arcR * arcR - y * y, 1e-6))) + curl);
-      } else {
-        p.setZ(i, -curve * (y / len) * (y / len) * len + curl);
-      }
-    }
-    g.computeVertexNormals();
-    const m = new Mesh(g, mat);
-    m.castShadow = true;
-    return m;
-  }
-  function plate(shape, thick, mat, { bevel = 0.022, seg = 10 } = {}) {
-    const g = new ExtrudeGeometry(shape, {
-      depth: thick,
-      bevelEnabled: true,
-      bevelSize: bevel,
-      bevelThickness: bevel,
-      bevelSegments: 2,
-      curveSegments: seg
-    });
-    g.translate(0, 0, -thick / 2);
-    const m = new Mesh(g, mat);
-    m.castShadow = true;
-    return m;
-  }
-  function limb(a, b, r0, r1, mat, seg = 10) {
-    const dir = new Vector3().subVectors(b, a);
-    const len = dir.length();
-    const g = new CylinderGeometry(r1, r0, len, seg, 1, false);
-    const m = new Mesh(g, mat);
-    m.position.copy(a).addScaledVector(dir, 0.5);
-    m.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), dir.normalize());
-    m.castShadow = true;
-    return m;
-  }
-  function ball(r, mat, sx = 1, sy = 1, sz = 1, seg = 18) {
-    const m = new Mesh(new SphereGeometry(r, seg, Math.round(seg * 0.72)), mat);
-    m.scale.set(sx, sy, sz);
-    m.castShadow = true;
-    return m;
-  }
-  function pleatedSkirt({ rTop, rBot, yTop, yBot, folds = 22, depth = 0.085, rows = 7 }) {
-    const cols = folds * 2;
+  function grid(nu, nv, fn) {
     const pos = [], uv = [], idx = [];
-    for (let i = 0; i <= rows; i++) {
-      const t2 = i / rows;
-      const y = lerp2(yTop, yBot, t2);
-      const rBase = lerp2(rTop, rBot, Math.pow(t2, 0.86));
-      for (let j = 0; j <= cols; j++) {
-        const a = j / cols * TAU;
-        const r = rBase - (j % 2 ? depth : 0) * (0.3 + 0.7 * t2);
-        pos.push(Math.sin(a) * r, y, Math.cos(a) * r);
-        uv.push(j / cols, t2);
+    for (let iv = 0; iv <= nv; iv++) {
+      const v = iv / nv;
+      for (let iu = 0; iu <= nu; iu++) {
+        const u = iu / nu;
+        const p = fn(u, v);
+        pos.push(p[0], p[1], p[2]);
+        uv.push(u, v);
       }
     }
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < cols; j++) {
-        const a = i * (cols + 1) + j, b = a + cols + 1;
-        idx.push(a, b, a + 1, b, b + 1, a + 1);
+    const W = nu + 1;
+    for (let iv = 0; iv < nv; iv++) {
+      for (let iu = 0; iu < nu; iu++) {
+        const a = iv * W + iu, b = a + 1, c = a + W, d = c + 1;
+        idx.push(a, b, c, b, d, c);
       }
     }
     const g = new BufferGeometry();
@@ -34927,282 +32564,36 @@ void main() {
     g.computeVertexNormals();
     return g;
   }
-  function lock(curve, {
-    segs = 44,
-    rad = 0.22,
-    cols = 14,
-    prof = null,
-    taper = 0,
-    flat = 1,
-    deep = 1,
-    capA = 1,
-    capB = 1,
-    capSeg = 3,
-    out = null
-  } = {}) {
+  function sweep(curve, radiusAt, segs, rings) {
+    const pts = curve.getSpacedPoints(segs);
     const fr = curve.computeFrenetFrames(segs, false);
-    const radAt = (t2) => rad * (prof ? prof(t2) : 0.88 + 0.12 * Math.sin(Math.PI * t2)) * (1 - taper * t2);
-    const frameAt = (i, p) => {
-      const tan = fr.tangents[i];
-      if (!out) return { t: tan, n: fr.normals[i], b: fr.binormals[i] };
-      const o = out === "radial" ? p.clone() : out.clone();
-      o.addScaledVector(tan, -o.dot(tan));
-      if (o.lengthSq() < 1e-8) return { t: tan, n: fr.normals[i], b: fr.binormals[i] };
-      o.normalize();
-      return { t: tan, n: o, b: new Vector3().crossVectors(tan, o).normalize() };
-    };
-    const rings = [];
-    const p0 = curve.getPoint(0), r0 = radAt(0);
-    const f0 = frameAt(0, p0);
-    if (capA > 0) {
-      for (let k = capSeg; k >= 1; k--) {
-        const th = k / capSeg * (Math.PI / 2);
-        rings.push({
-          c: p0.clone().addScaledVector(f0.t, -r0 * Math.sin(th) * capA),
-          n: f0.n,
-          b: f0.b,
-          r: r0 * Math.cos(th),
-          ref: p0,
-          pole: k === capSeg ? f0.t.clone().negate() : null
-        });
-      }
-    }
+    const pos = [], idx = [];
     for (let i = 0; i <= segs; i++) {
-      const p = curve.getPoint(i / segs);
-      const f = frameAt(i, p);
-      rings.push({ c: p, n: f.n, b: f.b, r: radAt(i / segs), ref: null, pole: null });
-    }
-    const p1 = curve.getPoint(1), r1 = radAt(1);
-    const f1 = frameAt(segs, p1);
-    if (capB > 0) {
-      for (let k = 1; k <= capSeg; k++) {
-        const th = k / capSeg * (Math.PI / 2);
-        rings.push({
-          c: p1.clone().addScaledVector(f1.t, r1 * Math.sin(th) * capB),
-          n: f1.n,
-          b: f1.b,
-          r: r1 * Math.cos(th),
-          ref: p1,
-          pole: k === capSeg ? f1.t.clone() : null
-        });
+      const r = radiusAt(i / segs);
+      const N = fr.normals[i], Bn = fr.binormals[i];
+      for (let j = 0; j <= rings; j++) {
+        const a = j / rings * TAU3, ca = Math.cos(a), sa = Math.sin(a);
+        pos.push(
+          pts[i].x + (N.x * ca + Bn.x * sa) * r,
+          pts[i].y + (N.y * ca + Bn.y * sa) * r,
+          pts[i].z + (N.z * ca + Bn.z * sa) * r
+        );
       }
     }
-    const pos = [], nrm = [], uv = [], idx = [];
-    for (let i = 0; i < rings.length; i++) {
-      const R = rings[i];
-      for (let j = 0; j <= cols; j++) {
-        const a = j / cols * TAU;
-        const ox = Math.cos(a) * R.r * deep, oy = Math.sin(a) * R.r * flat;
-        const px2 = R.c.x + R.n.x * ox + R.b.x * oy;
-        const py2 = R.c.y + R.n.y * ox + R.b.y * oy;
-        const pz2 = R.c.z + R.n.z * ox + R.b.z * oy;
-        pos.push(px2, py2, pz2);
-        if (R.pole) {
-          nrm.push(R.pole.x, R.pole.y, R.pole.z);
-        } else {
-          const ref = R.ref || R.c;
-          const nx = px2 - ref.x, ny = py2 - ref.y, nz = pz2 - ref.z;
-          const L = Math.hypot(nx, ny, nz) || 1;
-          nrm.push(nx / L, ny / L, nz / L);
-        }
-        uv.push(j / cols, i / (rings.length - 1));
-      }
-    }
-    for (let i = 0; i < rings.length - 1; i++) {
-      for (let j = 0; j < cols; j++) {
-        const a = i * (cols + 1) + j, b = a + cols + 1;
-        idx.push(a, a + 1, b, b, a + 1, b + 1);
+    const W = rings + 1;
+    for (let i = 0; i < segs; i++) {
+      for (let j = 0; j < rings; j++) {
+        const a = i * W + j, b = a + 1, c = a + W, d = c + 1;
+        idx.push(a, b, c, b, d, c);
       }
     }
     const g = new BufferGeometry();
     g.setAttribute("position", new Float32BufferAttribute(pos, 3));
-    g.setAttribute("normal", new Float32BufferAttribute(nrm, 3));
-    g.setAttribute("uv", new Float32BufferAttribute(uv, 2));
     g.setIndex(idx);
+    g.computeVertexNormals();
     return g;
   }
-  function hp(yaw, lat, r = HAIR_R) {
-    return new Vector3(
-      Math.sin(yaw) * Math.cos(lat) * r,
-      Math.sin(lat) * r,
-      Math.cos(yaw) * Math.cos(lat) * r
-    );
-  }
-  function ropeStrand(curve, segs, r, turns, phase) {
-    const fr = curve.computeFrenetFrames(segs, false);
-    const pts = [];
-    for (let i = 0; i <= segs; i++) {
-      const t2 = i / segs;
-      const p = curve.getPoint(t2);
-      const a = t2 * turns * TAU + phase;
-      p.addScaledVector(fr.normals[i], Math.cos(a) * r * 0.6);
-      p.addScaledVector(fr.binormals[i], Math.sin(a) * r * 0.6);
-      pts.push(p);
-    }
-    return new CatmullRomCurve3(pts);
-  }
-  function tipPaint(geom, vAt, amount, hex) {
-    const p = geom.attributes.position;
-    const arr = new Float32Array(p.count * 3);
-    const a = new Color(C.hair), b = new Color(hex), tmp2 = new Color();
-    for (let i = 0; i < p.count; i++) {
-      const t2 = clamp2((vAt(i) - (1 - amount)) / Math.max(amount, 1e-4), 0, 1);
-      tmp2.copy(a).lerp(b, t2 * t2 * (3 - 2 * t2));
-      arr[i * 3] = tmp2.r;
-      arr[i * 3 + 1] = tmp2.g;
-      arr[i * 3 + 2] = tmp2.b;
-    }
-    geom.setAttribute("color", new BufferAttribute(arr, 3));
-  }
-  var DOWN = new Vector3(0, -1, 0);
-  var EYE_W = 256;
-  var EYE_H = 292;
-  function star(g, x, y, R, r) {
-    g.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const a = -Math.PI / 2 + i * Math.PI / 4;
-      const rr = i % 2 ? r : R;
-      const px2 = x + Math.cos(a) * rr, py2 = y + Math.sin(a) * rr;
-      if (i) g.lineTo(px2, py2);
-      else g.moveTo(px2, py2);
-    }
-    g.closePath();
-    g.fill();
-  }
-  function eyeCanvas(open) {
-    const c = document.createElement("canvas");
-    c.width = EYE_W;
-    c.height = EYE_H;
-    const g = c.getContext("2d");
-    g.strokeStyle = "#8d9377";
-    g.lineWidth = 12;
-    g.lineCap = "round";
-    g.beginPath();
-    g.moveTo(58, 58);
-    g.quadraticCurveTo(128, 26, 198, 54);
-    g.stroke();
-    if (!open) {
-      g.strokeStyle = "#3a3d2c";
-      g.lineWidth = 12;
-      g.beginPath();
-      g.moveTo(52, 168);
-      g.quadraticCurveTo(128, 214, 204, 162);
-      g.stroke();
-      return c;
-    }
-    const cx = 128, cy = 172;
-    g.fillStyle = "#33362a";
-    g.beginPath();
-    g.moveTo(30, 168);
-    g.bezierCurveTo(44, 84, 96, 52, 130, 52);
-    g.bezierCurveTo(176, 52, 220, 92, 228, 168);
-    g.bezierCurveTo(196, 236, 66, 240, 30, 168);
-    g.closePath();
-    g.fill();
-    const ir = g.createLinearGradient(0, cy - 84, 0, cy + 84);
-    ir.addColorStop(0, "#4d7b3d");
-    ir.addColorStop(0.52, "#8fbf6a");
-    ir.addColorStop(1, "#e4f2c6");
-    g.fillStyle = ir;
-    g.beginPath();
-    g.ellipse(cx, cy, 86, 90, 0, 0, TAU);
-    g.fill();
-    g.strokeStyle = "rgba(45,80,38,0.80)";
-    g.lineWidth = 9;
-    g.beginPath();
-    g.ellipse(cx, cy, 83, 87, 0, 0, TAU);
-    g.stroke();
-    const pupil = (R, r, fill) => {
-      g.fillStyle = fill;
-      star(g, cx, cy, R, r);
-    };
-    pupil(70, 23, "#2f5b33");
-    pupil(58, 18, "#8fc46a");
-    pupil(34, 10, "rgba(246,252,232,0.95)");
-    g.fillStyle = "rgba(255,255,255,0.55)";
-    g.beginPath();
-    g.arc(cx - 48, cy - 54, 15, 0, TAU);
-    g.fill();
-    g.strokeStyle = "rgba(238,236,232,0.75)";
-    g.lineWidth = 7;
-    g.beginPath();
-    g.moveTo(66, 214);
-    g.quadraticCurveTo(128, 236, 192, 210);
-    g.stroke();
-    return c;
-  }
-  function mouthCanvas(open) {
-    const c = document.createElement("canvas");
-    c.width = 160;
-    c.height = 120;
-    const g = c.getContext("2d");
-    g.strokeStyle = "#4a3a30";
-    g.fillStyle = "#8c4a48";
-    if (!open) {
-      g.lineWidth = 14;
-      g.lineCap = "round";
-      g.beginPath();
-      g.moveTo(44, 46);
-      g.quadraticCurveTo(80, 78, 116, 44);
-      g.stroke();
-      return c;
-    }
-    g.beginPath();
-    g.ellipse(80, 60, 34, 30, 0, 0, TAU);
-    g.fill();
-    g.fillStyle = "#c2706c";
-    g.beginPath();
-    g.ellipse(80, 76, 22, 12, 0, 0, TAU);
-    g.fill();
-    return c;
-  }
-  function blushCanvas() {
-    const c = document.createElement("canvas");
-    c.width = c.height = 128;
-    const g = c.getContext("2d");
-    const r = g.createRadialGradient(64, 64, 4, 64, 64, 62);
-    r.addColorStop(0, "rgba(233,132,124,0.86)");
-    r.addColorStop(0.55, "rgba(233,140,130,0.46)");
-    r.addColorStop(1, "rgba(233,140,130,0)");
-    g.fillStyle = r;
-    g.fillRect(0, 0, 128, 128);
-    return c;
-  }
-  function capeCanvas() {
-    const c = document.createElement("canvas");
-    c.width = 64;
-    c.height = 256;
-    const g = c.getContext("2d");
-    const grad = g.createLinearGradient(0, 0, 0, 256);
-    grad.addColorStop(0, "#8fae6e");
-    grad.addColorStop(0.55, "#8cb59a");
-    grad.addColorStop(1, "#9fc4dc");
-    g.fillStyle = grad;
-    g.fillRect(0, 0, 64, 256);
-    return c;
-  }
-  function canvasTex(canvas3, { flipY = true, repeat = null, offset = null } = {}) {
-    const t2 = new CanvasTexture(canvas3);
-    t2.colorSpace = SRGBColorSpace;
-    t2.flipY = flipY;
-    t2.anisotropy = 4;
-    if (repeat) t2.repeat.set(repeat[0], repeat[1]);
-    if (offset) t2.offset.set(offset[0], offset[1]);
-    return t2;
-  }
-  function patch(radius, phiMid, thetaMid, halfW, halfH, segW = 16, segH = 14) {
-    const g = new SphereGeometry(
-      radius,
-      segW,
-      segH,
-      phiMid - halfW,
-      halfW * 2,
-      thetaMid - halfH,
-      halfH * 2
-    );
-    return new Mesh(g, null);
-  }
-  function createNahida({ height = NOMINAL, x = 0, y = 0, z = 0 } = {}) {
+  function createGhost({ height = NOMINAL, x = 0, y = 0, z = 0 } = {}) {
     const root = new Group();
     root.position.set(x, y, z);
     root.scale.setScalar(height / NOMINAL);
@@ -35212,521 +32603,511 @@ void main() {
       materials.push(m);
       return m;
     };
-    const matSkin = M({ color: C.skin, roughness: 0.74, metalness: 0 });
-    const matSkinDark = M({ color: C.skinDark, roughness: 0.78, metalness: 0 });
-    const HAIR_FILL = { roughness: 0.58, metalness: 0.02, emissive: 4736578, emissiveIntensity: 0.45 };
-    const matHair = M({ color: C.hair, ...HAIR_FILL });
-    const matHairDark = M({ color: C.hairDark, ...HAIR_FILL });
-    const matHairTip = M({ color: 16777215, ...HAIR_FILL, vertexColors: true });
-    const matShirt = M({ color: C.shirt, roughness: 0.72, metalness: 0 });
-    const matShirtBoth = M({ color: C.shirt, roughness: 0.72, metalness: 0, side: DoubleSide });
-    const matShirtDark = M({ color: C.shirtDark, roughness: 0.76, metalness: 0 });
-    const matCollar = M({ color: C.collar, roughness: 0.66, metalness: 0 });
-    const matSkirt = M({ color: C.skirt, roughness: 0.78, metalness: 0, side: DoubleSide });
-    const matSkirtInner = M({ color: C.skirtInner, roughness: 0.8, metalness: 0, side: DoubleSide });
-    const matCape = M({ color: 16777215, roughness: 0.8, metalness: 0, side: DoubleSide, map: canvasTex(capeCanvas()) });
-    const matSilver = M({ color: C.silver, roughness: 0.35, metalness: 0.55 });
-    const matShoeWhite = M({ color: C.shoe, roughness: 0.5, metalness: 0.05 });
-    const matLeaf = M({ color: C.leaf, roughness: 0.62, metalness: 0, side: DoubleSide });
-    const matLeafLit = M({ color: C.leafLit, roughness: 0.66, metalness: 0, side: DoubleSide });
-    const matLeafDeep = M({ color: C.leafDeep, roughness: 0.6, metalness: 0, side: DoubleSide });
-    const matGold = M({ color: C.gold, roughness: 0.34, metalness: 0.28 });
-    const leafMats = [matLeaf, matLeafLit, matLeafDeep];
-    for (const m of leafMats) m.emissiveIntensity = 0.08;
-    const HEAD_R = 0.95, HEAD_Y = 4.96;
-    const HAIR_R2 = 1.01;
-    const NECK_Y = 3.78;
-    const SHOULDER_Y = 3.66, SHOULDER_X = 0.5;
-    const head = new Group();
-    head.position.y = HEAD_Y;
-    root.add(head);
-    const skull = ball(HEAD_R, matSkin, 1, 1.03, 0.97, 30);
-    head.add(skull);
-    const jaw = ball(HEAD_R * 0.72, matSkin, 1, 0.86, 1.02, 20);
-    jaw.position.set(0, -HEAD_R * 0.44, 0.04);
-    head.add(jaw);
-    function earShape() {
-      const s = new Shape();
-      s.moveTo(0, 0);
-      s.bezierCurveTo(0.125, 0.03, 0.15, 0.2, 0.1, 0.34);
-      s.bezierCurveTo(0.068, 0.43, 0.03, 0.5, -0.01, 0.5);
-      s.bezierCurveTo(-0.062, 0.49, -0.108, 0.31, -0.115, 0.16);
-      s.bezierCurveTo(-0.12, 0.05, -0.07, -0.015, 0, 0);
-      s.closePath();
-      return s;
-    }
-    const EAR_TILT = 0.42;
-    const UP = new Vector3(0, 1, 0);
-    for (const side of [-1, 1]) {
-      const base = hp(side * 1.15, -0.1, 0.9);
-      const growth = base.clone().normalize().multiplyScalar(Math.cos(EAR_TILT)).addScaledVector(UP, Math.sin(EAR_TILT)).normalize();
-      const nrm = new Vector3(side * 0.42, 0.06, 0.9);
-      nrm.addScaledVector(growth, -nrm.dot(growth)).normalize();
-      const width = new Vector3().crossVectors(growth, nrm).normalize();
-      const e = plate(earShape(), 0.055, matSkin, { bevel: 0.022 });
-      e.position.copy(base);
-      e.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(width, growth, nrm));
-      head.add(e);
-    }
-    const FRONT = Math.PI / 2;
-    const EYE_YAW = 0.34, EYE_TH = Math.PI / 2 + 0.3;
-    const eyeHalfW = 0.315, eyeHalfH = 0.359;
-    const eyeTexOpen = canvasTex(eyeCanvas(true));
-    const eyeTexShut = canvasTex(eyeCanvas(false));
-    const eyes = [];
-    for (const side of [-1, 1]) {
-      const mat = new MeshBasicMaterial({ map: eyeTexOpen, transparent: true, toneMapped: true });
-      const e = patch(HEAD_R * 1.004, FRONT + side * EYE_YAW, EYE_TH, eyeHalfW, eyeHalfH);
-      e.material = mat;
-      e.renderOrder = 2;
-      head.add(e);
-      eyes.push({ mesh: e, mat });
-    }
-    const blush = [];
-    for (const side of [-1, 1]) {
-      const mat = new MeshBasicMaterial({
-        map: canvasTex(blushCanvas()),
-        transparent: true,
-        opacity: 0.75,
-        depthWrite: false,
-        toneMapped: true
-      });
-      const b = patch(HEAD_R * 1.003, FRONT + side * 0.6, Math.PI / 2 + 0.5, 0.17, 0.13, 10, 8);
-      b.material = mat;
-      b.renderOrder = 2;
-      head.add(b);
-      blush.push(b);
-    }
-    const mouthMatShut = new MeshBasicMaterial({
-      map: canvasTex(mouthCanvas(false)),
-      transparent: true,
-      depthWrite: false,
-      toneMapped: true
-    });
-    const mouthMatOpen = new MeshBasicMaterial({
-      map: canvasTex(mouthCanvas(true)),
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-      toneMapped: true
-    });
-    const mouth = patch(HEAD_R * 1.006, FRONT, Math.PI / 2 + 0.68, 0.2, 0.13, 14, 12);
-    mouth.material = mouthMatShut;
-    mouth.renderOrder = 3;
-    head.add(mouth);
-    const mouth2 = patch(HEAD_R * 1.007, FRONT, Math.PI / 2 + 0.68, 0.2, 0.13, 14, 12);
-    mouth2.material = mouthMatOpen;
-    mouth2.renderOrder = 3;
-    head.add(mouth2);
-    const hair = new Group();
-    head.add(hair);
-    const cap = new Mesh(
-      new SphereGeometry(HAIR_R2 * 1.004, 30, 20, 0, TAU, 0, Math.PI * 0.4),
-      matHair
-    );
-    cap.castShadow = true;
-    cap.scale.set(1, 1.09, 1);
-    hair.add(cap);
-    const back = new Mesh(
-      new SphereGeometry(HAIR_R2, 30, 18, FRONT + 0.78, TAU - 1.56, Math.PI * 0.26, Math.PI * 0.52),
-      matHair
-    );
-    back.castShadow = true;
-    hair.add(back);
-    const forehead = new Mesh(
-      new SphereGeometry(HAIR_R2 * 0.97, 30, 16, FRONT - 0.8, 1.6, Math.PI * 0.28, Math.PI * 0.225),
-      matHairDark
-    );
-    forehead.castShadow = true;
-    hair.add(forehead);
-    const nape = ball(HAIR_R2 * 0.94, matHair, 1, 0.72, 1);
-    nape.position.set(0, -HAIR_R2 * 0.52, -HAIR_R2 * 0.34);
-    hair.add(nape);
-    const bangs = new Group();
-    hair.add(bangs);
-    const WIDE = 1.28, DEEP = 0.55;
-    const FR = HAIR_R2 + 5e-3;
-    const FRINGE = [
-      // yaw at the root, yaw at the tip, latitude at the root, at the tip, radius
-      [0, 0.02, 0.92, -0.28, 0.165],
-      // centre: ends between the eyes
-      [-0.22, -0.88, 0.84, -0.2, 0.215],
-      [0.22, 0.88, 0.84, -0.2, 0.215],
-      [-0.54, -1.32, 0.74, -0.16, 0.195],
-      [0.54, 1.32, 0.74, -0.16, 0.195]
+    const PROFILE2 = [
+      // v, r/B   —— 逐行扫出来的原表。下摆带（v ≤ 0.52）是用户 2026-10-02 要求
+      // 「屁股变圆」后整体外扩过的：峰值 0.496 → 0.540（v 0.217），收腰位置与腰围
+      // （0.389 @ 0.522）原样不动。圆 = 峰两边近乎对称地鼓出去再收回来，不是锥形。
+      // ★ 峰值必须留在臂行（0.618B）之下，否则 `_sil` 的 widest row 会从手臂换到屁股。
+      [0, 0.07],
+      [0.043, 0.346],
+      [0.087, 0.452],
+      [0.13, 0.506],
+      [0.174, 0.532],
+      [0.217, 0.54],
+      [0.261, 0.532],
+      [0.304, 0.512],
+      [0.348, 0.484],
+      [0.391, 0.452],
+      [0.435, 0.42],
+      [0.478, 0.4],
+      [0.522, 0.389],
+      [0.565, 0.396],
+      [0.609, 0.41],
+      [0.652, 0.432],
+      /* 头顶四行是用户 2026-10-02 要求「头圆一些，不要那么尖」后改的：
+         原表 0.790/0.440 · 0.840/0.320 · 0.880/0.150 · 0.930/0.075 —— 从眼睛上方
+         就开始猛收，读成一颗泪滴/洋葱。现在穹顶在 0.46 挂到 v 0.79 才开始收，
+         收的轨迹也放缓（0.400 → 0.300 → 0.170），截面是一个球的弧不是锥的斜线。
+         ★ 圆颅的截面比原来宽，檐圈（内径 0.28B）的"卡座"随之上移
+         （v 0.854 → 0.888）—— `HAT_Y` 因此抬了 0.030B，否则圆颅从檐面里戳出来。
+         脸那一带（v ≤ 0.739）一个数没动，眼睛/腮红/嘴的位置全部照旧。 */
+      [0.696, 0.455],
+      [0.739, 0.47],
+      [0.79, 0.462],
+      [0.84, 0.4],
+      [0.88, 0.3],
+      [0.93, 0.17],
+      [1, 0.02]
     ];
-    for (const [yawR, yawT, latR, latT, rad] of FRINGE) {
-      const pts = [];
-      for (let i = 0; i <= 4; i++) {
-        const u = i / 4;
-        const yaw = yawR + (yawT - yawR) * Math.pow(u, 1.4);
-        const lat = latR + (latT - latR) * Math.pow(u, 0.8);
-        pts.push(hp(yaw, lat, FR));
-      }
-      const m = new Mesh(lock(new CatmullRomCurve3(pts), {
-        segs: 30,
-        rad,
-        cols: 18,
-        flat: WIDE,
-        deep: DEEP,
-        taper: 0.34,
-        capA: 0.9,
-        capB: 1,
-        out: "radial"
-      }), matHair);
-      m.castShadow = true;
-      bangs.add(m);
-    }
-    for (const side of [-1, 1]) {
-      const pts = [];
-      for (let i = 0; i <= 5; i++) {
-        const u = i / 5;
-        pts.push(hp(side * (0.82 + 0.2 * u * u), 0.7 - 1.7 * Math.pow(u, 0.92), FR));
-      }
-      const g = lock(new CatmullRomCurve3(pts), {
-        segs: 34,
-        rad: 0.165,
-        cols: 16,
-        flat: 1.15,
-        deep: 0.55,
-        taper: 0.26,
-        capA: 0.9,
-        capB: 1,
-        out: "radial"
-      });
-      tipPaint(g, (i) => g.attributes.uv.getY(i), 0.32, C.hairTip);
-      const m = new Mesh(g, matHairTip);
-      m.castShadow = true;
-      hair.add(m);
-    }
-    for (const side of [-1, 1]) {
-      const pts = [
-        hp(side * 1.16, 0.22, HAIR_R2 + 0.02),
-        hp(side * 1.25, 0, HAIR_R2 + 0.022),
-        hp(side * 1.34, -0.22, HAIR_R2 + 0.024)
-      ];
-      hair.add(new Mesh(lock(new CatmullRomCurve3(pts), {
-        segs: 16,
-        rad: 0.105,
-        cols: 12,
-        flat: 1.1,
-        deep: 0.55,
-        taper: 0.3,
-        capA: 0.9,
-        capB: 1,
-        out: "radial"
-      }), matHairDark));
-    }
-    const tailPivot = new Group();
-    tailPivot.position.set(HAIR_R2 * 0.73, HAIR_R2 * 0.58, -HAIR_R2 * 0.38);
-    hair.add(tailPivot);
-    const tailCurve = new CatmullRomCurve3([
-      new Vector3(0, 0, 0),
-      new Vector3(0.1, 0.22, -0.13),
-      new Vector3(0.22, -0.22, -0.21),
-      new Vector3(0.3, -0.86, -0.18),
-      new Vector3(0.28, -1.5, -0.06),
-      new Vector3(0.18, -2.06, 0.08),
-      new Vector3(0.06, -2.44, 0.18)
-    ]);
-    const tailGeom = lock(tailCurve, {
-      segs: 40,
-      rad: 0.315,
-      cols: 16,
-      flat: 0.92,
-      prof: (t2) => 0.94 + 0.06 * Math.sin(Math.PI * t2),
-      taper: 0.42,
-      capA: 0.8,
-      capB: 1.15
-    });
-    tipPaint(tailGeom, (i) => tailGeom.attributes.uv.getY(i), 0.58, C.hairTip);
-    const tail = new Mesh(tailGeom, matHairTip);
-    tail.castShadow = true;
-    tailPivot.add(tail);
-    const ridgeGeom = lock(ropeStrand(tailCurve, 44, 0.52, 2.3, 0), {
-      segs: 64,
-      rad: 0.082,
-      cols: 10,
-      flat: 0.9,
-      taper: 0.3,
-      capA: 0,
-      capB: 1
-    });
-    tipPaint(ridgeGeom, (i) => ridgeGeom.attributes.uv.getY(i), 0.52, C.hairTip);
-    const ridge = new Mesh(ridgeGeom, matHairTip);
-    ridge.castShadow = true;
-    tailPivot.add(ridge);
-    for (const [side, off, sc] of [[1, 0.72, 1], [-1, 0.62, 0.78]]) {
-      const pts = [];
-      for (let i = 0; i <= 6; i++) {
-        const t2 = 0.16 + 0.8 * (i / 6);
-        const p = tailCurve.getPoint(t2).clone();
-        const q = tailCurve.getPoint(Math.min(1, t2 + 0.02));
-        const tang = q.sub(tailCurve.getPoint(Math.max(0, t2 - 0.02))).normalize();
-        const side3 = new Vector3(0, 1, 0).cross(tang).normalize();
-        p.addScaledVector(side3, side * 0.3 * sc * (0.4 + 0.6 * (i / 6)));
-        pts.push(p);
-      }
-      const g = lock(new CatmullRomCurve3(pts), {
-        segs: 26,
-        rad: 0.075 * sc,
-        cols: 10,
-        flat: 1,
-        taper: 0.45,
-        capA: 0.9,
-        capB: 1
-      });
-      tipPaint(g, (i) => g.attributes.uv.getY(i), 0.55, C.hairTip);
-      const m = new Mesh(g, matHairTip);
-      m.castShadow = true;
-      tailPivot.add(m);
-    }
-    const braidCurve = new CatmullRomCurve3([
-      new Vector3(-0.3, 0.94, 0.2),
-      // over the crown, just off centre
-      new Vector3(-0.72, 0.74, 0.29),
-      new Vector3(-0.98, 0.22, 0.23),
-      new Vector3(-1.01, -0.32, 0.07),
-      new Vector3(-0.86, -0.78, -0.1)
-    ]);
-    for (const phase of [0, Math.PI]) {
-      const g = lock(ropeStrand(braidCurve, 34, 0.15, 3, phase), {
-        segs: 62,
-        rad: 0.086,
-        cols: 10,
-        flat: 1,
-        taper: 0.32,
-        capA: 0.8,
-        capB: 1
-      });
-      tipPaint(g, (i) => g.attributes.uv.getY(i), 0.42, C.hairTip);
-      const m = new Mesh(g, matHairTip);
-      m.castShadow = true;
-      hair.add(m);
-    }
-    const crown = new Group();
-    crown.position.set(HAIR_R2 * 0.74, HAIR_R2 * 0.6, -HAIR_R2 * 0.38);
-    hair.add(crown);
-    for (const side of [-1, 1]) {
-      const wing = leafMesh(0.3, 0.2, matShirtBoth, { curve: 0.16 });
-      wing.rotation.set(-0.55, side * 0.5, side * 2.25);
-      wing.position.set(side * 0.09, 0.02, 0.02);
-      crown.add(wing);
-      const tail2 = leafMesh(0.26, 0.09, matShirtBoth, { curve: 0.3 });
-      tail2.rotation.set(-0.2, side * 0.25, side * 0.55 + 0.35);
-      tail2.position.set(side * 0.07, -0.16, 0.03);
-      crown.add(tail2);
-    }
-    const knot = ball(0.085, matShirtBoth, 1.15, 1, 0.7, 12);
-    knot.position.set(0, 0.02, 0.03);
-    crown.add(knot);
-    const ring = new Mesh(new TorusGeometry(0.115, 0.026, 6, 16), matGold);
-    ring.rotation.set(1.15, 0, 0);
-    ring.position.set(0, -0.1, 0.05);
-    crown.add(ring);
-    const clip = new Group();
-    clip.position.set(-HAIR_R2 * 0.9, HAIR_R2 * 0.06, -0.06);
-    clip.rotation.set(0, -0.5, 0.35);
-    hair.add(clip);
-    for (const [rot, len, mat] of [[-0.5, 0.34, matLeafDeep], [0.35, 0.28, matLeaf]]) {
-      const lf = leafMesh(len, 0.19, mat, { curve: 0.2 });
-      lf.rotation.set(-0.4, 0, rot);
-      clip.add(lf);
-    }
-    const body = new Group();
-    root.add(body);
-    const neck = limb(new Vector3(0, NECK_Y - 0.28, 0), new Vector3(0, NECK_Y + 0.24, 0), 0.24, 0.21, matSkin);
-    body.add(neck);
-    const bodiceProfile = [
-      [0.44, 2.4],
-      [0.5, 2.6],
-      [0.48, 2.8],
-      [0.53, 3.02],
-      [0.62, 3.24],
-      [0.6, 3.44],
-      [0.42, 3.62],
-      [0.24, 3.74]
-    ].map(([r, yy]) => new Vector2(r, yy));
-    const bodice = new Mesh(new LatheGeometry(bodiceProfile, 26), matShirt);
-    bodice.castShadow = true;
-    body.add(bodice);
-    function shirtR(y2) {
-      const p = bodiceProfile;
-      if (y2 <= p[0].y) return p[0].x;
-      for (let i = 1; i < p.length; i++) {
-        if (y2 <= p[i].y) {
-          const k = (y2 - p[i - 1].y) / (p[i].y - p[i - 1].y);
-          return lerp2(p[i - 1].x, p[i].x, k);
-        }
-      }
-      return p[p.length - 1].x;
-    }
-    const collarBand = new Mesh(
-      new CylinderGeometry(0.25, 0.32, 0.2, 22, 1, true),
-      matCollar
-    );
-    collarBand.position.y = 3.72;
-    body.add(collarBand);
-    const gem = ball(0.085, matLeaf, 1, 1.25, 0.7, 12);
-    gem.position.set(0, 3.5, shirtR(3.5) + 0.05);
-    body.add(gem);
-    const gemSet = new Mesh(new TorusGeometry(0.078, 0.02, 6, 14), matGold);
-    gemSet.rotation.x = 0.28;
-    gemSet.position.set(0, 3.5, shirtR(3.5) + 0.048);
-    body.add(gemSet);
-    for (const side of [-1, 1]) {
-      const ep = leafMesh(0.46, 0.3, matLeaf, { curve: 0.26 });
-      ep.position.set(side * 0.34, 3.62, 0.08);
-      ep.rotation.set(-0.55, side * 0.15, side * -1.3);
-      body.add(ep);
-    }
-    const skirt = new Mesh(pleatedSkirt({
-      rTop: 0.5,
-      rBot: 1.26,
-      yTop: 2.46,
-      yBot: 1.5,
-      folds: 14,
-      depth: 0.115,
-      rows: 8
-    }), matSkirt);
-    skirt.castShadow = true;
-    body.add(skirt);
-    const lining = new Mesh(
-      new CylinderGeometry(1.29, 1.12, 0.26, 30, 1, true),
-      matSkirtInner
-    );
-    lining.position.y = 1.44;
-    body.add(lining);
-    const waist = new Mesh(new CylinderGeometry(0.545, 0.525, 0.1, 26, 1, true), matCollar);
-    waist.position.y = 2.45;
-    body.add(waist);
-    for (const side of [-1, 1]) {
-      const g = new PlaneGeometry(0.95, 1.9, 6, 12);
-      const p = g.attributes.position;
-      for (let i = 0; i < p.count; i++) {
-        const x2 = p.getX(i), y2 = p.getY(i);
-        const t2 = 1 - (y2 + 0.95) / 1.9;
-        const flare = 1 + 0.75 * t2 * t2;
-        p.setX(i, x2 * flare);
-        p.setZ(i, -0.3 * t2 * t2 - 0.12 * (x2 / 0.39) * (x2 / 0.39) * t2);
-        p.setY(i, y2 - 0.2 * t2 * t2);
-      }
-      g.computeVertexNormals();
-      const cape = new Mesh(g, matCape);
-      cape.position.set(side * 0.4, 2.62, -0.4);
-      cape.rotation.set(0.16, side * 0.3, side * 0.34);
-      cape.castShadow = true;
-      body.add(cape);
-      const mount = leafMesh(0.3, 0.2, matLeaf, { curve: 0.24 });
-      mount.position.set(side * 0.36, 3.52, -0.18);
-      mount.rotation.set(-1.9, 0, side * -0.9);
-      body.add(mount);
-    }
-    const arms = [];
-    for (const side of [-1, 1]) {
-      const pivot = new Group();
-      pivot.position.set(side * SHOULDER_X, SHOULDER_Y, 0);
-      body.add(pivot);
-      const upper = limb(new Vector3(0, 0, 0), new Vector3(side * 0.09, -0.6, 0.05), 0.135, 0.115, matSkin);
-      pivot.add(upper);
-      const sleeve = limb(new Vector3(0, 0.06, 0), new Vector3(side * 0.05, -0.32, 0.03), 0.215, 0.165, matShirt);
-      pivot.add(sleeve);
-      const cuff = new Mesh(new TorusGeometry(0.172, 0.036, 8, 18), matShirt);
-      cuff.rotation.x = Math.PI / 2;
-      cuff.position.set(side * 0.05, -0.32, 0.03);
-      pivot.add(cuff);
-      const fore = new Group();
-      fore.position.set(side * 0.09, -0.6, 0.05);
-      pivot.add(fore);
-      const lower = limb(new Vector3(0, 0, 0), new Vector3(side * 0.05, -0.54, 0.08), 0.115, 0.095, matSkin);
-      fore.add(lower);
-      const hand = ball(0.14, matSkin, 1, 1.1, 0.85, 12);
-      hand.position.set(side * 0.05, -0.6, 0.09);
-      fore.add(hand);
-      const bangle = new Mesh(new TorusGeometry(0.128, 0.04, 8, 18), matSilver);
-      bangle.rotation.x = Math.PI / 2;
-      bangle.position.set(side * 0.04, -0.46, 0.07);
-      fore.add(bangle);
-      arms.push({ pivot, fore, side });
-    }
-    const legs = [];
-    for (const side of [-1, 1]) {
-      const pivot = new Group();
-      pivot.position.set(side * 0.22, 1.32, 0);
-      body.add(pivot);
-      const shin = limb(new Vector3(0, 0, 0), new Vector3(side * 0.02, -1.08, 0.03), 0.165, 0.135, matSkin);
-      pivot.add(shin);
-      const foot = ball(0.175, matSkin, 0.94, 0.62, 1.72, 14);
-      foot.position.set(side * 0.02, -1.14, 0.15);
-      pivot.add(foot);
-      const strap = new Mesh(new BoxGeometry(0.3, 0.055, 0.18), matShoeWhite);
-      strap.position.set(side * 0.02, -1.07, 0.13);
-      strap.castShadow = true;
-      pivot.add(strap);
-      const anklet = new Mesh(new TorusGeometry(0.142, 0.028, 8, 16), matGold);
-      anklet.rotation.x = Math.PI / 2;
-      anklet.position.set(side * 0.02, -0.96, 0.03);
-      pivot.add(anklet);
-      legs.push({ pivot, side });
-    }
-    const auraUniforms = {
-      uColor: { value: new Color(C.leafLit) },
-      uOpacity: { value: 0.4 }
+    const profAt = (v) => {
+      const n = PROFILE2.length;
+      let i = 0;
+      while (i < n - 2 && v > PROFILE2[i + 1][0]) i++;
+      const v0 = PROFILE2[i][0], v1 = PROFILE2[i + 1][0];
+      const t2 = clamp2((v - v0) / Math.max(1e-6, v1 - v0), 0, 1);
+      const p0 = PROFILE2[Math.max(0, i - 1)][1], p1 = PROFILE2[i][1];
+      const p22 = PROFILE2[i + 1][1], p3 = PROFILE2[Math.min(n - 1, i + 2)][1];
+      const t22 = t2 * t2, t3 = t22 * t2;
+      return 0.5 * (2 * p1 + (-p0 + p22) * t2 + (2 * p0 - 5 * p1 + 4 * p22 - p3) * t22 + (-p0 + 3 * p1 - 3 * p22 + p3) * t3) * B;
     };
-    const aura = new Mesh(
-      new SphereGeometry(HAIR_R2 * 1.07, 26, 20),
-      new ShaderMaterial({
-        uniforms: auraUniforms,
-        vertexShader: `
-        varying vec3 vN;
-        varying vec3 vV;
-        void main() {
-          vec4 wp = modelMatrix * vec4(position, 1.0);
-          vN = normalize(mat3(modelMatrix) * normal);
-          vV = normalize(cameraPosition - wp.xyz);
-          gl_Position = projectionMatrix * viewMatrix * wp;
-        }`,
-        fragmentShader: `
-        uniform vec3 uColor;
-        uniform float uOpacity;
-        varying vec3 vN;
-        varying vec3 vV;
-        void main() {
-          float f = 1.0 - abs(dot(normalize(vN), normalize(vV)));
-          /* The floor is the whole difference between a contour and a hairline.
-             A bare fresnel is ~1 at the silhouette and ~0 a few pixels inside,
-             so what it draws is a one-pixel line -- measured: a dip of 13 levels
-             at 0.62 opacity, i.e. invisible in a white hall, and it took a
-             deliberately absurd setting (power 1.0, shell 1.30, opacity 0.95) to
-             prove the shader was even running. Lifting the floor to 0.70 makes
-             the shell render at nearly constant alpha, so the visible annulus is
-             a BAND whose width is the shell's radius and whose contrast is
-             uOpacity alone. Two numbers, two separate jobs.
-             (No backticks in here: this comment lives inside a JS template
-             literal, and one backtick ends the string. node --check does not
-             catch it -- the truncation still parses. esbuild does.) */
-          f = 0.70 + 0.30 * pow(clamp(f, 0.0, 1.0), 2.0);
-          gl_FragColor = vec4(uColor, f * uOpacity);
-          #include <tonemapping_fragment>
-          #include <colorspace_fragment>
-        }`,
-        transparent: true,
-        blending: NormalBlending,
-        side: BackSide,
-        depthWrite: false
-      })
-    );
-    aura.position.y = HEAD_Y;
-    aura.scale.set(1, 1.1, 1);
+    const ARM2 = 0.618 * B;
+    const ARM_V = 0.78, ARM_P = 12, ARM_SD = 0.04;
+    const ARM_ADD = ARM2 - profAt(ARM_V);
+    const HEM_WAVE = 0.035 * B;
+    const HEM_DROP = 0.06 * B;
+    const HEM_REACH = 0.16;
+    const PLEAT = 0.02 * B, PLEAT_N = 16;
+    function bodyPoint(u, v) {
+      const th = u * TAU3;
+      const up = Math.sin(th);
+      const arm = ARM_ADD * Math.exp(-((v - ARM_V) ** 2) / (2 * ARM_SD * ARM_SD));
+      const near = 1 - clamp2(v / HEM_REACH, 0, 1);
+      const wave = -Math.cos(8 * th);
+      const w01 = 0.5 + 0.5 * wave;
+      const r = profAt(v) + arm * Math.pow(Math.abs(up), ARM_P) + HEM_WAVE * (w01 - 0.5) * near + PLEAT * Math.cos(PLEAT_N * th) * near;
+      const y2 = HEM + v * BH - HEM_DROP * near * Math.pow(w01, 1.8);
+      return [Math.sin(th) * r, y2, Math.cos(th) * r];
+    }
+    function glowMap() {
+      const cv = document.createElement("canvas");
+      cv.width = 8;
+      cv.height = 256;
+      const g = cv.getContext("2d");
+      const gr = g.createLinearGradient(0, 0, 0, 256);
+      gr.addColorStop(0, "rgb(70,118,126)");
+      gr.addColorStop(0.14, "rgb(186,246,252)");
+      gr.addColorStop(0.3, "rgb(214,252,255)");
+      gr.addColorStop(0.46, "rgb(186,246,252)");
+      gr.addColorStop(0.68, "rgb(96,190,200)");
+      gr.addColorStop(0.86, "rgb(38,92,100)");
+      gr.addColorStop(1, "rgb(20,54,60)");
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 8, 256);
+      const t2 = new CanvasTexture(cv);
+      t2.colorSpace = SRGBColorSpace;
+      return t2;
+    }
+    const matBody = M({
+      color: C.body,
+      roughness: 0.66,
+      metalness: 0,
+      /* 侧面朝外的那一半要能透出光：`side: DoubleSide` 让下摆内侧也画出来，
+         不然从下往上看床单是漏的。 */
+      side: DoubleSide,
+      emissive: new Color(C.glow),
+      emissiveIntensity: 1.15,
+      emissiveMap: glowMap()
+    });
+    matBody.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <emissivemap_fragment>",
+        `#include <emissivemap_fragment>
+       float facing = abs(dot(normalize(vNormal), normalize(vViewPosition)));
+       totalEmissiveRadiance *= pow(facing, 1.4);`
+      );
+    };
+    const body = new Mesh(grid(200, 96, bodyPoint), matBody);
+    body.castShadow = true;
+    root.add(body);
+    const FACE_Y = HEM + (TOP - HEM) * 0.7;
+    const face = new Group();
+    face.position.y = FACE_Y;
+    root.add(face);
+    const faceAt = (u, v, out = 1) => {
+      const p = bodyPoint(u, v);
+      const l = Math.hypot(p[0], p[2]) || 1;
+      return [p[0] * out, p[1] - FACE_Y, p[2] * out, p[0] / l, p[2] / l];
+    };
+    const FWD = new Vector3(0, 0, 1);
+    const faceOut = (obj, nx, nz) => {
+      obj.quaternion.setFromUnitVectors(FWD, new Vector3(nx, 0, nz).normalize());
+    };
+    const matEyeL = M({ color: C.eyeL, roughness: 0.52, metalness: 0 });
+    const matEyeR = M({ color: C.eye, roughness: 0.55, metalness: 0 });
+    const matEyeHi = M({ color: C.eyeHi, roughness: 0.3, emissive: C.eyeHi, emissiveIntensity: 0.3 });
+    const eyes = [];
+    for (const [u, rx, ry, hi, mat] of [
+      [0.962, 0.028 * B, 0.052 * B, false, matEyeL],
+      [0.038, 0.054 * B, 0.056 * B, true, matEyeR]
+    ]) {
+      const [px2, py2, pz2, nx, nz] = faceAt(u, 0.69, 1);
+      const e = new Mesh(new SphereGeometry(1, 26, 18), mat);
+      e.scale.set(rx, ry, 0.3 * rx);
+      e.position.set(px2, py2, pz2);
+      faceOut(e, nx, nz);
+      e.userData.ry = ry;
+      face.add(e);
+      eyes.push(e);
+      if (hi) {
+        const h = new Mesh(new SphereGeometry(rx * 0.26, 12, 10), matEyeHi);
+        const out = 0.3 * rx + 0.012 * B, lat = 0.02 * B;
+        h.position.set(px2 + nx * out - nz * lat, py2 + ry * 0.34, pz2 + nz * out + nx * lat);
+        face.add(h);
+      }
+    }
+    const matBlush = M({ color: C.blush, roughness: 0.58, emissive: C.blush, emissiveIntensity: 0.28 });
+    for (const u of [0.951, 0.049]) {
+      const [px2, py2, pz2, nx, nz] = faceAt(u, 0.535, 1);
+      const b = new Mesh(new SphereGeometry(1, 22, 14), matBlush);
+      b.scale.set(0.04 * B, 0.032 * B, 0.016 * B);
+      b.position.set(px2, py2, pz2);
+      faceOut(b, nx, nz);
+      face.add(b);
+    }
+    const matMouth = M({ color: C.mouth, roughness: 0.42 });
+    const mouth = new Group();
+    {
+      const arc = new Mesh(new TorusGeometry(0.02 * B, 9e-3 * B, 10, 22, Math.PI), matMouth);
+      arc.rotation.z = Math.PI;
+      mouth.add(arc);
+    }
+    {
+      const [px2, py2, pz2, nx, nz] = faceAt(0, 0.63, 1);
+      mouth.position.set(px2, py2, pz2);
+      faceOut(mouth, nx, nz);
+      face.add(mouth);
+    }
+    const hat = new Group();
+    root.add(hat);
+    const matHat = M({ color: C.hatTop, roughness: 0.54, metalness: 0.03, side: DoubleSide });
+    const matUnder = M({ color: C.hatUnder, roughness: 0.6, metalness: 0, side: DoubleSide });
+    const matBand = M({ color: C.band, roughness: 0.3, metalness: 0.7 });
+    const HAT_Y = TOP + 0.015 * B;
+    hat.position.y = HAT_Y;
+    const brimDrop = (v) => -(0.045 * B) * v * v;
+    const brimFn = (u, v, dy) => {
+      const th = u * TAU3;
+      const r0 = CONE_R + (BRIM_R - CONE_R) * Math.pow(v, 0.78);
+      const r = r0 + BRIM_TIP * v * v * -Math.cos(2 * th);
+      return [Math.sin(th) * r, brimDrop(v) + dy, Math.cos(th) * r];
+    };
+    const brimTop = new Mesh(grid(96, 22, (u, v) => brimFn(u, v, 0)), matHat);
+    brimTop.castShadow = true;
+    hat.add(brimTop);
+    const brimBot = new Mesh(grid(96, 22, (u, v) => brimFn(u, v, -(8e-3 + 0.026 * v * v) * B)), matUnder);
+    hat.add(brimBot);
+    {
+      const axis = [
+        [0, -0.19],
+        [0, -0.06],
+        [4e-3, 0.057],
+        [0.016, 0.155],
+        [0.038, 0.247],
+        [0.062, 0.31],
+        [0.094, 0.345],
+        [0.145, 0.323],
+        [0.196, 0.264],
+        [0.242, 0.164]
+      ].map(([dx, dy]) => new Vector3(dx * B, dy * B, 0));
+      const curve = new CatmullRomCurve3(axis, false, "centripetal", 0.5);
+      const R_T = [
+        [0, 0.32],
+        [0.21, 0.28],
+        [0.32, 0.235],
+        [0.44, 0.19],
+        [0.56, 0.145],
+        [0.68, 0.098],
+        [0.78, 0.062],
+        [0.88, 0.036],
+        [0.95, 0.017],
+        [1, 6e-3]
+      ];
+      const radiusAt = (t2) => {
+        for (let i = 1; i < R_T.length; i++) {
+          if (t2 <= R_T[i][0]) {
+            const [t0, r0] = R_T[i - 1], [t1, r1] = R_T[i];
+            const u = (t2 - t0) / Math.max(1e-6, t1 - t0);
+            return (r0 + (r1 - r0) * (u * u * (3 - 2 * u))) * B;
+          }
+        }
+        return R_T[R_T.length - 1][1] * B;
+      };
+      const cone = new Mesh(sweep(curve, radiusAt, 84, 40), matHat);
+      cone.castShadow = true;
+      hat.add(cone);
+    }
+    {
+      const band = new Mesh(new CylinderGeometry(0.268 * B, 0.286 * B, 0.058 * B, 56), matBand);
+      band.position.y = 0.045 * B;
+      hat.add(band);
+    }
+    hat.rotation.set(-0.055, 0, -0.302);
+    const broom = new Group();
+    root.add(broom);
+    const matHandle = M({ color: C.handle, roughness: 0.48, metalness: 0.02 });
+    const matBristle = M({ color: C.bristle, roughness: 0.88, metalness: 0, flatShading: true });
+    const matBristleLo = M({ color: C.bristleLo, roughness: 0.9, metalness: 0, flatShading: true });
+    const matRibbon = M({ color: C.ribbon, roughness: 0.52, emissive: C.ribbon, emissiveIntensity: 0.14 });
+    const BROOM_Y = HEM + 0.15 * B;
+    const BROOM_SWING = 0.05;
+    const BROOM_RISE = 0.1;
+    const BROOM_FOLLOW = 0.04;
+    const BROOM_HOME = new Vector3(-0.29 * B, BROOM_Y, 0.62 * B);
+    const _bqRoot = new Quaternion(), _bqKeep = new Quaternion();
+    const _bqFix = new Quaternion(), _bEul = new Euler(), _bVec = new Vector3();
+    const BROOM_LEN = 2.15 * B;
+    {
+      const handle = new Mesh(new CylinderGeometry(0.03 * B, 0.011 * B, BROOM_LEN, 14), matHandle);
+      handle.rotation.z = Math.PI / 2;
+      handle.castShadow = true;
+      broom.add(handle);
+    }
+    {
+      const TUFTS = 14;
+      const head2 = BROOM_LEN / 2 - 0.2 * B;
+      const UP = new Vector3(0, 1, 0);
+      for (let i = 0; i < TUFTS; i++) {
+        const a = i / TUFTS * TAU3 + 0.4;
+        const outer = i % 2 === 0;
+        const spread = (outer ? 0.2 : 0.11) + 0.03 * Math.sin(i * 2.1);
+        const len = (outer ? 0.36 : 0.29) * B * (1 + 0.1 * Math.sin(i * 1.7));
+        const t2 = new Mesh(
+          new ConeGeometry(0.028 * B * (outer ? 1 : 0.78), len, 5),
+          i % 3 ? matBristle : matBristleLo
+        );
+        const dir = new Vector3(1, Math.sin(a) * spread, Math.cos(a) * spread).normalize();
+        t2.quaternion.setFromUnitVectors(UP, dir);
+        t2.position.set(head2, 0, 0).addScaledVector(dir, len * 0.46);
+        t2.castShadow = true;
+        broom.add(t2);
+      }
+      for (const dx of [0, 0.08 * B]) {
+        const b = new Mesh(new CylinderGeometry(0.045 * B, 0.045 * B, 0.03 * B, 14), matBristleLo);
+        b.rotation.z = Math.PI / 2;
+        b.position.set(head2 - 0.05 * B + dx, 0, 0);
+        broom.add(b);
+      }
+    }
+    {
+      const at = -BROOM_LEN / 2 + 0.64 * B;
+      const knot = new Mesh(new SphereGeometry(0.036 * B, 16, 12), matRibbon);
+      knot.scale.set(0.8, 1, 1);
+      knot.position.set(at, 0, 0);
+      broom.add(knot);
+      for (const s of [-1, 1]) {
+        const flag = new Mesh(new ConeGeometry(0.055 * B, 0.22 * B, 10), matRibbon);
+        flag.rotation.z = s * 0.62;
+        flag.position.set(at + s * 0.062 * B, 0.075 * B, 0);
+        flag.scale.set(1, 1, 0.34);
+        broom.add(flag);
+      }
+    }
+    broom.position.copy(BROOM_HOME);
+    broom.rotation.set(0, -0.24, -0.1);
+    const auraUniforms = {
+      uColor: { value: new Color(10479871) },
+      /* 0.22 在霜厅那种白墙上会糊成一团雾，把轮廓吃掉；幽灵自己已经有一层
+         体内青光，光环只需要勾一条边。 */
+      uOpacity: { value: 0.14 }
+    };
+    const auraMat = new ShaderMaterial({
+      uniforms: auraUniforms,
+      transparent: true,
+      depthWrite: false,
+      side: BackSide,
+      blending: NormalBlending,
+      vertexShader: `
+      varying vec3 vN; varying vec3 vP;
+      void main() {
+        vN = normalize(normalMatrix * normal);
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vP = mv.xyz;
+        gl_Position = projectionMatrix * mv;
+      }`,
+      fragmentShader: `
+      uniform vec3 uColor; uniform float uOpacity;
+      varying vec3 vN; varying vec3 vP;
+      void main() {
+        float f = 1.0 - abs(dot(normalize(vN), normalize(-vP)));
+        gl_FragColor = vec4(uColor, pow(f, 2.2) * uOpacity);
+      }`
+    });
+    const aura = new Mesh(new SphereGeometry(1, 32, 22), auraMat);
+    const AURA_H = TOP - HEM + 0.55 * B;
+    aura.scale.set(BRIM_R * 1.05, AURA_H * 0.5, BRIM_R * 1.05);
+    aura.position.y = HEM + AURA_H * 0.5;
     aura.renderOrder = -1;
     root.add(aura);
     const hit = new Mesh(
-      new CapsuleGeometry(1.15, 3.6, 6, 14),
+      new CapsuleGeometry(ARM2 * 0.95, (TOP - HEM) * 0.86, 6, 16),
       new MeshBasicMaterial({ visible: false })
     );
-    hit.position.y = 3.3;
-    hit.scale.set(1, 1, 0.92);
+    hit.position.y = HEM + (TOP - HEM) * 0.48;
+    hit.scale.set(1, 1, 0.72);
     root.add(hit);
+    const head = new Group();
+    head.position.y = HEM + (TOP - HEM) * 0.7;
+    root.add(head);
+    const smooth = (t2) => t2 * t2 * (3 - 2 * t2);
+    const hold = (p, a = 0.22, b = 0.78) => {
+      const t2 = p < a ? p / a : p > b ? (1 - p) / (1 - b) : 1;
+      return smooth(t2 < 0 ? 0 : t2 > 1 ? 1 : t2);
+    };
+    const env = (p, r = 0.16) => smooth(clamp2(p / r, 0, 1)) * smooth(clamp2((1 - p) / r, 0, 1));
+    const bump = (p, a, b, c, d) => smooth(clamp2((p - a) / (b - a), 0, 1)) * (1 - smooth(clamp2((p - c) / (d - c), 0, 1)));
+    const ACTIONS = {
+      /* 点头 —— 两次下潜用两个高斯：一深一浅、二沉比一沉晚且缓。均匀的两次
+         是机器；真点头的第二次只有第一次的六成。帽子滞后 0.055 像被甩着跟。 */
+      nod: [1.25, (p) => {
+        const d1 = Math.exp(-Math.pow((p - 0.28) / 0.125, 2));
+        const d2 = 0.62 * Math.exp(-Math.pow((p - 0.74) / 0.135, 2));
+        const dh1 = Math.exp(-Math.pow((p - 0.335) / 0.125, 2));
+        const dh2 = 0.62 * Math.exp(-Math.pow((p - 0.795) / 0.135, 2));
+        const s = d1 + d2;
+        return {
+          rise: -1.05 * s,
+          squash: -0.55 * s,
+          tip: 0.16 * s,
+          hatTilt: -0.42 * (dh1 + dh2),
+          eyes: -0.55 * Math.min(1, s)
+        };
+      }],
+      /* 晃一晃 —— 一个半来回（不是一整来回）：甩出去、荡回来、再回正，
+       * 乘两端包络。帽子与扫帚各迟 0.55 / 0.35 rad，布停了道具还在走。 */
+      wave: [1.75, (p) => {
+        const e = env(p, 0.16);
+        const s = Math.sin(p * TAU3 * 1.5);
+        return {
+          lean: 0.72 * s * e,
+          hatTilt: -0.9 * Math.sin(p * TAU3 * 1.5 - 0.55) * e,
+          broomSwing: 0.9 * Math.sin(p * TAU3 * 1.5 - 0.35) * e,
+          rise: 0.2 * Math.sin(p * TAU3 * 3) * e,
+          eyes: 0.26 * Math.abs(s) * e
+        };
+      }],
+      /* 转个圈 —— 蓄力-扫-过冲-安顿：起手先反向拧 0.38 rad（重心同时下沉一点），
+         0.14..0.84 平滑扫过一整圈，收尾多转 0.5 再弹回停正 —— 真正的转身
+         不会正好停在刻度上。上升沿用 hold 的平台，转着的时候眼睛闭上。 */
+      spin: [1.55, (p) => {
+        const wind = bump(p, 0.02, 0.12, 0.12, 0.22);
+        const over = Math.sin(Math.PI * clamp2((p - 0.84) / 0.16, 0, 1));
+        return {
+          spin: -0.38 * wind + TAU3 * smooth(clamp2((p - 0.14) / 0.7, 0, 1)) + 0.5 * over,
+          rise: 0.95 * hold(p, 0.22, 0.8) - 0.28 * wind,
+          lean: 0.24 * Math.sin(p * TAU3) * env(p, 0.14),
+          hatTilt: 0.48 * Math.sin(p * TAU3) * env(p, 0.14),
+          broomSwing: -0.85 * Math.sin(p * TAU3) * env(p, 0.14),
+          eyes: -0.7 * hold(p, 0.22, 0.8)
+        };
+      }],
+      /* 跳一跳 —— 蹲-蹬-腾空-落地-回弹：起跳前先蹲 0.30 蓄力（挤压），
+         腾空拉长，落地那一压（-1.05）比起跳的蹬还重 —— 重量是落地时读出来的，
+         之后一个小回弹（settle）站定。帽子在落地时被颠得前倾。 */
+      jump: [1.15, (p) => {
+        const crouch = bump(p, 0, 0.09, 0.15, 0.26);
+        const flight = Math.sin(Math.PI * clamp2((p - 0.22) / 0.54, 0, 1));
+        const land = bump(p, 0.72, 0.8, 0.88, 0.97);
+        const settle = Math.sin(Math.PI * clamp2((p - 0.88) / 0.12, 0, 1));
+        return {
+          rise: -0.3 * crouch + 1.65 * flight - 0.14 * land + 0.1 * settle,
+          squash: -0.5 * crouch + 0.85 * flight - 1.05 * land + 0.25 * settle,
+          hatTilt: 0.5 * flight - 0.45 * land,
+          broomSwing: -0.95 * flight,
+          eyes: 0.5 * flight - 0.35 * land
+        };
+      }],
+      /* 掀帽 —— 掀起时先过头顶一点（过冲 +18%）再落回拿着的高度，拿住的这段
+         里帽子以 0.07 的幅度轻轻晃（她端着它，不是冻结它），放回去走 w 自己
+         的缓出。身体后仰与扫帚都跟着过冲一小下。 */
+      salute: [1.6, (p) => {
+        const w = smooth(clamp2((p - 0.04) / 0.2, 0, 1)) * (1 - smooth(clamp2((p - 0.78) / 0.18, 0, 1)));
+        const os = Math.sin(Math.PI * clamp2((p - 0.24) / 0.26, 0, 1));
+        const sway = Math.sin(p * TAU3 * 2.2);
+        return {
+          hatRise: 2.4 * w * (1 + 0.18 * os) + 0.07 * w * sway,
+          hatTilt: -1.15 * w * (1 + 0.14 * os) + 0.1 * w * sway,
+          tip: -0.32 * w,
+          rise: 0.4 * w,
+          broomSwing: 0.6 * w * (1 + 0.25 * os),
+          eyes: 0.35 * w
+        };
+      }]
+    };
+    const SING = {
+      /* 随句摇 —— 一个完整来回的侧倾。跟的是**乐句的呼吸**，不是拍：正弦只有
+         一个周期，2.6 秒走完，正好是"一句"的长度。帽子反相、扫帚再迟一点。
+         ★ `rise` 必须**非负**（`(1−cos)/2`，两个峰分别在 p=0.25/0.75 —— 正好是
+           侧倾的两个极值）。第一版给的是 `sin(p·2·TAU)`，它在 p=0.75 取 −1，于是
+           最大侧倾与最大下沉同时发生，两笔账叠一起：`_singhem.mjs` 量到下摆
+           离地板 −0.269。同一个形状改成只往上呼吸，同一处变成 +0.4 以上。 */
+      sway: [2.6, (p) => {
+        const e = env(p, 0.2);
+        const s = Math.sin(p * TAU3);
+        return {
+          lean: 0.82 * s * e,
+          hatTilt: -0.44 * Math.sin(p * TAU3 - 0.55) * e,
+          broomSwing: 0.58 * Math.sin(p * TAU3 - 0.35) * e,
+          rise: 0.34 * (1 - Math.cos(p * TAU3 * 2)) * 0.5 * e,
+          eyes: 0.2 * e
+        };
+      }],
+      /* 跟拍弹两下 —— 两段 `bump` 拼的：第一下满、第二下七成（均匀的重复是机器）。
+         全在 `rise` 的正半轴上，所以不碰地板钳。 */
+      bounce: [1.5, (p) => {
+        const s = bump(p, 0, 0.1, 0.16, 0.3) + 0.72 * bump(p, 0.34, 0.44, 0.5, 0.64);
+        return {
+          rise: 1.1 * s,
+          squash: 0.45 * s,
+          tip: 0.12 * s,
+          hatTilt: -0.3 * s,
+          broomSwing: -0.55 * s,
+          eyes: 0.35 * s
+        };
+      }],
+      /* 抬手（高音那一句）—— 主打 `hatRise`：帽子相对头顶升起来。`hold` 把平台
+         保在 26%~72%，因为"举着"才是这一条要看的，进出只是礼貌。 */
+      reach: [1.9, (p) => {
+        const w = hold(p, 0.26, 0.72);
+        const os = Math.sin(Math.PI * clamp2((p - 0.26) / 0.34, 0, 1));
+        return {
+          hatRise: 1.85 * w + 0.1 * os,
+          hatTilt: -0.72 * w,
+          rise: 0.92 * w,
+          tip: -0.28 * w,
+          broomSwing: 0.7 * w,
+          eyes: 0.3 * w
+        };
+      }],
+      /* 俯身凑句 —— 前倾是唯一主导（0.52 rad ≈ 30°，比点头的 0.16 大三倍：那是
+         "回一下"，这是"凑过去"）。★ `rise` 是**正**的（+0.26），不是负的：第一版
+         写成"前倾 + 下沉"（tip 0.86 / rise −0.78），`_singhem.mjs` 量到下摆离地板
+         −0.814。原因不是公式不够，是**唱歌时 `bob` 自己有 ±0.385**，钳完 `sunk`
+         长期停在 −0.30 —— 旋转和下沉两笔账叠在一起，地板钳只管后一笔。所以她俯身
+         的时候要**微微升起来**，把那 0.30 让回去；她是飘着的，俯身不是蹲下。
+         （`_hemsweep.mjs` 量过纯旋转的下沉曲线：θ=0.52 时 0.576，现公式给 0.353，
+         加上让回的 0.30 正好够。） */
+      swoop: [1.7, (p) => {
+        const w = hold(p, 0.24, 0.7);
+        return {
+          tip: 0.52 * w,
+          rise: 0.26 * w,
+          squash: -0.22 * w,
+          hatTilt: 0.42 * w,
+          broomSwing: -0.36 * w,
+          eyes: -0.45 * w
+        };
+      }],
+      /* 高音飘起 —— 主打整体 `rise`（1.35，介于跳的 1.65 与抬手的 0.92 之间），
+         而且**全程不回地面**：`hold` 的平台宽到 30%~74%，读起来是"飘着唱"，
+         不是"跳了一下"。眼睛瞪大，扫帚甩得比身体多。 */
+      float: [2.1, (p) => {
+        const w = hold(p, 0.3, 0.74);
+        return {
+          rise: 1.35 * w,
+          squash: 0.28 * w,
+          tip: -0.2 * w,
+          hatRise: 0.45 * w,
+          broomSwing: 0.85 * w,
+          eyes: 0.45 * w
+        };
+      }]
+    };
+    const clip = (n) => ACTIONS[n] || SING[n];
+    const SONGBOOK = ["sway", "bounce", "reach", "sway", "swoop", "float", "sway", "bounce"];
+    const SING_PHRASE = 4.5;
+    const SING_FIRST = 1.4;
+    const SING_GAP = [2.4, 3.4];
+    const SING_DUCK = 0.34;
     const st = {
       t: 0,
       sing: 0,
@@ -35737,39 +33118,119 @@ void main() {
       aimY: 0,
       beat: 0,
       sway: 0,
-      blink: 0,
-      nextBlink: 2.2,
       act: null,
-      // { name, t, dur }
-      tailSway: 0,
-      tailSwayV: 0
+      blink: 0,
+      nextBlink: 2.4,
+      glow: 0,
+      eye: 1,
+      dance: 0,
+      song: 0,
+      songT: 0,
+      ph: -1,
+      pos: -1
     };
-    const ACTIONS = {
-      // name: [duration, how it drives the pose]
-      nod: [1.15, (p) => ({ headPitch: Math.sin(p * Math.PI * 1.6) * 0.3 })],
-      wave: [1.85, (p) => {
-        const up = smoothstep2(0, 0.18, p) * (1 - smoothstep2(0.84, 1, p));
-        const w = Math.sin(p * Math.PI * 5.2) * up;
-        return { armR: up, armRWave: w, headTilt: w * 0.1 };
-      }],
-      spin: [1.6, (p) => ({
-        spin: easeInOut(p) * Math.PI * 2,
-        hop: Math.sin(p * Math.PI) * 0.42
-      })],
-      jump: [1.25, (p) => ({
-        // crouch, launch, float, land — an asymmetric arc, not a sine
-        hop: p < 0.22 ? -0.3 * Math.sin(p / 0.22 * Math.PI * 0.5) : Math.sin((p - 0.22) / 0.78 * Math.PI) * 1.05,
-        armsUp: p < 0.22 ? 0 : smoothstep2(0.22, 0.4, p) * (1 - smoothstep2(0.72, 1, p))
-      })],
-      salute: [1.5, (p) => ({
-        // hand to the brow, hold, and a small bow on the way out
-        armR: smoothstep2(0, 0.22, p) * (1 - smoothstep2(0.76, 1, p)),
-        armRBend: -1.5,
-        bow: Math.sin(smoothstep2(0.3, 0.7, p) * Math.PI) * 0.16
-      })]
-    };
-    function easeInOut(p) {
-      return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    function update(dt, { singing = false, hovered = false, aimX = 0, aimY = 0, beat = 0, beatOn = false, routine = true, pos = 0 } = {}) {
+      st.t += dt;
+      st.sing = damp(st.sing, singing ? 1 : 0, 3, dt);
+      st.hover = damp(st.hover, hovered ? 1 : 0, 9, dt);
+      st.aim = damp(st.aim, aimX || aimY ? 1 : 0, 4, dt);
+      st.aimX = damp(st.aimX, clamp2(aimX, -1, 1), 5, dt);
+      st.aimY = damp(st.aimY, clamp2(aimY, -1, 1), 5, dt);
+      st.beat = damp(st.beat, beatOn ? clamp2(beat, 0, 1) : 0, 12, dt);
+      const phrase = pos > 0 ? Math.floor(pos / SING_PHRASE) : -1;
+      const edge = phrase < 0 || phrase !== st.ph;
+      st.ph = phrase;
+      const dpos = pos > 0 && st.pos >= 0 ? clamp2(pos - st.pos, 0, 1) : 0;
+      st.pos = pos;
+      if (!routine || !singing) {
+        st.song = 0;
+        st.songT = SING_FIRST;
+        st.ph = -1;
+        st.pos = -1;
+      } else if (!st.act && st.sing > 0.5) {
+        st.songT -= pos > 0 ? dpos : dt;
+        if (st.songT <= 0 && (st.song === 0 || edge)) {
+          const name = SONGBOOK[st.song % SONGBOOK.length];
+          st.song++;
+          st.songT = SING_GAP[st.song % SING_GAP.length];
+          st.act = { name, t: 0, dur: clip(name)[0], auto: true };
+        }
+      }
+      let o = {};
+      if (st.act) {
+        st.act.t += dt;
+        const p = clamp2(st.act.t / st.act.dur, 0, 1);
+        o = clip(st.act.name)[1](p) || {};
+        if (p >= 1) st.act = null;
+      }
+      const s = st.sing, b = st.beat;
+      const floatAmp = 0.085 + 0.2 * s;
+      const floatRate = 0.9 + 0.55 * s;
+      st.bob = Math.sin(st.t * floatRate) * floatAmp * (1 + 0.5 * b);
+      st.lift = damp(st.lift, hovered ? 0.26 : 0, 7, dt);
+      st.glow = damp(st.glow, 1.15 + 0.55 * s + 0.45 * b, 8, dt);
+      const danceTo = !singing ? 0 : st.act && !st.act.auto ? 0 : st.act && st.act.auto ? SING_DUCK : 1;
+      st.dance = damp(st.dance, danceTo, 2.2, dt);
+      const dc = st.dance;
+      const ph = st.t * (2.5 + 0.5 * b);
+      const dLean = dc * (0.15 * Math.sin(ph) + 0.05 * b * Math.sin(ph * 2));
+      const dRise = dc * (0.14 * b + 0.045 * Math.sin(ph * 2 + 0.6));
+      const dSpin = dc * 0.06 * Math.sin(ph * 0.5 + 0.35);
+      const dTip = dc * 0.045 * Math.sin(ph * 2 + 0.9);
+      const dHat = dc * 0.05 * Math.sin(ph + 1.5);
+      const dBroom = dc * 0.12 * Math.sin(ph + 0.9);
+      const rise = (o.rise || 0) * (1 + 0.35 * b);
+      const tip = (o.tip || 0) + st.aimY * 0.1 * st.aim + Math.sin(st.t * 0.71) * 0.035 + dTip;
+      const lean = st.aimX * 0.16 * st.aim + Math.sin(st.t * 0.53) * 0.045 + dLean;
+      const roll = lean * 0.6 + (o.lean || 0);
+      root.rotation.set(tip, (o.spin || 0) + dSpin, roll);
+      root.position.y = y;
+      const SINK_LIMIT = -0.24, SINK_SOFT = 0.06;
+      const rawY = st.bob + st.lift + rise + dRise;
+      const over = SINK_LIMIT - rawY;
+      const sunk = over <= 0 ? rawY : SINK_LIMIT - SINK_SOFT * (1 - Math.exp(-over / SINK_SOFT));
+      const sag = HEM_RX * Math.abs(Math.sin(roll)) + HEM_RZ * Math.abs(Math.sin(tip));
+      const rideUp = Math.max(0, sag - HEM_H * Math.cos(Math.hypot(tip, roll)) + HEM_KEEP);
+      const squash = (o.squash || 0) * 0.16;
+      body.position.y = sunk + rideUp;
+      const sy = 1 + squash, sxz = 1 - squash * 0.55;
+      body.scale.set(sxz, sy, sxz);
+      face.rotation.y = st.aimX * 0.3 * st.aim;
+      face.position.y = FACE_Y + body.position.y;
+      hat.position.y = HAT_Y + body.position.y * 0.86 + (o.hatRise || 0);
+      hat.rotation.z = -0.302 + Math.sin(st.t * 0.62 + 0.9) * 0.03 + (o.hatTilt || 0) * 0.62 - dHat;
+      hat.rotation.x = -0.055 + tip * 0.42;
+      const bobY = Math.sin(st.t * floatRate + 0.9) * floatAmp * 0.42 + rise * BROOM_RISE + dRise * 0.5;
+      _bqRoot.setFromEuler(root.rotation);
+      _bqKeep.setFromEuler(_bEul.set(
+        root.rotation.x * BROOM_FOLLOW,
+        root.rotation.y,
+        root.rotation.z * BROOM_FOLLOW,
+        "XYZ"
+      ));
+      _bqFix.copy(_bqRoot).invert().multiply(_bqKeep);
+      broom.position.copy(BROOM_HOME).applyQuaternion(_bqFix).add(_bVec.set(0, bobY, 0).applyQuaternion(_bqFix));
+      broom.quaternion.setFromEuler(_bEul.set(
+        0,
+        -0.24,
+        -0.1 + Math.sin(st.t * 0.5) * 0.016 + (o.broomSwing || 0) * BROOM_SWING + dBroom,
+        "XYZ"
+      ));
+      broom.quaternion.premultiply(_bqFix);
+      matBody.emissiveIntensity = st.glow;
+      st.nextBlink -= dt;
+      if (st.nextBlink <= 0) {
+        st.blink = 0.11;
+        st.nextBlink = 2.6 + Math.random() * 3.8;
+      }
+      st.blink = Math.max(0, st.blink - dt);
+      const shut = st.blink > 0 ? 0.1 : 1;
+      st.eye = clamp2(1 + (o.eyes || 0), 0.12, 1.7);
+      for (const e of eyes) e.scale.y = e.userData.ry * shut * st.eye;
+      const open = s * (0.25 + 0.75 * b);
+      mouth.scale.set(1 + open * 0.35, 1 - open * 0.55, 1);
+      matMouth.color.setHex(open > 0.4 ? 7149076 : C.mouth);
+      return { sing: st.sing, bob: st.bob };
     }
     return {
       root,
@@ -35777,15 +33238,8 @@ void main() {
       aura,
       materials,
       head,
-      crown,
-      /* Two read-only numbers, and the only reason they are on the outside is
-         `tools/_sing.mjs`. It has to answer "is she singing, and does that move
-         her more" from outside a closure, and the honest way to do that is to read
-         the numbers `update` writes rather than to infer them from the picture —
-         the picture is what burned this project once already (the probe used to
-         measure her hover footprint, which was a proxy for her scale while she was
-         a billboard and stopped meaning anything the day she became a solid).
-         Nothing on the page reads these. */
+      crown: hat,
+      broom,
       get sing() {
         return st.sing;
       },
@@ -35793,112 +33247,48 @@ void main() {
         return st.bob;
       },
       ready: true,
-      /** a one-shot; re-pressing the same one restarts it, which is what a button
-          you can hit twice should do */
+      /* 没有 `auto` 就是"这是访客点的"：`dance` 会因此熄掉（见 `SONGBOOK` 那块），
+         而歌本的倒计时也被推回一整段休息 —— 否则访客点的那一下可能刚好撞上
+         即兴动作的到期时刻，自己点的动作只演了十分之一就被接走。 */
       play(name) {
         const a = ACTIONS[name];
         if (!a) return false;
         st.act = { name, t: 0, dur: a[0] };
+        st.songT = SING_GAP[st.song % SING_GAP.length];
         return true;
       },
       get action() {
         return st.act ? st.act.name : null;
       },
-      /* A room has exactly two ways in to her, and they are the two the 2D version
-         had. `rim` / `rimOp` drive the aura — the same numbers, the same meaning,
-         a different machine (see the header). `tint` lands on the *leaf* accents
-         only, at a whisper: it is what stops her green reading as a sticker on a
-         white plate in 晴室 and as a lamp in 夜巢, without recolouring the
-         character herself. Nothing else about her is per-room, and that is
-         deliberate — a figure whose skin changes colour with the wallpaper is a
-         swatch, not a person. */
+      /* 姿态读数。`action` 只说得出**哪一段**在跑，说不出它有没有在动 ——
+         而这两件事不是同一句话。本轮就是靠它抓到两个**从没被读过**的动作通道
+         （`arm` 与 `lift`）："挥手"那一栏背后只有一个 0.10 rad 的倾角，
+         因为 `arm` 全文件没有第二处引用、`lift` 每帧被 `damp` 覆盖掉。
+         只出数字，不把任何 Object3D 递出去 —— 钩子的读者是探针，不是渲染器。 */
+      pose() {
+        return {
+          y: body.position.y,
+          sx: body.scale.x,
+          sy: body.scale.y,
+          tip: root.rotation.x,
+          spin: root.rotation.y,
+          lean: root.rotation.z,
+          hatY: hat.position.y,
+          hatZ: hat.rotation.z,
+          hatX: hat.rotation.x,
+          broomY: broom.position.y,
+          broomZ: broom.rotation.z,
+          eye: st.eye || 1
+        };
+      },
+      /* 房间能改的只有两样：光环的颜色/浓度，和体内青光的色偏。
+         幽灵本身的白紫红不随墙纸变 —— 一个会跟着壁纸换肤的角色是色卡不是角色。 */
       setRoom(rim, rimOpacity, tint, k) {
         auraUniforms.uColor.value.lerp(rim, k);
-        auraUniforms.uOpacity.value = lerp2(auraUniforms.uOpacity.value, rimOpacity, k);
-        for (const m of leafMats) m.emissive.lerp(tint, k);
+        auraUniforms.uOpacity.value += (rimOpacity - auraUniforms.uOpacity.value) * k;
+        matBody.emissive.lerp(tint, k * 0.5);
       },
-      /* `aimX` / `aimY` are the pointer's offset from her on screen, -1..1;
-         `beat` is the audio envelope, 0..1; `beatOn` gates it so a silent page
-         does not sway to a level that happens to be non-zero. */
-      update(dt, { singing = false, hovered = false, aimX = 0, aimY = 0, beat = 0, beatOn = false } = {}) {
-        st.t += dt;
-        st.sing = damp2(st.sing, singing ? 1 : 0, 3, dt);
-        st.hover = damp2(st.hover, hovered ? 1 : 0, 9, dt);
-        st.lift = damp2(st.lift, hovered ? 0.24 : 0, 7, dt);
-        st.aim = damp2(st.aim, aimX || aimY ? 1 : 0, 4, dt);
-        st.aimX = damp2(st.aimX, clamp2(aimX, -1, 1), 5.5, dt);
-        st.aimY = damp2(st.aimY, clamp2(aimY, -1, 1), 5.5, dt);
-        st.beat = damp2(st.beat, beatOn ? clamp2(beat, 0, 1) : 0, 12, dt);
-        const s = st.sing;
-        let o = {};
-        if (st.act) {
-          st.act.t += dt;
-          const p = clamp2(st.act.t / st.act.dur, 0, 1);
-          o = ACTIONS[st.act.name][1](p) || {};
-          if (p >= 1) st.act = null;
-        }
-        st.nextBlink -= dt;
-        if (st.nextBlink <= 0) {
-          st.blink = 0.13;
-          st.nextBlink = 2.4 + Math.random() * 3.6;
-        }
-        if (st.blink > 0) {
-          st.blink -= dt;
-          const shut = st.blink > 0 && st.blink < 0.13;
-          for (const e of eyes) e.mat.map = shut ? eyeTexShut : eyeTexOpen;
-        }
-        const openAmt = s * (0.2 + 0.8 * st.beat);
-        mouthMatOpen.opacity = openAmt;
-        mouthMatShut.opacity = 1 - openAmt * 0.72;
-        mouth.visible = mouthMatShut.opacity > 0.02;
-        const speed = 1.05 + s * 1.45;
-        const bob = Math.sin(st.t * speed) * (0.075 + s * 0.2) + (o.hop || 0);
-        st.bob = bob;
-        const breath = 1 + Math.sin(st.t * speed * 1.34) * (0.014 + s * 0.03);
-        const idleLean = Math.sin(st.t * speed * 0.61) * (0.5 + s * 1.6);
-        const headYaw = st.aimX * 0.42 * st.aim + (o.headYaw || 0);
-        const headPitch = -st.aimY * 0.24 * st.aim + (o.headPitch || 0) + st.beat * 0.085 + (o.bow || 0);
-        const bodyYaw = st.aimX * 0.2 * st.aim + (o.spin || 0);
-        head.rotation.y = headYaw;
-        head.rotation.x = headPitch;
-        head.rotation.z = (idleLean + (o.headTilt || 0)) * Math.PI / 180;
-        body.rotation.y = bodyYaw;
-        body.scale.set(breath, 1 + (breath - 1) * 0.5, breath);
-        root.position.y = y + bob + st.lift;
-        const drive = (o.spin ? 1.6 : 0) + st.aimX * st.aim * 0.5 + Math.sin(st.t * speed) * 0.22;
-        st.tailSwayV += (drive - st.tailSway) * 9 * dt;
-        st.tailSwayV *= Math.exp(-3.2 * dt);
-        st.tailSway += st.tailSwayV * dt * 6;
-        tailPivot.rotation.z = st.tailSway * 0.42;
-        tailPivot.rotation.x = -st.tailSway * 0.24 + st.beat * 0.06;
-        for (const a of arms) {
-          const isR = a.side > 0;
-          const idle = 0.16 + s * 0.3;
-          const up = isR ? o.armR || 0 : 0;
-          a.pivot.rotation.z = a.side * (idle + up * 2);
-          a.pivot.rotation.x = -s * 0.16 + (o.armsUp || 0) * -0.9;
-          a.fore.rotation.z = a.side * (-0.22 - s * 0.2) + (isR ? (o.armRWave || 0) * 0.5 + (o.armRBend || 0) * 0.4 : 0);
-          a.fore.rotation.x = -0.3 - s * 0.3;
-        }
-        for (const l of legs) {
-          l.pivot.rotation.x = 0.12 - s * 0.1 + (o.hop ? clamp2(o.hop, -1, 1) * -0.5 : 0);
-        }
-        crown.rotation.z = Math.sin(st.t * 6.2) * 0.02 + st.beat * 0.07 + st.aimX * 0.06;
-        crown.rotation.x = -st.beat * 0.06;
-        aura.scale.set(breath * 1, 1.1 * breath, breath);
-        aura.position.y = HEAD_Y + bob * 0.4;
-      },
-      dispose() {
-        root.traverse((o) => {
-          if (o.geometry) o.geometry.dispose();
-        });
-        for (const m of materials) m.dispose();
-        aura.material.dispose();
-        hit.geometry.dispose();
-        hit.material.dispose();
-        eyeTexOpen.dispose();
-        eyeTexShut.dispose();
-      }
+      update
     };
   }
 
@@ -36001,16 +33391,18 @@ void main() {
         // the gold of the room's one spot
       },
       bg: {
-        stops: [[0, "#111214"], [0.44, "#1b1c1f"], [0.64, "#0c0d0f"], [1, "#040405"]],
-        spot: { u: 0.849, v: 0.48, r: 0.4, color: "rgba(220,190,140,0.60)" }
+        stops: [[0, "#120e1c"], [0.44, "#1e1733"], [0.64, "#0d0a17"], [1, "#050309"]],
+        spot: { u: 0.849, v: 0.48, r: 0.4, color: "rgba(226,196,150,0.58)" }
       },
-      floor2: 921361,
-      floorMix: 0.6,
+      floor2: 1840678,
+      floorMix: 0.22,
       shadowOp: 0.44,
-      pool: 16763256,
-      poolOp: 0.07,
-      spirit: { tint: 16774630, rim: 14466700, rimOp: 0.3 },
-      glare: { tint: [1, 0.86, 0.62], strength: 0.16, stride: 0.01, threshold: 0.58 }
+      pool: 12160255,
+      poolOp: 0.03,
+      /* 房间能改幽灵的只有两样：光环的颜色/浓度、体内青光的色偏。
+         暗房里光环取金带那个金 —— 它替掉了原来那身叶子发饰在房间里的作用。 */
+      spirit: { tint: 15260927, rim: 13214286, rimOp: 0.3 },
+      glare: { tint: [0.94, 0.86, 1], strength: 0.16, stride: 0.01, threshold: 0.58 }
     },
     studio: {
       env: "studio",
@@ -36025,20 +33417,21 @@ void main() {
         sat: 1,
         edge: 1,
         focus: 0.26,
-        // neutral: in a white hall a warm bleed on a white highlight is the one
-        // thing that would give the whole room away as a filter
-        halTint: [1, 0.97, 0.94]
+        // a hair violet rather than neutral: the hall's white is now a cold one
+        // (see lights.js), and a neutral bleed on a violet-white highlight is the
+        // one thing that would give the whole room away as a filter
+        halTint: [0.96, 0.96, 1]
       },
       bg: {
-        stops: [[0, "#b8bcc1"], [0.46, "#d7dade"], [0.78, "#ebedef"], [1, "#f6f7f8"]],
-        spot: { u: 0.849, v: 0.48, r: 0.44, color: "rgba(255,255,255,0.42)" }
+        stops: [[0, "#b6bac8"], [0.46, "#d5d9e4"], [0.78, "#eaecf2"], [1, "#f5f6fa"]],
+        spot: { u: 0.849, v: 0.48, r: 0.44, color: "rgba(246,244,255,0.42)" }
       },
-      floor2: 14080218,
-      floorMix: 0.3,
+      floor2: 9144982,
+      floorMix: 0.12,
       shadowOp: 0.18,
-      pool: 16777215,
-      poolOp: 0.03,
-      spirit: { tint: 14605010, rim: 2763551, rimOp: 0.26 },
+      pool: 13616383,
+      poolOp: 0,
+      spirit: { tint: 14738162, rim: 6967208, rimOp: 0.26 },
       // the room the page opens in, so this is the one glare nobody should be
       // able to notice: a hint of a streak on the speculars and nothing else
       glare: { tint: [0.92, 0.95, 1], strength: 0.06, stride: 8e-3, threshold: 0.66 }
@@ -36061,19 +33454,19 @@ void main() {
         sat: 1,
         edge: 1.05,
         focus: 0.24,
-        halTint: [0.66, 0.84, 1]
+        halTint: [0.62, 0.92, 1]
       },
       bg: {
-        stops: [[0, "#a8bcc9"], [0.46, "#cbd8e0"], [0.74, "#e2e9ee"], [1, "#f1f5f8"]],
-        spot: { u: 0.849, v: 0.48, r: 0.42, color: "rgba(180,215,240,0.45)" }
+        stops: [[0, "#93b6c4"], [0.46, "#c2dae2"], [0.74, "#dcebf0"], [1, "#eef6f8"]],
+        spot: { u: 0.849, v: 0.48, r: 0.42, color: "rgba(150,225,245,0.48)" }
       },
-      floor2: 12766936,
-      floorMix: 0.34,
+      floor2: 8294294,
+      floorMix: 0.14,
       shadowOp: 0.22,
-      pool: 6277352,
-      poolOp: 0.06,
-      spirit: { tint: 14871280, rim: 3029562, rimOp: 0.24 },
-      glare: { tint: [0.62, 0.84, 1], strength: 0.22, stride: 0.011, threshold: 0.55 }
+      pool: 6283504,
+      poolOp: 0.02,
+      spirit: { tint: 14217461, rim: 2068384, rimOp: 0.26 },
+      glare: { tint: [0.58, 0.92, 1], strength: 0.22, stride: 0.011, threshold: 0.55 }
     }
   };
   for (const T of Object.values(THEMES)) {
@@ -36149,6 +33542,9 @@ void main() {
     pool2.position.y = FLOOR_Y + 0.02 - d;
   }
   setFloorDrop(0);
+  var castle = createCastle({ floorY: FLOOR_Y });
+  scene.add(castle.group);
+  scene.fog = castle.fog;
   var dustLayers = [
     { n: 220, size: 0.055, color: 16770760, opacity: 0.5, spread: 26, rise: 0.09 },
     { n: 70, size: 0.34, color: 16762778, opacity: 0.16, spread: 20, rise: 0.045 }
@@ -36233,7 +33629,7 @@ void main() {
   }
   function goHome() {
     homeArmed = false;
-    orbit.setPreset(vi >= 0 ? VANTAGES[vi].v : cur().view, false);
+    orbit.setPreset((vi >= 0 ? VANTAGES[vi] : VANTAGES[0]).v, false);
     if (orbit.tween) orbit.tween.dur = 1.6;
   }
   var orbit = new Orbit(canvas2, camera, {
@@ -36242,9 +33638,10 @@ void main() {
     radius: 40,
     target: new Vector3(0, 0.05, 0),
     minR: 11,
-    maxR: 52,
+    maxR: 40,
     minPhi: 0.16,
     maxPhi: 1.52,
+    // 城堡墙在 44 —— 镜头最远 40，留在厅内
     auto: false,
     reduce,
     onInteract: (dragging) => {
@@ -36252,14 +33649,15 @@ void main() {
       document.body.classList.add("moved");
       if (!dragging) armHome();
     },
-    onManual: armHome,
-    onReset: () => {
-      vi = 0;
-      homeArmed = false;
-      render();
-    }
+    onManual: armHome
   });
-  orbit.home = { theta: 0.62, phi: 1.03, radius: 33 };
+  var VANTAGES = [
+    { k: "front", cn: "\u6B63\u89C6\u673A\u4F4D", en: "\u6B63\u7ACB\u9762", v: { theta: 0.06, phi: 1.3, radius: 31 } },
+    { k: "iso", cn: "\u7B49\u8F74\u673A\u4F4D", en: "\u7B49\u89D2\u6295\u5F71", v: { theta: 0.62, phi: 1.03, radius: 33 } },
+    { k: "top", cn: "\u4FEF\u89C6\u673A\u4F4D", en: "\u5E73\u9762", v: { theta: 0.34, phi: 0.3, radius: 34 } },
+    { k: "detail", cn: "\u7EC6\u8282\u7279\u5199", en: "\u5FAE\u8DDD", v: { theta: 0.95, phi: 1.14, radius: 21 } }
+  ];
+  orbit.home = VANTAGES[0].v;
   var audio = new TapeAudio();
   var TRACK_DEFAULT = {
     title: "Sacred Play Secret Place",
@@ -36285,7 +33683,7 @@ void main() {
   var bedLevel = () => prefs.hiss ? muted ? 0.45 : 0.3 * volume : 0;
   var audioOk = () => audioEl.readyState >= 2 && isFinite(audioEl.duration) && audioEl.duration > 0;
   var SWAP_DUR = 1.2;
-  var swap = { state: "idle", p: 0, press: 0, neu: null, old: null, dur: 0, play: false, seek: null, meta: null };
+  var swap = { state: "idle", p: 0, press: 0, dur: 0, play: false, seek: null, meta: null };
   var loadSeq = 0;
   var brandCode = $("#brand-code");
   var currentName = TRACK_DEFAULT.src;
@@ -36356,9 +33754,7 @@ void main() {
     swap.dur = 0;
     const dur = await whenPlayable();
     if (seq !== loadSeq) return;
-    const staged = cas.setLabel({ title, artist, album, minutes: dur > 0 ? tapeMinutes(dur) : "--" });
-    swap.neu = staged.neu;
-    swap.old = staged.old;
+    cas.setLabel({ title, artist, album, minutes: dur > 0 ? tapeMinutes(dur) : "--" });
     cas.sweepLabel(0);
     audio.clunk(0.9);
     swap.p = 0;
@@ -36377,17 +33773,11 @@ void main() {
     swap.state = "idle";
     swap.press = 0;
     cas.commitLabel();
-    for (const e of ghosts) {
-      const i = swap.old.indexOf(e.m.map);
-      if (i >= 0) e.m.map = swap.neu[i];
-    }
-    for (const t2 of swap.old) t2.dispose();
-    swap.neu = swap.old = null;
     Object.assign(TRACK, swap.meta);
     swap.meta = null;
     if (swap.dur > 0) {
       cas.st.duration = swap.dur;
-      swapText(brandCode, "ND\u2014" + tapeMinutes(swap.dur));
+      swapText(brandCode, "GH\u2014" + tapeMinutes(swap.dur));
     }
     setNowChip();
     flashAdd(null);
@@ -36410,8 +33800,6 @@ void main() {
     swap.meta = null;
     swap.dur = 0;
     swap.play = false;
-    if (swap.neu) for (const t2 of swap.neu) t2.dispose();
-    swap.neu = swap.old = null;
     cas.warmLabel(false);
   }
   function reinitTrack() {
@@ -36429,15 +33817,10 @@ void main() {
     cas.setProgress(0);
     audioFailed = false;
     Object.assign(TRACK, T);
-    const staged = cas.setLabel({ title: T.title, artist: T.artist, album: T.album, minutes: T.minutes });
-    for (const e of ghosts) {
-      const i = staged.old.indexOf(e.m.map);
-      if (i >= 0) e.m.map = staged.neu[i];
-    }
+    cas.setLabel({ title: T.title, artist: T.artist, album: T.album, minutes: T.minutes });
     cas.commitLabel();
-    for (const t2 of staged.old) t2.dispose();
     cas.warmLabel(false);
-    swapText(brandCode, "ND\u2014" + T.minutes);
+    swapText(brandCode, "GH\u2014" + T.minutes);
     setNowChip();
     swap.dur = 0;
   }
@@ -36471,7 +33854,7 @@ void main() {
     if (vk >= 0) {
       vi = vk;
       orbit.setPreset(VANTAGES[vk].v, true);
-    } else if (camera2 && [...Q.keys()].length && !Q.has("x")) orbit.setPreset(orbit.home, true);
+    } else if (camera2) orbit.setPreset(orbit.home, true);
     if (TAPE_ON) {
       if (Q.get("f") === "1") setFlip(true, true);
       if (Q.get("x") === "1") setExplode(true, true);
@@ -36480,7 +33863,7 @@ void main() {
       const r = MOVES.findIndex((x) => x.no === Q.get("m").padStart(2, "0"));
       if (r >= 0) {
         ri = r;
-        doMove(true, camera2);
+        doMove(true);
       }
     }
     if (Q.get("p") === "1") togglePlay(true);
@@ -36639,7 +34022,8 @@ void main() {
     const l = themeRate();
     rig.apply(RIG[themeName], dt, instant, l);
     const k = instant ? 1 : 1 - Math.exp(-l * dt);
-    const to = (cur2, tgt) => instant ? tgt : damp2(cur2, tgt, l, dt);
+    const to = (cur2, tgt) => instant ? tgt : damp(cur2, tgt, l, dt);
+    castle.setTheme(themeName, k);
     renderer.toneMappingExposure += ((RIG[themeName].exposure ?? 1) - renderer.toneMappingExposure) * k;
     scene.environmentIntensity += ((RIG[themeName].envInt ?? 1) - (scene.environmentIntensity ?? 1)) * k;
     dust.mat.opacity = to(dust.mat.opacity, T.dust);
@@ -36676,7 +34060,7 @@ void main() {
         backdropIn.visible = false;
       }
     }
-    intro.fade = reduce ? 1 : damp2(intro.fade, 1, 1.6, dt);
+    intro.fade = reduce ? 1 : damp(intro.fade, 1, 1.6, dt);
     grade.uniforms.uFade.value = intro.fade;
     applyIblFade(dt);
   }
@@ -36725,7 +34109,7 @@ void main() {
   function applyIblFade(dt) {
     iblSrgb = themeProbe ? iblFrom + (iblTo - iblFrom) * themeQ() : iblTo;
     const want = Math.pow(iblSrgb / iblRef, 2.2);
-    const next = damp2(iblK, want, 11, dt);
+    const next = damp(iblK, want, 11, dt);
     iblK = Math.abs(next - want) < 2e-3 ? want : next;
     if (iblK === iblWritten) return;
     iblWritten = iblK;
@@ -36783,13 +34167,20 @@ void main() {
       currentName = side.url;
       audioEl.src = TRACK.src;
       audioEl.load();
-      swapText(brandCode, "ND\u2014" + TRACK.minutes);
+      swapText(brandCode, "GH\u2014" + TRACK.minutes);
     });
     await step("\u6B63\u5728\u5EFA\u7ACB\u51E0\u4F55\u4F53", 12, () => {
-      cas = createCassette({ title: TRACK.title, artist: TRACK.artist, album: TRACK.album, minutes: TRACK.minutes });
+      cas = createRelic({
+        title: TRACK.title,
+        artist: TRACK.artist,
+        album: TRACK.album,
+        minutes: TRACK.minutes,
+        // 厅的地面。烛台的底座落在它上面，不落在 y=0 —— 见 relic.js 的 ★★
+        floorY: FLOOR_Y
+      });
       scene.add(cas.root);
-      cas.root.visible = TAPE_ON;
-      spirit = createNahida({ height: SPIRIT_H, y: FLOOR_Y });
+      cas.root.visible = true;
+      spirit = createGhost({ height: SPIRIT_H, y: FLOOR_Y });
       scene.add(spirit.root);
       {
         const T = THEMES[themeName];
@@ -36798,6 +34189,22 @@ void main() {
       Object.defineProperty(window, "__spirit", {
         configurable: true,
         value: {
+          /* 探针的相机/场景读数口（castle 调试用；页面自己不读） */
+          get cam() {
+            return camera.position.toArray().map((n) => +n.toFixed(1));
+          },
+          get kids() {
+            return scene.children.map((o) => o.type + ":" + o.name + ":" + o.children.length);
+          },
+          get fogv() {
+            return scene.fog ? [scene.fog.near, scene.fog.far, scene.fog.color.getHexString()] : null;
+          },
+          /* 城堡的实用灯与火苗可见性。火把在世界 y=4.9、锥体半径 0.15 —— 标准
+             机位框不到，"火把在霜厅里熄着没有"这句话用截图是证不出来的（试过：
+             两种机位都框不到那面墙的上半）。所以让页面把数字说出来。 */
+          get castle() {
+            return castle ? castle.debug() : null;
+          },
           get sing() {
             return spirit ? spirit.sing : null;
           },
@@ -36806,6 +34213,13 @@ void main() {
           },
           get action() {
             return spirit ? spirit.action : null;
+          },
+          /* `action` says which clip is running; `pose` says whether the clip is
+             *doing* anything. `tools/_moves.mjs` checks the first and cannot check
+             the second, which is how two action channels (`arm`, `lift`) sat in
+             ghost.js for a whole round with nothing reading them. */
+          get pose() {
+            return spirit ? spirit.pose() : null;
           },
           get aimX() {
             return spiritAim.x;
@@ -36936,77 +34350,44 @@ void main() {
   var flipped = false;
   var autoRotate = false;
   var PROFILE = {
-    no: "00",
-    cn: "\u7EB3\u897F\u59B2",
-    en: "Nahida \xB7 \u5C0F\u5409\u7965\u8349\u738B",
+    no: "01",
+    cn: "\u5C0F\u5E7D\u7075",
+    en: "Little Ghost \xB7 \u4F1A\u5531\u6B4C\u7684\u7CBE\u7075",
+    note: "\u4E00\u9876\u6B6A\u6234\u7684\u7D2B\u8272\u5973\u5DEB\u5E3D\u3001\u4E00\u6761\u4F1A\u53D1\u5149\u7684\u5E8A\u5355\uFF0C\u548C\u4E00\u67C4\u6BD4\u5979\u624B\u81C2\u8FD8\u957F\u7684\u7EA2\u67C4\u626B\u5E1A\u3002\u5979\u98D8\u5728\u534A\u7A7A\uFF0C\u5E3D\u5C16\u88AB\u8C01\u62E7\u8FC7\u4E00\u9053\u5F2F\uFF1B\u4F53\u5185\u90A3\u70B9\u9752\u5149\u8DDF\u7740\u6B4C\u8D70\u2014\u2014\u5531\u5230\u9AD8\u5904\u5C31\u4EAE\u4E00\u6863\uFF0C\u505C\u4E0B\u6765\u4FBF\u6162\u6162\u6697\u56DE\u53BB\u3002\u4E24\u53EA\u773C\u775B\u4E0D\u4E00\u6837\u5927\uFF0C\u53F3\u773C\u7684\u90A3\u4E00\u9897\u9AD8\u5149\u662F\u7279\u610F\u70B9\u7684\u3002",
+    /* 这几行是 `ghost.js` 里 `C` 的**反照率**，不是从视频里采到的像素值 ——
+       采样到的是那盏强主光下的受光色，写进图鉴会跟模型对不上。改 `C` 就得
+       改这里，否则档案开始描述一个不存在的颜色。（上一轮就漏改过一次：
+       `C` 里的 `hatTop` 从 0x3D2C6E 换成了 0x372370、`hatUnder` 从 0xA8202C
+       换成了 0xC62B2B，这张表还停在旧值上。） */
     spec: [
-      ["\u672C\u4F53", "\u8349\u5143\u7D20 \xB7 \u7CBE\u7075"],
-      ["\u522B\u79F0", "\u5C0F\u5409\u7965\u8349\u738B"],
-      ["\u4F53\u9AD8", "6.40"],
-      ["\u88D9\u767D", "#F6F4EF"],
-      ["\u9886\u7EFF", "#49684F"],
-      ["\u53D1\u68A2\u84DD", "#A9C4D8"]
+      ["\u672C\u4F53", "\u5E03\u7075 \xB7 \u5E7D\u7075"],
+      ["\u522B\u79F0", "\u5C0F\u5E7D\u7075"],
+      ["\u4F53\u9AD8", "6.38"],
+      ["\u5E3D\u9762\u975B\u7D2B", "#372370"],
+      ["\u6A90\u5E95\u7329\u7EA2", "#C62B2B"],
+      ["\u91D1\u5E26", "#C9A24E"]
     ]
   };
   var MOVES = [
-    {
-      no: "01",
-      k: "nod",
-      cn: "\u70B9\u5934",
-      en: "Nod",
-      view: { theta: 0.24, phi: 1.24, radius: 25 },
-      viewName: "\u8FD1\u666F\u673A\u4F4D",
-      viewEn: "\u6B63\u9762\u8FD1\u666F"
-    },
-    {
-      no: "02",
-      k: "wave",
-      cn: "\u6325\u624B",
-      en: "Wave",
-      view: { theta: 0.06, phi: 1.3, radius: 30 },
-      viewName: "\u6B63\u89C6\u673A\u4F4D",
-      viewEn: "\u6B63\u7ACB\u9762"
-    },
-    {
-      no: "03",
-      k: "spin",
-      cn: "\u8F6C\u4E2A\u5708",
-      en: "Twirl",
-      view: { theta: 0.62, phi: 1.16, radius: 32 },
-      viewName: "\u73AF\u7ED5\u673A\u4F4D",
-      viewEn: "\u7B49\u89D2\u6295\u5F71"
-    },
-    {
-      no: "04",
-      k: "jump",
-      cn: "\u8DF3\u4E00\u8DF3",
-      en: "Hop",
-      view: { theta: 0.16, phi: 1.34, radius: 31 },
-      viewName: "\u5168\u8EAB\u673A\u4F4D",
-      viewEn: "\u4F4E\u673A\u4F4D"
-    },
-    {
-      no: "05",
-      k: "salute",
-      cn: "\u656C\u793C",
-      en: "Salute",
-      view: { theta: 0.44, phi: 1.3, radius: 27 },
-      viewName: "\u534A\u8EAB\u673A\u4F4D",
-      viewEn: "\u4FA7\u524D\u65B9"
-    }
+    { no: "01", k: "nod", cn: "\u70B9\u5934", en: "Nod", note: "\u6574\u53EA\u4E0B\u6C89\u4E24\u6B21" },
+    /* `k` stays `wave` — `GREETINGS`, the deep link `?m=02` and the clip's name in
+       ghost.js all key off it. What she does is sway the whole sheet, because she
+       has no arms to wave; the label says what actually happens, the way 05 says
+       掀帽 for a clip still called `salute`. */
+    { no: "02", k: "wave", cn: "\u6643\u4E00\u6643", en: "Sway", note: "\u4EE5\u5730\u677F\u4E3A\u8F74\u5DE6\u53F3\u6446\uFF0C\u626B\u5E1A\u540C\u5411\u7529" },
+    { no: "03", k: "spin", cn: "\u8F6C\u4E2A\u5708", en: "Twirl", note: "\u7ED5\u7AD6\u76F4\u8F74\u8F6C\u4E00\u5708\uFF0C\u5347\u8D77\u540E\u505C\u4F4F" },
+    { no: "04", k: "jump", cn: "\u8DF3\u4E00\u8DF3", en: "Hop", note: "\u8DC3\u8D77\u5E76\u505A\u6324\u538B\u62C9\u4F38" },
+    /* `k` stays `salute` — the deep link `?m=05` and the clip's name in ghost.js
+       both key off it. What she does is doff the hat, so the label says that. */
+    { no: "05", k: "salute", cn: "\u6380\u5E3D", en: "Tip the hat", note: "\u628A\u5E3D\u5B50\u6380\u8D77\u6765\u5E76\u6B6A\u5411\u4E00\u4FA7" }
   ];
-  var VANTAGES = [
-    { k: "iso", cn: "\u7B49\u8F74\u673A\u4F4D", en: "\u7B49\u89D2\u6295\u5F71", v: { theta: 0.62, phi: 1.03, radius: 33 } },
-    { k: "front", cn: "\u6B63\u89C6\u673A\u4F4D", en: "\u6B63\u7ACB\u9762", v: { theta: 0.06, phi: 1.3, radius: 31 } },
-    { k: "top", cn: "\u4FEF\u89C6\u673A\u4F4D", en: "\u5E73\u9762", v: { theta: 0.34, phi: 0.3, radius: 34 } },
-    { k: "detail", cn: "\u7EC6\u8282\u7279\u5199", en: "\u5FAE\u8DDD", v: { theta: 0.95, phi: 1.14, radius: 21 } }
-  ];
+  var NO_VANTAGE = { cn: "\u62C6\u89E3\u5168\u89C8", en: "Exploded" };
   var ri = 0;
   var vi = 0;
   var savedVi = 0;
   var cur = () => MOVES[ri];
   var MACRO = VANTAGES.findIndex((v) => v.k === "detail");
-  var D2 = {
+  var D = {
     colCn: $("#col-cn"),
     colCn2: $("#col-cn-2"),
     colEn: $("#col-en"),
@@ -37030,18 +34411,15 @@ void main() {
     dbody: $("#dbody"),
     fold: $("#btn-fold")
   };
-  D2.colN.textContent = String(VANTAGES.length).padStart(2, "0");
-  D2.selN.textContent = MOVES[MOVES.length - 1].no;
+  D.colN.textContent = String(VANTAGES.length).padStart(2, "0");
+  D.selN.textContent = MOVES[MOVES.length - 1].no;
   var refRows = [];
   var ticks = [];
   for (let i = 0; i < MOVES.length; i++) {
     const m = MOVES[i];
     const pick = () => {
-      if (i === ri) doMove();
-      else {
-        ri = i;
-        render(true);
-      }
+      ri = i;
+      doMove();
     };
     const b = document.createElement("button");
     b.className = "row";
@@ -37049,14 +34427,14 @@ void main() {
     b.addEventListener("click", pick);
     const li = document.createElement("li");
     li.appendChild(b);
-    D2.refList.appendChild(li);
+    D.refList.appendChild(li);
     refRows.push(b);
     const t2 = document.createElement("button");
     t2.className = "tick";
     t2.title = `${m.no} \xB7 ${m.cn}`;
     t2.setAttribute("aria-label", `${m.no} ${m.cn}`);
     t2.addEventListener("click", pick);
-    D2.cols.appendChild(t2);
+    D.cols.appendChild(t2);
     ticks.push(t2);
   }
   var GHOST = {
@@ -37149,7 +34527,7 @@ void main() {
     for (let i = ghosts.length - 1; i >= 0; i--) {
       const e = ghosts[i];
       if (Math.abs(e.t - e.k) > 15e-4) {
-        e.k = reduce ? e.t : damp2(e.k, e.t, 5, dt);
+        e.k = reduce ? e.t : damp(e.k, e.t, 5, dt);
         paintGhost(e, e.k);
       } else if (e.k !== e.t) {
         e.k = e.t;
@@ -37189,12 +34567,12 @@ void main() {
   }
   var live = (r, i) => i === ri && (r.key ? focusKey === r.key : !exploded && focusKey === null);
   function swapIn(h0) {
-    const el = D2.doc;
+    const el = D.doc;
     clearTimeout(reprintT);
-    D2.dossier.classList.remove("reprint");
-    void D2.dossier.offsetWidth;
-    D2.dossier.classList.add("reprint");
-    reprintT = setTimeout(() => D2.dossier.classList.remove("reprint"), 900);
+    D.dossier.classList.remove("reprint");
+    void D.dossier.offsetWidth;
+    D.dossier.classList.add("reprint");
+    reprintT = setTimeout(() => D.dossier.classList.remove("reprint"), 900);
     clearTimeout(docT);
     el.classList.remove("grow");
     el.style.height = "";
@@ -37216,8 +34594,8 @@ void main() {
   var docT = 0;
   var reprintT = 0;
   function pinPanel() {
-    const h = D2.dossier.getBoundingClientRect().height;
-    if (h > 0) D2.dossier.style.setProperty("--panel-half", (h / 2).toFixed(1) + "px");
+    const h = D.dossier.getBoundingClientRect().height;
+    if (h > 0) D.dossier.style.setProperty("--panel-half", (h / 2).toFixed(1) + "px");
   }
   function syncViewShift() {
     viewShiftTarget = exploded ? 0.1 : folded ? 0.05 : 0.155;
@@ -37233,7 +34611,7 @@ void main() {
     const give = giveFor(orbit.radius);
     if (Math.abs(give - given) < 0.1) return;
     given = give;
-    D2.dossier.style.setProperty("--give", give.toFixed(1));
+    D.dossier.style.setProperty("--give", give.toFixed(1));
   }
   var wantFold = false;
   function syncPanelFold() {
@@ -37252,14 +34630,14 @@ void main() {
   var foldCamT = 0;
   function setFold(on) {
     folded = on;
-    D2.dossier.classList.toggle("folded", on);
-    D2.fold.setAttribute("aria-expanded", String(!on));
-    D2.fold.textContent = on ? "\u5C55\u5F00\u8BE6\u60C5" : "\u6536\u8D77\u8BE6\u60C5";
+    D.dossier.classList.toggle("folded", on);
+    D.fold.setAttribute("aria-expanded", String(!on));
+    D.fold.textContent = on ? "\u5C55\u5F00\u8BE6\u60C5" : "\u6536\u8D77\u8BE6\u60C5";
     clearTimeout(foldCamT);
     if (on && !reduce) foldCamT = setTimeout(syncViewShift, 400);
     else syncViewShift();
   }
-  D2.fold.addEventListener("click", () => {
+  D.fold.addEventListener("click", () => {
     setFold(!folded);
     audio.tick();
     document.body.classList.add("moved");
@@ -37281,21 +34659,21 @@ void main() {
     from: "",
     to: ""
   };
-  var noText = D2.fileId.textContent;
+  var noText = D.fileId.textContent;
   var NO_STROKE = (t2) => ease.out(t2);
   function paintNo() {
     const m = clamp2(no.d - no.lead, 0, no.w);
-    D2.fileId.textContent = no.phase === 0 ? no.from : no.to;
-    D2.fileId.style.clipPath = m <= 0.02 ? "" : `inset(0 ${m.toFixed(2)}px 0 0)`;
-    D2.caret.style.transform = `translate(${(-no.d).toFixed(2)}px, .06em)`;
+    D.fileId.textContent = no.phase === 0 ? no.from : no.to;
+    D.fileId.style.clipPath = m <= 0.02 ? "" : `inset(0 ${m.toFixed(2)}px 0 0)`;
+    D.caret.style.transform = `translate(${(-no.d).toFixed(2)}px, .06em)`;
   }
   function endNo() {
     no.on = false;
     no.d = 0;
-    D2.fileId.textContent = noText;
-    D2.fileId.style.minWidth = "";
-    D2.fileId.style.clipPath = "";
-    D2.caret.style.transform = "";
+    D.fileId.textContent = noText;
+    D.fileId.style.minWidth = "";
+    D.fileId.style.clipPath = "";
+    D.caret.style.transform = "";
   }
   function setFileNo(text, animate = true) {
     if (text === noText) return;
@@ -37305,7 +34683,7 @@ void main() {
       return;
     }
     if (!no.on) {
-      no.from = D2.fileId.textContent;
+      no.from = D.fileId.textContent;
       no.d = 0;
       no.phase = 0;
       no.p = 0;
@@ -37318,16 +34696,16 @@ void main() {
     no.to = text;
     no.cap = Math.max(no.from.length, no.to.length, 1);
     no.on = true;
-    D2.fileId.style.minWidth = no.cap + "ch";
-    no.w = D2.fileId.getBoundingClientRect().width;
-    const gap = parseFloat(getComputedStyle(D2.fileno).columnGap) || 0;
-    no.lead = gap + D2.caret.offsetWidth / 2;
+    D.fileId.style.minWidth = no.cap + "ch";
+    no.w = D.fileId.getBoundingClientRect().width;
+    const gap = parseFloat(getComputedStyle(D.fileno).columnGap) || 0;
+    no.lead = gap + D.caret.offsetWidth / 2;
     no.travel = no.w * NO_TRAVEL;
     paintNo();
   }
   function snapFileNo() {
     if (no.on) endNo();
-    else D2.fileId.textContent = noText;
+    else D.fileId.textContent = noText;
   }
   function updateFileNo(dt) {
     if (!no.on) return;
@@ -37356,29 +34734,29 @@ void main() {
   }
   function render(bump = false) {
     const M = cur();
-    const docH = D2.doc.getBoundingClientRect().height;
-    swapText(D2.colCn, PROFILE.cn);
+    const docH = D.doc.getBoundingClientRect().height;
+    swapText(D.colCn, PROFILE.cn);
     setFileNo(PROFILE.no);
-    D2.fileCn.textContent = PROFILE.cn;
-    D2.fileEn.textContent = PROFILE.en;
-    D2.fileNote.textContent = PROFILE.note;
-    setRoll(D2.selI, M.no);
-    swapText(D2.accessLabel, `\u8BA9\u5979${M.cn}`);
-    D2.access.classList.toggle("done", live(M, ri));
-    if (D2.fileSpec.dataset.no !== PROFILE.no) {
-      D2.fileSpec.dataset.no = PROFILE.no;
-      D2.fileSpec.replaceChildren(...PROFILE.spec.map(([k, v], i) => {
+    D.fileCn.textContent = PROFILE.cn;
+    D.fileEn.textContent = PROFILE.en;
+    D.fileNote.textContent = PROFILE.note;
+    setRoll(D.selI, M.no);
+    swapText(D.accessLabel, `\u8BA9\u5979${M.cn}`);
+    D.access.classList.toggle("done", live(M, ri));
+    if (D.fileSpec.dataset.no !== PROFILE.no) {
+      D.fileSpec.dataset.no = PROFILE.no;
+      D.fileSpec.replaceChildren(...PROFILE.spec.map(([k, v], i) => {
         const li = document.createElement("li");
         li.style.setProperty("--i", i);
         li.innerHTML = `<span>${k}</span><b>${v}</b>`;
         return li;
       }));
     }
-    D2.dossier.classList.toggle("tight", vi === MACRO);
+    D.dossier.classList.toggle("tight", vi === MACRO);
     const V = vi >= 0 ? VANTAGES[vi] : null;
-    setRoll(D2.colI, V ? String(vi + 1).padStart(2, "0") : "--");
-    swapText(D2.colCn2, V ? V.cn : M.viewName);
-    swapText(D2.colEn, V ? V.en : M.viewEn);
+    setRoll(D.colI, V ? String(vi + 1).padStart(2, "0") : "--");
+    swapText(D.colCn2, V ? V.cn : NO_VANTAGE.cn);
+    swapText(D.colEn, V ? V.en : NO_VANTAGE.en);
     for (let i = 0; i < MOVES.length; i++) {
       const l = live(MOVES[i], i);
       refRows[i].classList.toggle("sel", i === ri);
@@ -37388,7 +34766,7 @@ void main() {
     syncIndexSel();
     if (bump) swapIn(docH);
   }
-  function doMove(instant = false, moveCam = true) {
+  function doMove(instant = false) {
     const M = cur();
     homeArmed = false;
     if (spirit) spirit.play(M.k);
@@ -37397,11 +34775,6 @@ void main() {
     exploded = false;
     cas.setExplode(false);
     setPressed("#btn-explode", false);
-    if (moveCam) {
-      vi = -1;
-      orbit.setPreset(M.view, instant);
-      if (!instant && orbit.tween) orbit.tween.dur = 1.6;
-    }
     syncViewShift();
     measure();
     audio.tick();
@@ -37413,6 +34786,10 @@ void main() {
     ri = (ri + d + MOVES.length) % MOVES.length;
     audio.tick();
     render(true);
+  }
+  function nextMove() {
+    ri = (ri + 1) % MOVES.length;
+    doMove();
   }
   function setVantage(i) {
     vi = vi < 0 ? i < 0 ? VANTAGES.length - 1 : 0 : (i + VANTAGES.length) % VANTAGES.length;
@@ -37475,9 +34852,8 @@ void main() {
       const ul = document.createElement("ul");
       ul.className = "spec";
       ul.replaceChildren(...[
-        ["\u673A\u4F4D", M.viewName],
-        ["\u8DDD\u79BB", M.view.radius.toFixed(1)],
-        ["\u4FEF\u4EF0", M.view.phi.toFixed(2)]
+        ["\u7F16\u53F7", M.no],
+        ["\u8868\u73B0", M.note]
       ].map(([k, v]) => {
         const li = document.createElement("li");
         li.innerHTML = `<span>${k}</span><b>${v}</b>`;
@@ -37553,7 +34929,9 @@ void main() {
     indexOpen = true;
     buildIndex();
     indexEl.hidden = false;
-    requestAnimationFrame(() => indexEl.classList.add("open"));
+    requestAnimationFrame(() => {
+      if (indexOpen) indexEl.classList.add("open");
+    });
     document.body.classList.add("moved");
   }
   function closeIndex() {
@@ -37657,8 +35035,8 @@ void main() {
       t2.className = "set-t";
       t2.innerHTML = `<b>${s.cn}</b><i>${s.en}</i><em>${s.note}</em>`;
       if (s.dial) {
-        const box2 = document.createElement("div");
-        box2.className = "set-dial";
+        const box = document.createElement("div");
+        box.className = "set-dial";
         const track = document.createElement("div");
         track.className = "dial-track";
         const fill = document.createElement("i");
@@ -37684,10 +35062,10 @@ void main() {
           }
           setPref(s, v);
         });
-        box2.append(track, out);
+        box.append(track, out);
         s.dialEl = r;
         s.valEl = out;
-        li.append(t2, box2);
+        li.append(t2, box);
         return li;
       }
       const seg = document.createElement("div");
@@ -37710,7 +35088,9 @@ void main() {
     setOpen = true;
     buildSettings();
     settingsEl.hidden = false;
-    requestAnimationFrame(() => settingsEl.classList.add("open"));
+    requestAnimationFrame(() => {
+      if (setOpen) settingsEl.classList.add("open");
+    });
     settingsBtn.classList.add("open");
     settingsBtn.setAttribute("aria-expanded", "true");
     document.body.classList.add("moved");
@@ -37877,7 +35257,12 @@ void main() {
     if (Math.hypot(e.clientX - from.x, e.clientY - from.y) > 6) return;
     if (performance.now() - from.t > 500) return;
     const now = performance.now();
-    if (now - lastTap < 320) return;
+    if (now - lastTap < 320) {
+      lastTap = now;
+      nextMove();
+      render();
+      return;
+    }
     lastTap = now;
     if (!overSpirit(e)) return;
     audio.tick();
@@ -38221,6 +35606,7 @@ void main() {
   var tcEl = $("#tc");
   var tdEl = $("#td");
   var clockEl = $("#clock");
+  var counterEl = $(".counter");
   var p2 = (n) => String(n).padStart(2, "0");
   var subjectPos = new Vector3();
   var lastCamPos = new Vector3(0, 0, 1e9);
@@ -38274,16 +35660,15 @@ void main() {
     const lv = viz.update(dt, audioEl, vizOn() && !reduce && musicLive);
     bloomGain = viz.beat;
     const bob = reduce ? 0 : Math.sin(t * 0.62) * 0.055 + Math.sin(t * 1.71) * 0.012;
-    cas.root.position.y = intro.y + bob - swap.press;
-    cas.root.rotation.z = intro.tilt + (reduce ? 0 : Math.sin(t * 0.42) * 8e-3);
-    cas.root.rotation.x = reduce ? 0 : Math.sin(t * 0.33 + 1.2) * 6e-3;
-    spirit.update(reduce ? 0 : dt, {
+    spirit.update(reduce && !spirit.action && !sheSings ? 0 : dt, {
       singing: sheSings,
       hovered: spiritHover,
       aimX: spiritAim.x,
       aimY: spiritAim.y,
       beat: viz.pulse,
-      beatOn: !reduce && vizOn() && musicLive
+      beatOn: !reduce && vizOn() && musicLive,
+      routine: !reduce || sheSings,
+      pos: audioEl.currentTime || 0
     });
     syncMoveButtons();
     if (!reduce) {
@@ -38301,7 +35686,7 @@ void main() {
         applyViewOffset();
       }
     } else if (Math.abs(viewShift - viewShiftTarget) > 2e-4) {
-      viewShift = damp2(viewShift, viewShiftTarget, 2.6, dt);
+      viewShift = damp(viewShift, viewShiftTarget, 2.6, dt);
       applyViewOffset();
     }
     syncPanelGive();
@@ -38326,6 +35711,7 @@ void main() {
           railShown = frac;
           seekEl.value = String(frac);
           railEl.style.setProperty("--p", frac.toFixed(4));
+          counterEl.style.setProperty("--p", frac.toFixed(4));
         }
       }
       const d = /* @__PURE__ */ new Date();
@@ -38333,7 +35719,7 @@ void main() {
       setRoll(clockEl, cs);
       syncNowTrack();
       const audioLive = audioOk() && !audioEl.paused && !audioEl.ended;
-      const title = audioLive ? `\u266A ${fmt(audioEl.currentTime)} \xB7 ${TRACK.title}` : `${TRACK.title} \u2014 \u7EB3\u897F\u59B2`;
+      const title = audioLive ? `\u266A ${fmt(audioEl.currentTime)} \xB7 ${TRACK.title}` : `${TRACK.title} \u2014 \u5C0F\u5E7D\u7075`;
       if (title !== lastTitle) {
         lastTitle = title;
         document.title = title;
@@ -38342,6 +35728,7 @@ void main() {
     const camMoved = camera.position.distanceToSquared(lastCamPos) > 1e-6;
     lastCamPos.copy(camera.position);
     floorBase.update(renderer, scene, camera, camMoved);
+    castle.update(t, camera.position);
     composer.composer.render();
     jsMs = jsMs * 0.92 + (performance.now() - jsStart) * 0.08;
     requestAnimationFrame(loop);

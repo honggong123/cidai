@@ -8709,6 +8709,25 @@
     ctx.textAlign = prev;
     return w;
   }
+  function fitRun(ctx, text, font, size, maxW, { track = 0, min = 0.62 } = {}) {
+    const width = (s2) => ctx.measureText(s2).width + track * Math.max(0, [...s2].length - 1);
+    ctx.font = font(size);
+    let s = size;
+    while (s > size * min + 1e-6 && width(text) > maxW) {
+      s = Math.max(size * min, s * 0.94);
+      ctx.font = font(s);
+    }
+    let out = text;
+    if (width(out) > maxW) {
+      out = "";
+      for (const ch of text) {
+        if (width(out + ch + "\u2026") > maxW) break;
+        out += ch;
+      }
+      out = out.replace(/\s+$/, "") + "\u2026";
+    }
+    return { text: out, size: s, w: width(out) };
+  }
   function grain(ctx, w, h, amount = 0.06, seed = 3) {
     const r = rng(seed);
     const img = ctx.getImageData(0, 0, w, h);
@@ -8905,12 +8924,12 @@
   var LZ = 2.93;
   var WIN = { x0: -3.5, x1: 3.5, z0: -1.85, z1: 1.65 };
   var PALETTE = {
-    blue: [58, 112, 146],
-    cyan: [46, 138, 164],
-    rose: [176, 112, 104],
-    coral: [188, 62, 32],
-    ochre: [150, 122, 70],
-    olive: [116, 120, 84]
+    blue: [70, 104, 132],
+    cyan: [62, 124, 142],
+    rose: [148, 118, 116],
+    coral: [152, 84, 72],
+    ochre: [128, 118, 96],
+    olive: [110, 114, 98]
   };
   function hairFall(g, W, H, o) {
     const {
@@ -9321,7 +9340,7 @@
       { x: 0.03, y: 0.7, rx: 0.024, ry: 0.05, rot: 0.04, seed: 827, water: 0.8, mass: 0.45, wob: 0.5, drops: 2 },
       { x: 0.21, y: 0.89, rx: 0.07, ry: 0.032, rot: -0.01, seed: 828, water: 0.7, mass: 0.28, wob: 0.48, drops: 2, streak: 0.45 }
     ] },
-    { core: [192, 132, 124], halo: [212, 166, 154], strokes: [
+    { core: [156, 124, 118], halo: [186, 166, 160], strokes: [
       { x: 0.095, y: 0.028, rx: 0.1, ry: 0.036, rot: -0.02, seed: 836, water: 0.85, mass: 0.48, wob: 0.44, drops: 3, streak: 0.35 },
       { x: 0.145, y: 0.108, rx: 0.085, ry: 0.05, rot: -0.04, seed: 837, water: 0.8, mass: 0.32, wob: 0.46, drops: 3 },
       { x: 0.78, y: 0.9, rx: 0.15, ry: 0.046, rot: 0.01, seed: 838, water: 0.85, mass: 0.3, wob: 0.5, drops: 3, streak: 0.4 },
@@ -9409,7 +9428,7 @@
     const Y = (z) => (LZ - z) * S;
     const U = (u) => u * S;
     const dark = face === "B";
-    const base = dark ? ["#252b36", "#141821"] : ["#f4f1e7", "#e5dfce"];
+    const base = dark ? ["#1b1e23", "#0e1013"] : ["#f8f6f1", "#eeebe3"];
     const lg = g.createLinearGradient(0, 0, W * 0.34, H);
     lg.addColorStop(0, base[0]);
     lg.addColorStop(1, base[1]);
@@ -9424,10 +9443,10 @@
       g.fillRect(0, 0, W, H * 0.42);
       g.globalCompositeOperation = "source-over";
     }
-    const ink = dark ? "#e8e3d8" : "#2b2c30";
-    const sub = dark ? "rgba(206,203,214,.70)" : "rgba(62,64,70,.86)";
-    const accent = dark ? "#e2664a" : "#bf4626";
-    const lead = dark ? "208,212,218" : "46,49,55";
+    const ink = dark ? "#eeece7" : "#1b1b1d";
+    const sub = dark ? "rgba(210,210,208,.68)" : "rgba(46,48,52,.80)";
+    const accent = dark ? "#d94a3d" : "#c8362b";
+    const lead = dark ? "208,212,218" : "44,46,50";
     const blend = dark ? "screen" : "multiply";
     const r = rng(face === "A" ? 21 : 33);
     const bandZ0 = WIN.z1, bandZ1 = LZ - 0.02;
@@ -9442,7 +9461,7 @@
       g.drawImage(paintLayer(W, H), 0, 0, W, H);
       g.globalCompositeOperation = "color";
       g.globalAlpha = 0.42;
-      g.fillStyle = "#2b3c5e";
+      g.fillStyle = "#2b3138";
       g.fillRect(0, 0, W, H);
       g.restore();
     } else {
@@ -9488,26 +9507,31 @@
       { color: lead, alpha: dark ? 0.34 : 0.38, width: U(0.05), seed: 61, blend, flecks: false }
     );
     g.fillStyle = ink;
-    g.font = `600 ${U(0.46)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-    tracked(g, face === "A" ? "SIDE A" : "SIDE B", X(-4.5), bandTop + bandH * 0.34, { track: U(0.05) });
+    g.font = `600 ${U(0.46)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+    tracked(g, face === "A" ? "FACE A" : "FACE B", X(-4.5), bandTop + bandH * 0.34, { track: U(0.05) });
     g.fillStyle = sub;
-    g.font = `300 ${U(0.2)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-    tracked(g, "TYPE II  \xB7  HIGH BIAS", X(-4.5), bandTop + bandH * 0.63, { track: U(0.06) });
+    g.font = `300 ${U(0.2)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+    tracked(g, "TYPE II  \xB7  ARCHIVAL", X(-4.5), bandTop + bandH * 0.63, { track: U(0.06) });
     g.fillStyle = ink;
-    g.font = `600 ${U(0.56)}px "Segoe UI", Helvetica, Arial, sans-serif`;
+    g.font = `600 ${U(0.56)}px Helvetica, "Segoe UI", Arial, sans-serif`;
     tracked(g, minutes, X(4.5), bandTop + bandH * 0.84, { track: U(0.02), align: "right" });
     g.fillStyle = sub;
-    g.font = `300 ${U(0.18)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-    tracked(g, "MINUTES", X(4.5), bandTop + bandH * 0.3, { track: U(0.08), align: "right" });
+    g.font = `300 ${U(0.18)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+    tracked(g, "DURATION", X(4.5), bandTop + bandH * 0.3, { track: U(0.08), align: "right" });
     const SCRIPT = 'Gabriola, "Segoe Script", "Lucida Handwriting", "Brush Script MT", cursive';
     const titleY = backTop + backH * 0.48;
+    const titleBox = X(4.5) - X(-4.32);
+    const creditBox = X(4.5) - X(-4.3);
     if (title) {
-      g.font = `400 ${U(0.46)}px ${SCRIPT}`;
-      const tw = g.measureText(title).width;
-      g.fillStyle = dark ? "rgba(226,220,208,.26)" : "rgba(60,62,68,.26)";
-      g.fillText(title, X(-4.32) + U(0.014), titleY + U(0.014));
+      const script = (s) => `400 ${s}px ${SCRIPT}`;
+      const sans = (s) => `300 ${s}px Helvetica, "Segoe UI", Arial, sans-serif`;
+      const fit = fitRun(g, title, script, U(0.46), titleBox);
+      const tw = fit.w;
+      g.font = script(fit.size);
+      g.fillStyle = dark ? "rgba(230,228,222,.26)" : "rgba(52,54,58,.26)";
+      g.fillText(fit.text, X(-4.32) + U(0.014), titleY + U(0.014));
       g.fillStyle = ink;
-      g.fillText(title, X(-4.32), titleY);
+      g.fillText(fit.text, X(-4.32), titleY);
       inkStroke(
         g,
         [
@@ -9517,15 +9541,23 @@
         ],
         { color: lead, alpha: 0.24, width: U(0.016), seed: 62, blend }
       );
+      const credits = fitRun(
+        g,
+        [artist, album].filter(Boolean).join("  \xB7  "),
+        sans,
+        U(0.145),
+        creditBox,
+        { track: U(0.05), min: 0.72 }
+      );
       g.fillStyle = sub;
-      g.font = `300 ${U(0.145)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-      tracked(g, [artist, album].filter(Boolean).join("  \xB7  "), X(-4.3), backTop + backH * 0.77, { track: U(0.05) });
+      g.font = sans(credits.size);
+      tracked(g, credits.text, X(-4.3), backTop + backH * 0.77, { track: U(0.05) });
       g.font = `300 ${U(0.125)}px "Menlo", "Consolas", monospace`;
       tracked(g, face === "A" ? "SIDE A \xB7 4.76 cm/s" : "SIDE B \xB7 4.76 cm/s", X(-4.3), backTop + backH * 0.92, { track: U(0.04) });
     }
-    const strip = face === "A" ? ["\u03B3-Fe\u2082O\u2083  \xB7  3.81 mm", "MAGNETIC TAPE  \xB7  JAPAN"] : ["PATENTED LOW-NOISE SHELL", "ANTI-STATIC  \xB7  \u2300 12 mm HUB"];
+    const strip = face === "A" ? ["\u03B3-Fe\u2082O\u2083  \xB7  3.81 mm", "POLYESTER  \xB7  3.81 mm"] : ["ARCHIVAL SHELL", "ANTI-STATIC  \xB7  \u2300 12 mm HUB"];
     g.fillStyle = sub;
-    g.font = `300 ${U(0.17)}px "Segoe UI", Helvetica, Arial, sans-serif`;
+    g.font = `300 ${U(0.17)}px Helvetica, "Segoe UI", Arial, sans-serif`;
     strip.forEach((s, i) => {
       g.save();
       g.translate(X(-3.82 + i * 0.28), Y(WIN.z0) - U(0.16));
@@ -9537,21 +9569,21 @@
     g.translate(X(3.72), Y(WIN.z1));
     g.rotate(Math.PI / 2);
     g.fillStyle = sub;
-    g.font = `300 ${U(0.17)}px "Segoe UI", Helvetica, Arial, sans-serif`;
-    tracked(g, face === "A" ? "\u25B7  PLAY THIS SIDE" : "\u25C1  PLAY THIS SIDE", 0, -U(0.24), { track: U(0.055) });
+    g.font = `300 ${U(0.17)}px Helvetica, "Segoe UI", Arial, sans-serif`;
+    tracked(g, face === "A" ? "\u25B7  PLAY THIS FACE" : "\u25C1  PLAY THIS FACE", 0, -U(0.24), { track: U(0.055) });
     g.restore();
-    g.fillStyle = dark ? "rgba(232,227,216,.74)" : "rgba(43,44,48,.74)";
+    g.fillStyle = dark ? "rgba(238,236,231,.74)" : "rgba(27,27,29,.74)";
     g.font = `300 ${U(0.15)}px "Menlo", "Consolas", monospace`;
     tracked(g, "4.76 cm/s  \xB7  EQ 70 \xB5s", X(-0.78), bandTop + bandH * 0.34, { track: U(0.035) });
-    g.fillStyle = dark ? "rgba(232,227,216,.5)" : "rgba(43,44,48,.52)";
+    g.fillStyle = dark ? "rgba(238,236,231,.5)" : "rgba(27,27,29,.52)";
     g.font = `300 ${U(0.14)}px "Menlo", "Consolas", monospace`;
-    tracked(g, face === "A" ? "OHM TAPE MFG.  \u2116 000-A" : "OHM TAPE MFG.  \u2116 000-B", X(-0.78), bandTop + bandH * 0.64, { track: U(0.035) });
+    tracked(g, face === "A" ? "\u2116 000-A" : "\u2116 000-B", X(-0.78), bandTop + bandH * 0.64, { track: U(0.035) });
     if (dark) {
       let bx = X(2.65);
       const bh = U(0.72), by = Y(rz0) - U(0.9);
       while (bx < X(4.4)) {
         const bw = U(0.02 + r() * 0.05);
-        g.fillStyle = r() > 0.32 ? "rgba(226,222,212,.50)" : "transparent";
+        g.fillStyle = r() > 0.32 ? "rgba(232,230,226,.50)" : "transparent";
         g.fillRect(bx, by, bw, bh);
         bx += bw + U(0.02);
       }
@@ -9559,11 +9591,13 @@
     grain(g, W, H, dark ? 0.055 : 0.035, face === "A" ? 9 : 17);
     const vg = g.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, W * 0.62);
     vg.addColorStop(0, "rgba(0,0,0,0)");
-    vg.addColorStop(1, dark ? "rgba(0,0,0,.42)" : "rgba(70,58,42,.22)");
+    vg.addColorStop(1, dark ? "rgba(0,0,0,.42)" : "rgba(46,46,48,.20)");
     g.fillStyle = vg;
     g.fillRect(0, 0, W, H);
     return tex(c, { srgb: true });
   }
+  var EDGE_RINGS = 200;
+  var EDGE_PITCH = 0.5 / EDGE_RINGS;
 
   // tools/label-preview.js
   var TRACK = {

@@ -1,5 +1,5 @@
 /* ============================================================
-   LUX TAPE — archive terminal
+   GHOST — museum label
    ============================================================
    The page is a museum label: a masthead, a dossier on the
    subject, and a deck of index controls along the bottom. It is
@@ -66,11 +66,14 @@
   --e-inout: cubic-bezier(.4, 0, .2, 1);
   --e-spring: cubic-bezier(.22, 1.25, .36, 1);
 
-  /* geometry — a gallery caption is square, and generous with air */
+  /* geometry — a gallery caption is square, and generous with air.
+     2026-10-03: 每个值各收一档。板子垂直居中（top: 50% - --panel-half），
+     所以它每矮 2px 底边就往上走 1px —— 在 660~690 高的窗口里原本正好压住
+     走带台那一排（实测底边 572 / 走带台顶边 573）。 */
   --pad: clamp(1.75rem, 3.6vw, 3.5rem);
-  --sheet-pad-x: 1.75rem;
-  --sheet-pad-t: 1.5rem;
-  --sheet-pad-b: 1.5rem;
+  --sheet-pad-x: 1.5rem;
+  --sheet-pad-t: 1.3125rem;
+  --sheet-pad-b: 1.3125rem;
   --blur: 0.625rem;
   --r: 0;
   /* the widest the record plate is ever allowed to get. Past this it stops
@@ -85,6 +88,27 @@
   --sheet-line: rgba(22, 22, 26, .12);
   --sheet-hi: rgba(255, 255, 255, .70);
   --sh-sheet: 0 1.625rem 4rem -2.375rem var(--shadow), 0 0.1875rem 0.875rem -0.5rem var(--shadow);
+
+  /* THE PLATE'S OWN INK, and the second half of the token set. Everything
+     printed on the sheet reads `--ink` / `--hair` / `--accent` like the rest of
+     the page — and `.sheet` re-points those three names at these for its own
+     subtree, so a room can print a dark plate and a light plate from one set of
+     rules. It has to be a re-pointing and not one shared value: 冰渊's plate is
+     a dark pane hanging in a bright hall, and no single `--ink` can be both the
+     hall's and the pane's. The references stay live, so the 0.9s room change
+     carries the plate along with everything else. */
+  --sh-ink: #16161a;
+  --sh-ink-dim: rgba(22, 22, 26, .72);
+  --sh-ink-faint: rgba(22, 22, 26, .58);
+  --sh-hair: rgba(22, 22, 26, .16);
+  --sh-hair-soft: rgba(22, 22, 26, .08);
+  --sh-accent: #c8362b;
+  --sh-accent-soft: rgba(200, 54, 43, .10);
+  --sh-accent-line: rgba(200, 54, 43, .45);
+
+  /* the ornaments' ink, and the wash the plate is lit by */
+  --deco: rgba(22, 22, 26, .52);
+  --glow: transparent;
 }
 
 /* ---------- the lamps, and how they go out ----------
@@ -116,6 +140,23 @@
 @property --sheet-line { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .12); }
 @property --sheet-hi { syntax: '<color>'; inherits: true; initial-value: rgba(255, 255, 255, .70); }
 @property --sheet-a { syntax: '<percentage>'; inherits: true; initial-value: 82%; }
+/* the plate's own ink (see `:root`) — registered for the same reason as the
+   eighteen above and not because it is a different kind of thing: an
+   unregistered custom property cannot be transitioned, and the plate swapping
+   its whole colour scheme in one frame while the room cross-fades over 0.9s is
+   the exact failure the block above was written to fix. */
+@property --sh-ink { syntax: '<color>'; inherits: true; initial-value: #16161a; }
+@property --sh-ink-dim { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .72); }
+@property --sh-ink-faint { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .58); }
+@property --sh-hair { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .16); }
+@property --sh-hair-soft { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .08); }
+@property --sh-accent { syntax: '<color>'; inherits: true; initial-value: #c8362b; }
+@property --sh-accent-soft { syntax: '<color>'; inherits: true; initial-value: rgba(200, 54, 43, .10); }
+@property --sh-accent-line { syntax: '<color>'; inherits: true; initial-value: rgba(200, 54, 43, .45); }
+/* `--deco` is a colour and animates; `--glow` is a gradient stop, which is the
+   one thing besides a colour that `@property` makes interpolable */
+@property --deco { syntax: '<color>'; inherits: true; initial-value: rgba(22, 22, 26, .52); }
+@property --glow { syntax: '<color>'; inherits: true; initial-value: transparent; }
 
 /* ---------- the three galleries ---------- */
 /* `html[…]`, not `[…]`. The three buttons of the segmented control carry
@@ -130,76 +171,143 @@
 /* 黑盒 — the black box, and now the only dark room of the three. Its light is
    one warm gallery spot on a black wall, so the accent is gold and the plate is
    nearly black with a little of the wall still in it. */
+/* 紫夜 — the dark room, re-keyed to the character standing in it. The sheet is
+   violet, the brim is crimson and the one saturated thing on the model is the
+   gold band, so the room's paper goes violet-black and its accent is that gold.
+   A gold accent on a neutral black would have been the old room with a new
+   name; the violet in `--paper` is what makes it hers.
+
+   THE PLATE, 万圣夜. It is the room where the ornaments are loudest, because it
+   is the only one of the three that is dark on purpose: the plate goes a deeper
+   violet-black than it was, a candle is lit behind its top-right corner, and
+   the gold comes off the accent and onto the *frame* — the outer rule and the
+   hairline leaders are the band's own gold, so the record reads as something
+   filed in gold leaf rather than as a black card with a gold word on it. Its
+   ink is warm bone, not the cool violet-white it was: candlelight, and the one
+   colour on this plate that is not either gold or black. */
 html[data-theme="noir"] {
-  --paper: #0c0c0e;
-  --ink: #f4f2ee;
-  --ink-dim: rgba(244, 242, 238, .72);
-  --ink-faint: rgba(244, 242, 238, .58);
-  --ink-ghost: rgba(244, 242, 238, .28);
-  --hair: rgba(244, 242, 238, .15);
-  --hair-soft: rgba(244, 242, 238, .07);
-  --accent: #d9a441;
-  --accent-soft: rgba(217, 164, 65, .14);
-  --accent-line: rgba(217, 164, 65, .50);
-  --chip-bg: rgba(244, 242, 238, .95);
-  --chip-ink: #101012;
+  --paper: #0e0a16;
+  --ink: #f3eefc;
+  --ink-dim: rgba(243, 238, 252, .72);
+  --ink-faint: rgba(243, 238, 252, .58);
+  --ink-ghost: rgba(243, 238, 252, .28);
+  --hair: rgba(243, 238, 252, .15);
+  --hair-soft: rgba(243, 238, 252, .07);
+  --accent: #c9a24e;                        /* 金带 */
+  --accent-soft: rgba(201, 162, 78, .14);
+  --accent-line: rgba(201, 162, 78, .50);
+  --chip-bg: rgba(243, 238, 252, .95);
+  --chip-ink: #120d1c;
   --chip-hair: rgba(0, 0, 0, .18);
-  --shadow: rgba(0, 0, 0, .60);
+  --shadow: rgba(0, 0, 0, .62);
 
-  --sheet-tint: #141416;
-  --sheet-a: 76%;
-  --sheet-line: rgba(244, 242, 238, .10);
-  --sheet-hi: rgba(255, 255, 255, .06);
+  --sheet-tint: #140e20;
+  --sheet-a: 84%;
+  --sheet-line: rgba(216, 169, 79, .26);
+  --sheet-hi: rgba(255, 255, 255, .05);
+  --glow: rgba(216, 169, 79, .17);
+
+  --sh-ink: #f7f1e3;
+  --sh-ink-dim: rgba(247, 241, 227, .74);
+  --sh-ink-faint: rgba(247, 241, 227, .56);
+  --sh-hair: rgba(216, 169, 79, .20);
+  --sh-hair-soft: rgba(247, 241, 227, .075);
+  --sh-accent: #d8a94f;
+  --sh-accent-soft: rgba(216, 169, 79, .16);
+  --sh-accent-line: rgba(216, 169, 79, .52);
+  --deco: #d8a94f;
 }
-/* 白厅 — the white hall, and the room the page opens in. A gallery wall is not
-   pure white: it is a warm off-white with a little body to it, so the plate can
-   be a true white and still read as a separate sheet laid on the wall. The
-   accent is the stamp red of a museum caption. */
+/* 霜厅 — the bright room. It stays a white hall, but the white has gone cold
+   and slightly violet: a room lit the way the inside of the ghost is lit. The
+   accent is the hat's violet, which is the one colour that reads on a pale
+   sheet at caption size without turning into a warning.
+
+   THE PLATE, 月下白厅. This is the room that keeps the light, so it is the one
+   where the paper stops being white rather than stops being bright: a cold
+   grey-lavender at 87%, which is a colour and not an absence of one, under a
+   wide moon wash from the top-right. Its frame stays a neutral hairline — the
+   violet is spent on the ornaments instead, so the web in the corner is the
+   only saturated thing on the sheet and the type is not competing with it. */
 html[data-theme="studio"] {
-  --paper: #f5f4f1;
-  --ink: #16161a;
-  --ink-dim: rgba(22, 22, 26, .72);
-  --ink-faint: rgba(22, 22, 26, .60);
-  --ink-ghost: rgba(22, 22, 26, .30);
-  --hair: rgba(22, 22, 26, .16);
-  --hair-soft: rgba(22, 22, 26, .08);
-  --accent: #c8362b;
-  --accent-soft: rgba(200, 54, 43, .10);
-  --accent-line: rgba(200, 54, 43, .45);
-  --chip-bg: rgba(22, 22, 26, .94);
-  --chip-ink: #f6f5f2;
+  --paper: #f2f2f7;
+  --ink: #16141c;
+  --ink-dim: rgba(22, 20, 28, .72);
+  --ink-faint: rgba(22, 20, 28, .60);
+  --ink-ghost: rgba(22, 20, 28, .30);
+  --hair: rgba(22, 20, 28, .16);
+  --hair-soft: rgba(22, 20, 28, .08);
+  --accent: #6a4fa8;                        /* 帽面紫 */
+  --accent-soft: rgba(106, 79, 168, .10);
+  --accent-line: rgba(106, 79, 168, .45);
+  --chip-bg: rgba(22, 20, 28, .94);
+  --chip-ink: #f5f3fa;
   --chip-hair: rgba(255, 255, 255, .18);
-  --shadow: rgba(24, 26, 30, .22);
+  --shadow: rgba(24, 22, 34, .22);
 
-  --sheet-tint: #ffffff;
-  --sheet-a: 82%;
-  --sheet-line: rgba(22, 22, 26, .12);
-  --sheet-hi: rgba(255, 255, 255, .70);
+  /* `#e0e1f0`, not the `#d9daec` this started at, and `--sh-ink-faint` at .62
+     rather than the .58 the other two rooms can afford. Those two sit on plates
+     dark enough that a 56%-alpha label clears 5.5:1; this plate is light, and
+     the same alpha put the spec labels at 3.5:1 — under AA for 10.5px type, and
+     a step down from the 4.4:1 the same labels had on the white plate this
+     replaces. Half a step off the plate and four points on the ink buys 4.65:1
+     and costs nothing: the plate is still grey-lavender, not white. */
+  --sheet-tint: #e0e1f0;
+  --sheet-a: 87%;
+  --sheet-line: rgba(23, 19, 37, .14);
+  --sheet-hi: rgba(255, 255, 255, .55);
+  --glow: rgba(228, 222, 255, .52);
+
+  --sh-ink: #171325;
+  --sh-ink-dim: rgba(23, 19, 37, .74);
+  --sh-ink-faint: rgba(23, 19, 37, .62);
+  --sh-hair: rgba(23, 19, 37, .15);
+  --sh-hair-soft: rgba(23, 19, 37, .08);
+  --sh-accent: #6244a6;
+  --sh-accent-soft: rgba(98, 68, 166, .11);
+  --sh-accent-line: rgba(98, 68, 166, .45);
+  --deco: #6244a6;
 }
-/* 蓝厅 — a north-lit hall. The same white as the hall next door, but every
-   surface carries the cool of daylight that never saw the sun, so the ink has
-   a little blue in it and the accent is the light coming in through the roof.
-   It is the one token that moves a long way from both other rooms. */
-html[data-theme="abyss"] {
-  --paper: #e5eaee;
-  --ink: #10161c;
-  --ink-dim: rgba(16, 22, 28, .72);
-  --ink-faint: rgba(16, 22, 28, .58);
-  --ink-ghost: rgba(16, 22, 28, .28);
-  --hair: rgba(16, 22, 28, .16);
-  --hair-soft: rgba(16, 22, 28, .08);
-  --accent: #2f6f9e;
-  --accent-soft: rgba(47, 111, 158, .10);
-  --accent-line: rgba(47, 111, 158, .45);
-  --chip-bg: rgba(16, 22, 28, .94);
-  --chip-ink: #eef4f8;
-  --chip-hair: rgba(255, 255, 255, .18);
-  --shadow: rgba(20, 30, 40, .24);
+/* 冰渊 — the cold room, and the one where the light's colour is the whole
+   story. It is the ghost's own glow, pushed to a room: ice cyan, everywhere,
+   including the ink. It is the token that moves furthest from the other two.
 
-  --sheet-tint: #ffffff;
-  --sheet-a: 82%;
-  --sheet-line: rgba(16, 22, 28, .12);
-  --sheet-hi: rgba(255, 255, 255, .70);
+   THE PLATE, 溺魂冰窟. The one room where the plate and the room disagree
+   about which of them is dark — a cold pane of smoked ice hanging in a bright
+   hall, which is the entire reason the plate was given its own ink rather than
+   sharing the room's. The frame is the glow: the outer rule, the leaders and
+   the corner ticks all come up cyan, and the wash behind the type is lit from
+   the top-right the way the model's own light is. */
+html[data-theme="abyss"] {
+  --paper: #e2ecf1;
+  --ink: #0f161a;
+  --ink-dim: rgba(15, 22, 26, .72);
+  --ink-faint: rgba(15, 22, 26, .58);
+  --ink-ghost: rgba(15, 22, 26, .28);
+  --hair: rgba(15, 22, 26, .16);
+  --hair-soft: rgba(15, 22, 26, .08);
+  --accent: #1f8fa0;                        /* 体内青光 */
+  --accent-soft: rgba(31, 143, 160, .10);
+  --accent-line: rgba(31, 143, 160, .45);
+  --chip-bg: rgba(15, 22, 26, .94);
+  --chip-ink: #eaf6f9;
+  --chip-hair: rgba(255, 255, 255, .18);
+  --shadow: rgba(18, 34, 40, .24);
+
+  --sheet-tint: #0b1c23;
+  --sheet-a: 80%;
+  --sheet-line: rgba(69, 198, 216, .24);
+  --sheet-hi: rgba(255, 255, 255, .06);
+  --glow: rgba(69, 198, 216, .20);
+
+  --sh-ink: #e4f5fa;
+  --sh-ink-dim: rgba(228, 245, 250, .74);
+  --sh-ink-faint: rgba(228, 245, 250, .56);
+  --sh-hair: rgba(158, 222, 234, .16);
+  --sh-hair-soft: rgba(228, 245, 250, .08);
+  --sh-accent: #45c6d8;
+  --sh-accent-soft: rgba(69, 198, 216, .16);
+  --sh-accent-line: rgba(69, 198, 216, .52);
+  --deco: #45c6d8;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -227,7 +335,13 @@ html {
     --chip-bg .9s cubic-bezier(.16, 1, .3, 1), --chip-ink .9s cubic-bezier(.16, 1, .3, 1),
     --chip-hair .9s cubic-bezier(.16, 1, .3, 1), --shadow .9s cubic-bezier(.16, 1, .3, 1),
     --sheet-tint .9s cubic-bezier(.16, 1, .3, 1), --sheet-line .9s cubic-bezier(.16, 1, .3, 1),
-    --sheet-hi .9s cubic-bezier(.16, 1, .3, 1), --sheet-a .9s cubic-bezier(.16, 1, .3, 1);
+    --sheet-hi .9s cubic-bezier(.16, 1, .3, 1), --sheet-a .9s cubic-bezier(.16, 1, .3, 1),
+    --sh-ink .9s cubic-bezier(.16, 1, .3, 1), --sh-ink-dim .9s cubic-bezier(.16, 1, .3, 1),
+    --sh-ink-faint .9s cubic-bezier(.16, 1, .3, 1),
+    --sh-hair .9s cubic-bezier(.16, 1, .3, 1), --sh-hair-soft .9s cubic-bezier(.16, 1, .3, 1),
+    --sh-accent .9s cubic-bezier(.16, 1, .3, 1), --sh-accent-soft .9s cubic-bezier(.16, 1, .3, 1),
+    --sh-accent-line .9s cubic-bezier(.16, 1, .3, 1),
+    --deco .9s cubic-bezier(.16, 1, .3, 1), --glow .9s cubic-bezier(.16, 1, .3, 1);
 }
 body {
   background: var(--paper);
@@ -282,7 +396,13 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   border: 1px solid var(--hair-soft);
   /* `--hair-soft` is a token; it animates with the rest of the room */
 }
-.frame i { position: absolute; width: 0.5625rem; height: 0.5625rem; border: 1px solid var(--ink-faint); }
+/* The four corner marks are the only place outside the plate where the page
+   says which room it is standing in, so they take the room's accent — at half
+   weight, because they are registration marks and a registration mark that
+   shouts is a decoration. The frame's own hairline stays the ink's: it is the
+   machine's edge, and it has to be the same edge in all three rooms or the
+   console stops looking like one console. */
+.frame i { position: absolute; width: 0.5625rem; height: 0.5625rem; border: 1px solid var(--accent); opacity: .5; }
 .frame i:nth-child(1) { top: -0.0625rem; left: -0.0625rem; border-right: 0; border-bottom: 0; }
 .frame i:nth-child(2) { top: -0.0625rem; right: -0.0625rem; border-left: 0; border-bottom: 0; }
 .frame i:nth-child(3) { bottom: -0.0625rem; left: -0.0625rem; border-right: 0; border-top: 0; }
@@ -300,7 +420,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   font-family: var(--disp);
   font-size: clamp(1.625rem, 3.05vw, 3.125rem); font-weight: 700;
   /* two CJK glyphs, not eight Latin ones: the negative tracking that pulled LUX
-     TAPE into a block squeezes 纳西妲 into a smudge, and a three-glyph wordmark wants
+     TAPE into a block squeezes 小幽灵 into a smudge, and a three-glyph wordmark wants
      air between the glyphs instead of less */
   letter-spacing: .04em; line-height: .94;
 }
@@ -373,7 +493,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
    record was picked up. Anchored at the top, a longer sheet just grows downward. */
 .dossier {
   position: absolute; left: auto; right: var(--pad);
-  width: min(calc(45% - var(--pad)), var(--plate-max));
+  width: min(calc(43% - var(--pad)), var(--plate-max));
   top: calc(50% - var(--panel-half, 13.125rem));
   /* How much of its own length the panel is not using. It rests 20% short, and
      the loop adds --give on top of that as the wheel brings the lens in (see
@@ -391,12 +511,46 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   position: relative;
   margin-left: var(--retract);
   padding: var(--sheet-pad-t) var(--sheet-pad-x) var(--sheet-pad-b);
-  background: color-mix(in srgb, var(--sheet-tint) var(--sheet-a), transparent);
+  /* THE PLATE'S INK, RE-POINTED. Everything printed below reads `--ink`,
+     `--hair` and `--accent` like the rest of the page — thirty rules' worth —
+     and rather than teach each of them a second name (and every rule added
+     later), the plate hands those three names its own values for its own
+     subtree and the room keeps the ones it was given. It has to be a
+     re-pointing and not one shared value: 冰渊's plate is a dark pane in a
+     bright hall, and no single `--ink` can be both.
+     The references stay live — `var()` is substituted at computed-value time —
+     so when the root's 0.9s transition walks `--sh-ink` to the next room, the
+     plate walks with it instead of snapping. */
+  --ink: var(--sh-ink);
+  --ink-dim: var(--sh-ink-dim);
+  --ink-faint: var(--sh-ink-faint);
+  --hair: var(--sh-hair);
+  --hair-soft: var(--sh-hair-soft);
+  --accent: var(--sh-accent);
+  --accent-soft: var(--sh-accent-soft);
+  --accent-line: var(--sh-accent-line);
+  /* `color` is inherited and is therefore *not* carried by the re-pointing:
+     `.fileno` and `.doc-cn` state no colour of their own and would arrive
+     carrying the room's, which is the one thing on this plate that must never
+     happen. One declaration here fixes every element that inherits. */
+  color: var(--ink);
+  /* the wash first, then the paper — the room's light falls *on* the plate. It
+     is what makes the three read as three places and not three tints: the same
+     sheet under a moon, under a candle and under the model's own glow. */
+  background:
+    radial-gradient(125% 80% at 84% -14%, var(--glow), transparent 64%),
+    color-mix(in srgb, var(--sheet-tint) var(--sheet-a), transparent);
   backdrop-filter: blur(var(--blur)) saturate(1.0);
   -webkit-backdrop-filter: blur(var(--blur)) saturate(1.0);
   border: 1px solid var(--sheet-line);
   border-radius: var(--r);
   box-shadow: inset 0 0.0625rem 0 var(--sheet-hi), var(--sh-sheet);
+  /* `backdrop-filter` already makes this a stacking context, and the ornaments
+     below depend on that — `z-index: -1` only means "above the plate's own
+     background, below everything printed on it" inside one. `isolation` says so
+     out loud, so the day the blur is turned off for performance the ornaments
+     do not fall through onto the scene. */
+  isolation: isolate;
   transition:
     margin-left .58s var(--e-spring) 0s;
 }
@@ -406,6 +560,96 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   content: ''; position: absolute; top: -0.0625rem; left: -0.0625rem;
   width: 1.375rem; height: 0.125rem; background: var(--accent); opacity: .85;
 }
+/* its echo on the opposite corner. A drawing is cornered on the diagonal it is
+   filed from, and the second tick is what makes the pair read as a frame rather
+   than as one mark that happens to be in the corner — it is also the anchor the
+   web hangs off, so the ornament is tied to the plate and not floating on it.
+   Lighter than the first: the top-left is the registration, this one is its
+   answer. */
+.sheet::after {
+  content: ''; position: absolute; bottom: -0.0625rem; right: -0.0625rem;
+  width: 1.375rem; height: 0.125rem; background: var(--accent); opacity: .5;
+}
+
+/* ---------- the ornaments ------------------------------------------------
+   Three drawn marks in one ink. They are here to say which room a record is
+   being kept in: a web in the corner it is filed from, a hem of drips along its
+   top rule, and her, small, sitting in the web. Each is one element carrying a
+   per-theme `--deco` and a per-theme drawing, so entering a room costs one
+   attribute and no markup — the same trick the tokens use, one level up.
+
+   NOTHING HERE MAY TAKE PART IN LAYOUT. The plate has no height ceiling above
+   900px (see .doc-note), so an ornament that added a line would push the
+   transport up through the record at exactly the widths with the least room for
+   it. Every one of them is absolutely positioned against the plate's padding
+   box, inert to the pointer, and behind everything printed — `z-index: -1` is
+   safe because the plate is a stacking context (see `isolation` above). */
+.orn {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  transition: opacity .42s var(--e-out);
+}
+.orn > * { position: absolute; display: block; color: var(--deco); }
+
+/* The web, hung in the bottom-right corner — the one quarter of the plate no
+   record ever reaches, because the reference list is short and the action sits
+   on the left. Drawn for that corner rather than mirrored into it: a mirrored
+   hairline puts its soft edge on the wrong side, and at this weight the
+   difference is the whole drawing. */
+.o-web { right: 0; bottom: 0; width: 6rem; height: 6rem; opacity: .4; }
+
+/* The hem. One element, three drawings, all hanging off the top rule — so the
+   plate reads as sealed along its top edge in whichever room it is standing.
+   霜厅 beads it, 紫夜 drips it unevenly, 冰渊 freezes it into teeth. */
+.o-hem { left: 0; right: 0; top: 0; height: 0.62rem; opacity: .26; background-repeat: repeat-x; }
+
+/* Her, in the web. Small enough to be a mark rather than a second subject, and
+   off the corner so the web's own arcs read in front of and behind it. */
+.o-ghost { right: 1.95rem; bottom: 1.45rem; width: 2.5rem; height: 3rem; opacity: .5; }
+
+html[data-theme="studio"] .o-hem {
+  background-image: radial-gradient(circle at 50% 0, currentColor 0 0.24rem, transparent 0.245rem);
+  background-size: 0.9rem 0.62rem;
+}
+html[data-theme="noir"] .o-hem {
+  background-image:
+    radial-gradient(circle at 50% 0, currentColor 0 0.30rem, transparent 0.305rem),
+    radial-gradient(circle at 50% 0, currentColor 0 0.16rem, transparent 0.165rem);
+  background-size: 1.6rem 0.62rem, 0.74rem 0.62rem;
+  background-position: 0 0, 0.4rem 0;
+}
+html[data-theme="abyss"] .o-hem {
+  height: 0.8rem;
+  /* a wedge of the cone centred on straight down: `from 135deg` puts the tile's
+     0deg at the lower-left diagonal, so 0–86deg of the sweep is the tooth. The
+     8deg of feather at the tip is the difference between an icicle and a
+     one-pixel staircase at 0.5rem wide. */
+  background-image: conic-gradient(from 135deg at 50% 0, currentColor 0deg 86deg, transparent 94deg);
+  background-size: 0.5rem 0.8rem;
+}
+
+/* The file number is the one thing on the plate set large enough to carry the
+   room's light, and it is where the two dark rooms say so: a candle behind
+   紫夜's number, the model's own cyan behind 冰渊's. 霜厅 gets none — a bright
+   room has no glow, and a halo on it would read as a printing fault. */
+html[data-theme="noir"] .fileno { text-shadow: 0 0 1.5rem rgba(216, 169, 79, .34); }
+html[data-theme="abyss"] .fileno { text-shadow: 0 0 1.5rem rgba(69, 198, 216, .34); }
+
+/* A narrow window narrows the plate with it (see .dossier), so the ornaments
+   come down a size instead of crowding the reference list off the right rule.
+   Sizes and not percentages: a percentage of the plate would grow the web on a
+   wide screen, where the plate has stopped growing and the corner is no emptier
+   than it was. */
+@media (max-width: 1200px) {
+  .o-web { width: 4.4rem; height: 4.4rem; }
+  .o-ghost { right: 1.5rem; bottom: 1.15rem; width: 1.9rem; height: 2.3rem; }
+}
+
+/* Folded, the plate keeps 40% of its length and the action button lands in the
+   corner the ornaments are drawn in. Tightened, it is the reference list that
+   moves under them. Either way the marks go rather than move: they are a note
+   about the room, and a note that has been shoved is worse than one omitted. */
+.dossier.folded .orn { opacity: 0; }
+.dossier.tight .o-web, .dossier.tight .o-ghost { opacity: 0; }
 
 /* The crumb never wraps. Retracting the plate squeezes this line, and a wrap is a
    height change in the middle of a move that is otherwise one gesture: the sheet
@@ -419,7 +663,11 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   color: var(--ink-faint); display: flex; align-items: center; gap: 0.625rem;
   flex-wrap: nowrap; overflow: hidden;
 }
-.crumb i { font-style: normal; opacity: .55; }
+/* the two separators are the only punctuation on the plate, so they are where
+   the room's accent gets to speak at caption size — inside the sheet `--accent`
+   is the plate's own (see .sheet), which is what keeps a gold 紫夜 from
+   printing a violet slash on a black card */
+.crumb i { font-style: normal; color: var(--accent); opacity: .55; }
 .crumb-pre {
   display: inline-flex; align-items: center; gap: 0.625rem; white-space: nowrap;
   overflow: hidden; max-width: 22rem; opacity: 1;
@@ -510,7 +758,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
 .fileno {
   font-family: var(--disp);
   font-size: var(--fs-h); font-weight: 700; letter-spacing: -.014em;
-  margin-top: 1rem; padding-bottom: 1.375rem;
+  margin-top: 0.8125rem; padding-bottom: 1.125rem;
   display: flex; align-items: baseline; gap: .5em; white-space: nowrap;
   position: relative;
 }
@@ -523,7 +771,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   background: var(--hair); transform-origin: 0 50%;
 }
 .ref-h::after { background: var(--hair-soft); }
-.ref-h i { font-style: normal; opacity: .55; }
+.ref-h i { font-style: normal; color: var(--accent); opacity: .55; }
 @keyframes redraw { from { transform: scaleX(0); } }
 .dossier.reprint .fileno::after,
 .dossier.reprint .ref-h::after { animation: redraw .62s var(--e-out) both; }
@@ -561,7 +809,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
 .dossier-grid {
   display: grid;
   grid-template-columns: minmax(min-content, min(16.5rem, calc(100% - 11.5rem))) minmax(0, 1fr);
-  gap: 1.375rem 2.5rem; margin-top: 1.375rem;
+  gap: 1.25rem 2rem; margin-top: 1.125rem;
   /* the record's name and REFERENCE AREA are two headers on one line, so they
      sit on one baseline rather than on one top edge — which is what they did
      when the two columns were sized by their own type */
@@ -576,14 +824,31 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   font-size: 0.75rem; line-height: 1.85; color: var(--ink-dim); margin-top: 1rem;
   max-width: 32ch; font-weight: 300; text-wrap: pretty;
 }
+/* The note is the one part of a record that is prose rather than data, so it is
+   the part that gives way when the plate is too narrow to carry it. It goes
+   rather than truncating: at the width where the plate first needs the room the
+   note column is about 166px and the paragraph needs nine lines in it, so a
+   clamp would leave a two-line stub that says less than nothing.
+
+   380px is measured, not guessed — the panel's own inline size is 465.7px at
+   1600x900, 402.3 at 1240x800, 350.3 at 1100x760 and 313.2 at 1000x700. The
+   note fits in the first two and pushed the plate 74px and 178px past the top of
+   the transport bar in the last two, because above 900px the plate has no height
+   ceiling at all (the `max-height` further down only starts at `max-width: 900px`).
+   The query is on the *panel* and not the viewport for the same reason the
+   one-column switch is: on a wide window the panel is narrow and the window is
+   not. */
+@container (max-width: 380px) {
+  .doc-note { display: none; }
+}
 /* the spec rows are the actual content of a record — the reason it is filed.
    The dotted leader between a key and its value is the oldest archive
    convention there is, and it does a real job here: at this size the eye
    otherwise falls off the row between the label and its number. */
-.spec { list-style: none; margin-top: 1.125rem; border-top: 1px solid var(--hair-soft); }
+.spec { list-style: none; margin-top: 0.9375rem; border-top: 1px solid var(--hair-soft); }
 .spec li {
   display: flex; align-items: baseline;
-  padding: 0.40625rem 0; border-bottom: 1px solid var(--hair-soft);
+  padding: 0.34375rem 0; border-bottom: 1px solid var(--hair-soft);
   transition: padding-left var(--t-med) var(--e-out), border-color var(--t-swift) var(--e-out);
 }
 /* the label is a word, not a column: it is what the grid floor above is measured
@@ -612,7 +877,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
    actually does, and it should not have to be found. */
 .access {
   appearance: none; cursor: pointer; color: var(--ink);
-  display: inline-flex; align-items: center; gap: 0.8125rem; margin-top: 1.25rem;
+  display: inline-flex; align-items: center; gap: 0.8125rem; margin-top: 1rem;
   font: inherit; font-size: 0.71875rem; font-weight: 500;
   letter-spacing: var(--tr-label); text-transform: uppercase;
   padding: 0.5625rem 0.9375rem; border: 1px solid var(--hair); background: transparent;
@@ -670,7 +935,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   font: inherit;
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center; column-gap: 0.75rem;
-  width: 100%; padding: 0.375rem 0.5rem 0.375rem 0; position: relative;
+  width: 100%; padding: 0.3125rem 0.5rem 0.3125rem 0; position: relative;
   transition: color var(--t-swift) var(--e-out), padding var(--t-med) var(--e-out),
               transform var(--t-press) var(--e-out);
 }
@@ -921,6 +1186,53 @@ body.no-audio .now { opacity: .72; }
 body.playing .tc-btn .ico-play { opacity: 0; transform: scale(.62) rotate(-12deg); }
 body.playing .tc-btn .ico-pause { opacity: 1; transform: none; }
 .counter { display: flex; align-items: baseline; gap: 0.3125rem; font-family: var(--mono); }
+/* ── 烛环（2026-10-02：磁带计数器 → 小幽灵的进度环）──
+   一圈光按 --p 合拢（主循环每 0.2s 写一次，和滑轨同一个节拍）。
+   conic-gradient + 径向 mask 挖出环带；环心是当下的时刻。
+   （时长）退到环的右下，小一号 —— 进度是一眼的事，
+   精确的数是二眼的事。 */
+.counter.ring {
+  --p: 0;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  gap: 0;
+  width: 3.1rem;
+  height: 3.1rem;
+  align-self: center;
+}
+.counter.ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) calc(var(--p) * 1turn), color-mix(in srgb, var(--ink) 26%, transparent) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+}
+.counter.ring::after {          /* 环心一点火：演唱中随 body.playing 亮起 */
+  content: '';
+  position: absolute;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.35;
+  transition: opacity .4s ease, box-shadow .4s ease;
+}
+body.playing .counter.ring::after {
+  opacity: 1;
+  box-shadow: 0 0 8px 1px var(--accent);
+}
+.counter.ring #tc { font-size: 0.58rem; letter-spacing: 0.02em; color: var(--ink); }
+.counter.ring .ring-total {
+  position: absolute;
+  right: -0.4rem;
+  bottom: -0.55rem;
+  font-size: 0.52rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+}
 /* The read-out may not be squeezed below its own text. `#tc` and `#td` are flex
    items, so each one's automatic minimum size is its min-content — and once the
    roll markup exists that min-content is a *single* .od cell (8.9px), not the
@@ -1023,11 +1335,18 @@ body.rewinding .rail-fill { background: var(--accent); }
    and this is the only place the number is shown. It sits above the icon, fades
    in on the first notch and fades out a moment after the last one, so nothing
    permanent is added to the console for a control that is used occasionally. */
+/* The surface is the *chip's* pair, not the plate's. It used to borrow
+   `--sheet-tint` / `--sheet-line` and paint itself with the room's `--ink`,
+   which held only for as long as all three plates were light: 冰渊's plate is a
+   dark pane now, and a readout that borrowed it would have printed the room's
+   dark ink on the plate's dark paper. `--chip-bg` / `--chip-ink` are the pair
+   that already inverts with the room — it is what the now-playing chip beside
+   it floats on — and a floating readout is the same kind of object. */
 .vol-read {
   position: absolute; left: 50%; bottom: calc(100% + 0.4375rem); transform: translate(-50%, 0.25rem);
-  padding: 0.1875rem 0.4375rem; border: 1px solid var(--sheet-line); border-radius: var(--r);
-  background: color-mix(in srgb, var(--sheet-tint) 94%, transparent);
-  font-family: var(--mono); font-size: 0.625rem; letter-spacing: .08em; color: var(--ink);
+  padding: 0.1875rem 0.4375rem; border: 1px solid var(--chip-hair); border-radius: var(--r);
+  background: var(--chip-bg);
+  font-family: var(--mono); font-size: 0.625rem; letter-spacing: .08em; color: var(--chip-ink);
   white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums;
   opacity: 0; transition: opacity var(--t-fast) var(--e-out), transform var(--t-fast) var(--e-out);
 }
@@ -1300,7 +1619,9 @@ body.ready .dossier { opacity: 1; transform: none; }
    three rows with the transport last — why that order, and not the two-row one
    it used to be, is argued at the 1080 block below. */
 @media (max-width: 1240px) {
-  .dossier { width: min(calc(50% - var(--pad)), var(--plate-max)); }
+  /* 2026-10-03: 50% → 46%。1081–1240 是板子相对最宽的一档（50% - pad），
+     在 1130 宽下它占 524px、板子本体 419px，底边几乎贴住走带台。 */
+  .dossier { width: min(calc(46% - var(--pad)), var(--plate-max)); }
   .col-name { display: none; }
   .deck { gap: 1.125rem 1.75rem; }
 }
@@ -1435,25 +1756,41 @@ body.ready .dossier { opacity: 1; transform: none; }
 
 /* ---------- more contrast, on request ---------- */
 @media (prefers-contrast: more) {
+  /* the plate's set has to be lifted alongside the room's: the sheet reads
+     `--sh-*` (see .sheet), so bumping only `--ink-faint` and `--hair` would
+     leave the one block of text this page exists to be read at its old weight */
   :root, html[data-theme="studio"] {
     --ink-faint: rgba(22, 22, 26, .82);
     --hair: rgba(22, 22, 26, .38);
     --hair-soft: rgba(22, 22, 26, .2);
     --sheet-a: 94%;
+    --sh-ink-faint: rgba(23, 19, 37, .84);
+    --sh-hair: rgba(23, 19, 37, .36);
+    --sh-hair-soft: rgba(23, 19, 37, .2);
   }
   html[data-theme="noir"] {
     --ink-faint: rgba(244, 242, 238, .82);
     --hair: rgba(244, 242, 238, .4);
     --hair-soft: rgba(244, 242, 238, .22);
     --sheet-a: 94%;
+    --sh-ink-faint: rgba(247, 241, 227, .84);
+    --sh-hair: rgba(216, 169, 79, .38);
+    --sh-hair-soft: rgba(247, 241, 227, .2);
   }
   html[data-theme="abyss"] {
     --ink-faint: rgba(16, 22, 28, .82);
     --hair: rgba(16, 22, 28, .40);
     --hair-soft: rgba(16, 22, 28, .22);
     --sheet-a: 94%;
+    --sh-ink-faint: rgba(228, 245, 250, .84);
+    --sh-hair: rgba(158, 222, 234, .36);
+    --sh-hair-soft: rgba(228, 245, 250, .2);
   }
   .frame { border-color: var(--hair); }
+  /* the ornaments are atmosphere, not information, and the page has just been
+     asked to stop decorating: a web under a paragraph is exactly the kind of
+     thing this preference exists to remove */
+  .orn { display: none; }
 }
 
 /* ============================ reduced motion ============================

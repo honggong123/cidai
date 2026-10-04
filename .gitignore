@@ -7,8 +7,8 @@ Thumbs.db
 # 注意不能写成 `assets/` + `!assets/xxx` —— git 不允许父目录被排除后再重新包含
 # 其中的文件，那样写会静默失效、线上 404。
 #   spirit.png      交付的原图（实为 JPEG，黑底无 alpha）。她现在是程序化生成的
-#                   （src/nahida.js），运行时**不再读任何图**；留在这里是因为
-#                   nahida.js 的配色就是从这张图采出来的，它是那份配色的依据。
+#                   （src/ghost.js），运行时**不再读任何图**；留在这里是因为
+#                   现在这套配色最初就是从这张图采出来的，它是那份配色的依据。
 #   spirit-cut.webp 由 tools/key-spirit.py 从上面那张切出的透明图。2D 时代她是
 #                   一块 billboard 时运行时贴的就是它；3D 之后已无人引用，暂留。
 assets/*

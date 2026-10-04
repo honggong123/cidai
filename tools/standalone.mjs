@@ -26,7 +26,7 @@ html = html.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => {
    的是整个产物里的路径，而不是某个标签。找不到的文件原样留着 —— 静默换成空图
    比 404 更难查。
 
-   现在她完全是程序化生成的（src/nahida.js：每个面都是图元或启动时自绘的
+   现在她完全是程序化生成的（src/ghost.js：每个面都是图元或启动时自绘的
    canvas），所以这一步扫到 0 个资源是**正常**的，不是回归。留着它是因为规则
    本身与角色无关：哪天要加回一张贴图，它得在。 */
 const MIME = {
@@ -43,9 +43,9 @@ html = html.replace(/(['"])assets\/([A-Za-z0-9._-]+)\.(png|jpe?g|webp|gif|svg)\1
   });
 
 /* 文件名跟着站点走，不跟着历史走：这个产物是会被 Pages 发出去的那一份，留着
-   旧名字等于在交付物上留一个已经不存在的东西。改过一次名（lux-tape → lingbao
-   → nahida），每次都没有页面引用旧名，所以站内链接不会断；**但站外分享过的
-   旧链接会**，那是有意为之，不是事故。 */
-const out = path.join(root, 'dist', 'nahida-standalone.html');
+   旧名字等于在交付物上留一个已经不存在的东西。改过几次名（lux-tape → lingbao
+   → nahida → ghost），每次都没有页面引用旧名，所以站内链接不会断；**但站外
+   分享过的旧链接会**，那是有意为之，不是事故。 */
+const out = path.join(root, 'dist', 'ghost-standalone.html');
 fs.writeFileSync(out, html);
-console.log(`内联 ${n} 个外部资源 → dist/nahida-standalone.html  ${(fs.statSync(out).size / 1024).toFixed(0)} KB`);
+console.log(`内联 ${n} 个外部资源 → dist/ghost-standalone.html  ${(fs.statSync(out).size / 1024).toFixed(0)} KB`);

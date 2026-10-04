@@ -43,9 +43,12 @@
 const [url, cdpPort = '9445', dpr = '1'] = process.argv.slice(2);
 if (!url) { console.error('usage: node tools/_pick.mjs <url> [cdpPort] [dpr]'); process.exit(2); }
 
+// The tab is picked by URL, never by position: /json/list lists every page in
+// the browser, and another project's page being first is a normal accident.
+// Imports are hoisted, so the helper can be declared here, next to its use.
+import { pickPage } from './_cdp.mjs';
 const list = await (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).json();
-const page = list.find((t) => t.type === 'page');
-if (!page) throw new Error('no page target — start tools/_dev.mjs first');
+const page = pickPage(list, url);
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 
@@ -83,6 +86,29 @@ for (let i = 0, ok = false; i < 90 && !ok; i++) {
   await sleep(1000);
   ok = await evaluate(`(() => { const l = document.getElementById('loader'); return !!l && getComputedStyle(l).opacity === '0'; })()`).catch(() => false);
 }
+/* ★ 再等主循环**真的起来**。loader 落下去只说明 `boot()` 走到中途，
+   `loop()` 是它最后一行；而主循环起来之前 `__spirit.bob` 已经是一个数字了，
+   所以"有钩子"不算判据。`bob` 是待机浮沉，只有 `loop()` 里的 `spirit.update`
+   会写它 —— 判据是"两次相邻帧之间它变了"。 */
+await evaluate(`new Promise((r) => {
+  let prev = null, n = 0;
+  const step = () => {
+    const b = window.__spirit ? window.__spirit.bob : null;
+    if (typeof b === 'number' && typeof prev === 'number' && b !== prev) return r(1);
+    prev = b;
+    if (++n > 900) return r(0);
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+})`).catch(() => 0);
+
+/* ★★ 等**帧**，不是等墙钟。这台机器上软件渲染一帧约 2.7 秒（0.37 fps），
+   而 `playingRows` 那一条读的是主循环里 `syncMoveButtons()` 写下的类 ——
+   原来那里是 `sleep(120)`，在这台机器上等于没等，于是那一条会**假 FAIL**。
+   `frames(2)` 在快机器上是几十毫秒、在这里是五秒，两边都对。 */
+const frames = (n = 2) => evaluate(
+  `new Promise((r) => { let k = ${n}; const step = () => (--k <= 0 ? r(1) : requestAnimationFrame(step)); requestAnimationFrame(step); })`,
+).catch(() => 0);
 await sleep(1500);
 
 /* `action` comes off `window.__spirit` and not off the panel's highlight: the
@@ -167,7 +193,7 @@ check(farUp.y > 0.1 && farDown.y < -0.1,
 await move(cx, cy);
 const before = await state();
 await down(cx, cy); await up(cx, cy);
-await sleep(120);
+await frames(2);
 const afterTap = await state();
 check(afterTap.action === 'nod' && afterTap.playing === before.playing,
   `tap        action ${JSON.stringify(before.action)} -> ${JSON.stringify(afterTap.action)}   playing ${before.playing} -> ${afterTap.playing} (must not change)`);
@@ -179,7 +205,7 @@ check(afterTap.playingRows.length === 1 && afterTap.playingRows[0].includes('点
 await down(cx, cy);
 for (let i = 1; i <= 6; i++) await move(cx + i * 12, cy + i * 3);
 await up(cx + 72, cy + 18);
-await sleep(150);
+await frames(2);
 const afterDrag = await state();
 check(afterDrag.action === 'nod' || afterDrag.action === null,
   `drag       action ${JSON.stringify(afterDrag.action)} (must not advance past "nod")  dragging=${afterDrag.dragging}`);
@@ -189,7 +215,7 @@ await sleep(400);
 await down(cx, cy);
 await sleep(750);
 await up(cx, cy);
-await sleep(150);
+await frames(2);
 const afterHold = await state();
 check(afterHold.action === 'nod' || afterHold.action === null,
   `hold 750ms action ${JSON.stringify(afterHold.action)} (must not advance past "nod")`);
@@ -201,7 +227,7 @@ await sleep(400);
 await down(cx, cy); await up(cx, cy);
 await sleep(90);
 await down(cx, cy); await up(cx, cy);
-await sleep(120);
+await frames(2);
 const afterDbl = await state();
 check(afterDbl.action === 'wave', `two taps   action ${JSON.stringify(afterDbl.action)} (must be "wave", i.e. exactly one more greeting)`);
 
@@ -209,7 +235,7 @@ check(afterDbl.action === 'wave', `two taps   action ${JSON.stringify(afterDbl.a
 await sleep(600);
 await move(60, 760);
 await down(60, 760); await up(60, 760);
-await sleep(150);
+await frames(2);
 const afterBg = await state();
 check(afterBg.action === 'wave' && !afterBg.hover,
   `empty room action ${JSON.stringify(afterBg.action)} (must stay "wave")  hover=${afterBg.hover}`);

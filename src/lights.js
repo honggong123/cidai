@@ -19,23 +19,52 @@ import { damp } from './anim.js';
    ======================================================================= */
 
 export const RIG = {
+  /* 紫夜 — the dark room, keyed to the character: a gold key (the hat band is
+     the only saturated thing on her), a violet fill (the hat's own colour
+     bounced back off the walls) and an ice rim (the glow inside the sheet).
+     The three hues are the three colours of the model, which is what makes a
+     one-lamp room read as *her* room rather than a generic black box. */
   noir: {
     exposure: 0.95, envInt: 0.45,
-    key: { c: 0xffe9c8, i: 1.90, w: 9.0, h: 6.0, p: [-6.4, 5.2, 6.6] },
-    fill: { c: 0xd6e4ff, i: 0.45, w: 12, h: 8.0, p: [8.6, 1.8, 5.2] },
-    rim: { c: 0xc4daff, i: 1.60, w: 1.3, h: 13, p: [4.2, 4.6, -8.6] },
-    bounce: { c: 0xffd7a8, i: 0.40, w: 12, h: 12, p: [0.5, -3.4, 3.8] },
-    top: { c: 0xeef3ff, i: 0.22, w: 12, h: 12, p: [-0.8, 8.8, 1.2] },
+    key: { c: 0xffdfae, i: 1.90, w: 9.0, h: 6.0, p: [-6.4, 5.2, 6.6] },
+    fill: { c: 0xbfa8ff, i: 0.45, w: 12, h: 8.0, p: [8.6, 1.8, 5.2] },
+    rim: { c: 0x9fe4ff, i: 1.60, w: 1.3, h: 13, p: [4.2, 4.6, -8.6] },
+    bounce: { c: 0xc9a8ff, i: 0.40, w: 12, h: 12, p: [0.5, -3.4, 3.8] },
+    top: { c: 0xe6dcff, i: 0.22, w: 12, h: 12, p: [-0.8, 8.8, 1.2] },
     shadow: { i: 0.75, p: [-6.4, 5.2, 6.6] },
   },
+  /* 霜厅 — the same five positions as the black box; what changed is the
+     *ratios*.
+
+     A room where every lamp is nearly as strong as the key is a room with no
+     key. Measured off the render at the old numbers, the crown came back
+     (248,244,238), the shirt (248,246,240), and the groove between two fringe
+     locks (247,243,239) — a surface facing the key and a surface turned away
+     from it were lit by two different softboxes of the same size and the same
+     brightness, so the model had three levels of shading across its whole head.
+     Nothing about a solid can be seen in that light: the fringe read as one
+     smooth white shell no matter how many locks it was built from, and the
+     first diagnosis blamed the geometry and rewrote it.
+
+     So the fill, the top and the bounce come down and the key goes up. The hall
+     is still bright — the exposure carries that, and it went up with them — but
+     it now has a direction, and a direction is what makes a crease a crease.
+     `envInt` comes down for the same reason: an IBL is the most directionless
+     light there is. */
   studio: {
-    exposure: 0.80, envInt: 0.56,
-    key: { c: 0xffffff, i: 1.50, w: 14, h: 10, p: [-7.6, 6.6, 7.6] },
-    fill: { c: 0xf0f4fa, i: 0.95, w: 15, h: 11, p: [9.4, 2.6, 5.8] },
-    rim: { c: 0xffffff, i: 1.05, w: 1.8, h: 16, p: [0.8, 6.2, -10.5] },
-    bounce: { c: 0xfffaf2, i: 0.55, w: 13, h: 13, p: [0.4, -3.2, 4.2] },
-    top: { c: 0xffffff, i: 0.50, w: 15, h: 15, p: [0, 10.5, 1.0] },
-    shadow: { i: 0.34, p: [-7.6, 6.6, 7.6] },
+    exposure: 0.86, envInt: 0.46,
+    /* Only the *hue* moved here — the ratios are the ones the shading analysis
+       settled on (see below), and they are what makes the fringe read as locks
+       rather than as one shell. The hall's white goes cold and faintly violet
+       so the sheet does not disappear into the wall it is standing in front of;
+       the bounce is the one warm lamp left, because a room with no warm source
+       at all reads as a colour cast rather than as a room. */
+    key: { c: 0xf8f6ff, i: 1.72, w: 14, h: 10, p: [-7.6, 6.6, 7.6] },
+    fill: { c: 0xe4e8ff, i: 0.46, w: 15, h: 11, p: [9.4, 2.6, 5.8] },
+    rim: { c: 0xd0f0ff, i: 1.00, w: 1.8, h: 16, p: [0.8, 6.2, -10.5] },
+    bounce: { c: 0xfff4e4, i: 0.34, w: 13, h: 13, p: [0.4, -3.2, 4.2] },
+    top: { c: 0xf0f2ff, i: 0.26, w: 15, h: 15, p: [0, 10.5, 1.0] },
+    shadow: { i: 0.40, p: [-7.6, 6.6, 7.6] },
   },
   /* 蓝厅 — the same five positions as the hall next door, with the colour of
      north light on every one of them: nothing here is warm, and the fill is
@@ -43,11 +72,15 @@ export const RIG = {
      shadow is the lightest of the three, for the same reason. */
   abyss: {
     exposure: 0.80, envInt: 0.54,
-    key: { c: 0xf2f8ff, i: 1.45, w: 12, h: 8.5, p: [-6.2, 7.8, 5.6] },
-    fill: { c: 0xb8cfe0, i: 0.80, w: 14, h: 10, p: [9.0, 1.6, 5.4] },
-    rim: { c: 0xcfeaff, i: 1.30, w: 1.2, h: 15, p: [3.6, 5.4, -9.6] },
-    bounce: { c: 0x8aa8bc, i: 0.45, w: 12, h: 12, p: [0.4, -3.6, 4.0] },
-    top: { c: 0xe4f2ff, i: 0.48, w: 14, h: 14, p: [-0.6, 9.8, 1.0] },
+    /* 冰渊 — the room lit the way the ghost is lit from inside. Every lamp is
+       pushed toward the cyan of the sheet's own glow, and the rim is the most
+       saturated one in the whole rig: in a room this cold the contour is the
+       only place a warm object could hide, and there is no warm object. */
+    key: { c: 0xecf9ff, i: 1.45, w: 12, h: 8.5, p: [-6.2, 7.8, 5.6] },
+    fill: { c: 0xa6cfdd, i: 0.80, w: 14, h: 10, p: [9.0, 1.6, 5.4] },
+    rim: { c: 0x9fe8ff, i: 1.30, w: 1.2, h: 15, p: [3.6, 5.4, -9.6] },
+    bounce: { c: 0x8ab6c4, i: 0.45, w: 12, h: 12, p: [0.4, -3.6, 4.0] },
+    top: { c: 0xd6f0ff, i: 0.48, w: 14, h: 14, p: [-0.6, 9.8, 1.0] },
     shadow: { i: 0.40, p: [-6.2, 7.8, 5.6] },
   },
 };

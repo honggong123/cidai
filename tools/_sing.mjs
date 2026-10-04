@@ -36,6 +36,18 @@
  * more because of it. The last is the one that would catch someone rewiring her
  * to `musicLive` — the state would still flip, but only when there is sound.
  *
+ * WHICH SAMPLES COUNT
+ * She is supposed to sing exactly while the transport rolls and is not spooling
+ * back (`sheSings = mode !== 'rew' && cas.st.playing`, main.js:3318), so the
+ * window is split on `body.playing` / `body.rewinding` and the assertion reads
+ * the rolling half. This file got that wrong for a while and it mattered: the
+ * probe reported `sing 0.72` and printed "she never started singing", when the
+ * real cause was a 60 s side ending inside the window — and, underneath that, a
+ * `mode = 'rew'` that could never be left at all (the tape transport's exit went
+ * with `cassette.js`; see `tools/_rew.mjs` for the fix and its guard). The lesson
+ * is the one this file already carried for its window length: **a number is only
+ * an assertion once you have said which frames it is allowed to be about.**
+ *
  * WHY THE WINDOW IS MINUTES LONG
  * The loop caps `dt` at 1/20 s, so on a software renderer slower than 20 fps the
  * page's own clock advances at `fps x 0.05` seconds per second of wall time —
@@ -70,9 +82,12 @@
 const [url, cdpPort = '9445', dpr = '0.35', idleSec = '45', singSec = '25'] = process.argv.slice(2);
 if (!url) { console.error('usage: node tools/_sing.mjs <url> [cdpPort] [dpr] [idleSec] [singSec]'); process.exit(2); }
 
+// The tab is picked by URL, never by position: /json/list lists every page in
+// the browser, and another project's page being first is a normal accident.
+// Imports are hoisted, so the helper can be declared here, next to its use.
+import { pickPage } from './_cdp.mjs';
 const list = await (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).json();
-const page = list.find((t) => t.type === 'page');
-if (!page) throw new Error('no page target — start tools/_dev.mjs first');
+const page = pickPage(list, url);
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 
@@ -151,27 +166,44 @@ await evaluate(`(() => {
 
 const stat = (a) => {
   const m = a.reduce((s, v) => s + v, 0) / a.length;
-  return { min: Math.min(...a), max: Math.max(...a), range: Math.max(...a) - Math.min(...a),
-    sd: Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / a.length) };
+  const s = [...a].sort((x, y) => x - y);
+  return { min: s[0], max: s[s.length - 1], range: s[s.length - 1] - s[0],
+    median: s[Math.floor(s.length / 2)],
+    sd: Math.sqrt(a.reduce((s2, v) => s2 + (v - m) ** 2, 0) / a.length) };
 };
+/* ★★ 采样时把 `body.playing` / `body.rewinding` 一起读回来，理由不是好奇。
+   `sheSings = mode !== 'rew' && cas.st.playing`（main.js:3318）—— 她**本来
+   就**在倒带期间不唱，而一首歌放完必然进倒带。所以"窗口里 `sing` 的最小值"
+   只有在窗口整段落在走带期间时才等于"她唱了没有"；窗口一旦压到曲尾，读到的是
+   一个**按设计**的衰减。2026-10-03 就是这么来的：断言印的是 "she never started
+   singing"，而真实情况是 60 秒的曲子恰好在窗口里放完（`_singtrace.mjs` 的
+   时间线：`ended=true`、`sing` 0.115→0.086→0）。
+   于是把样本分成两堆：`rolling` = 走带台在转**且**没在倒带 = 她本该开口的帧。
+   断言只对 `rolling` 下。 */
 const run = async (label, seconds) => {
   const f0 = await evaluate('window.__frames');
-  const bob = [], sing = [];
+  const bob = [], sing = [], rolling = [];
   const until = Date.now() + seconds * 1000;
   /* poll faster than the frame rate: a sample that lands inside the frame
      already read is free, and skipping one that landed between frames is not */
   while (Date.now() < until) {
-    const v = await evaluate('({ b: window.__spirit.bob, s: window.__spirit.sing })');
+    const v = await evaluate(`({ b: window.__spirit.bob, s: window.__spirit.sing,
+      p: document.body.classList.contains('playing'),
+      w: document.body.classList.contains('rewinding') })`);
     bob.push(v.b); sing.push(v.s);
+    if (v.p && !v.w) rolling.push(v.s);
     await sleep(90);
   }
   const f1 = await evaluate('window.__frames');
-  return { label, bob: stat(bob), sing: stat(sing), frames: f1 - f0, herSeconds: (f1 - f0) * 0.05 };
+  return { label, bob: stat(bob), sing: stat(sing),
+    rolling: rolling.length ? stat(rolling) : null, rollingN: rolling.length, n: sing.length,
+    frames: f1 - f0, herSeconds: (f1 - f0) * 0.05 };
 };
 const show = (s) => console.log(
   `${s.label.padEnd(8)}  bob ${s.bob.min.toFixed(3).padStart(7)}..${s.bob.max.toFixed(3).padStart(7)}` +
   ` (range ${s.bob.range.toFixed(3)}, sd ${s.bob.sd.toFixed(4)})` +
-  `   sing ${s.sing.min.toFixed(2)}..${s.sing.max.toFixed(2)}` +
+  `   sing ${s.sing.min.toFixed(2)}..${s.sing.max.toFixed(2)} med ${s.sing.median.toFixed(2)}` +
+  `   rolling ${s.rollingN}/${s.n}` +
   `   ${s.frames} frames = ${s.herSeconds.toFixed(2)} s of her clock`);
 
 const idle = await run('idle', +idleSec);
@@ -183,7 +215,24 @@ for (const type of ['mousePressed', 'mouseReleased']) {
   await send('Input.dispatchMouseEvent', { type, x: btn.x, y: btn.y, button: 'left', clickCount: 1, buttons: type === 'mousePressed' ? 1 : 0 });
   await sleep(60);
 }
-await sleep(12000);          // let the ease land: `sing` damps at 3.0/s, so this is ~1.8 s of her clock
+/* ★★ 等缓动落地要按**页面自己的钟**等，不能按墙钟。
+   `st.sing` 以 3.0/**页面秒**阻尼（`ghost.js:972`），而一帧只推进
+   `dt = 1/20` 页面秒。2026-10-03 实测这个页面约 1 fps，于是旧写法
+   `await sleep(12000)` 只换来 **0.6 页面秒** —— 缓动停在 0.45，采样窗从 0.45
+   起步，下面 `sing.sing.min > 0.85` 必然失败，而失败信息印的是
+   "she never started singing"。那是**探针的假阴性**，不是模型的问题：
+   `st.sing` / `st.bob` 都不由身体位置决定（写它们的是 972 / 992 行）。
+   改成轮询页面自己的读数，帧率再低也准。 */
+let eased = null;
+for (let i = 0; i < 150 && eased === null; i++) {
+  if (await evaluate('window.__spirit.sing > 0.9')) eased = await evaluate('window.__spirit.sing');
+  else await sleep(1000);
+}
+if (eased === null) {
+  console.error('warning: `sing` never eased past 0.9 within 150 s — the window below will read low');
+} else {
+  console.log(`ease       sing reached ${eased.toFixed(3)} before the window opened`);
+}
 const live = await evaluate(`({ playing: document.body.classList.contains('playing'),
   paused: document.querySelector('audio').paused, t: +document.querySelector('audio').currentTime.toFixed(1) })`);
 console.log(`press      playing=${live.playing}  audio.paused=${live.paused}  t=${live.t}s`);
@@ -196,15 +245,36 @@ if (!live.playing || (live.paused && !noAudio)) {
 const sing = await run('singing', +singSec);
 show(sing);
 
-/* three independent checks, so a failure names the half that broke */
-const quiet = idle.sing.max < 0.15;
-const loud = sing.sing.min > 0.85;
+/* ★ Zero `rolling` samples is not "she did not sing" — it is "there was nothing
+   to sing to", and the two want different messages. */
+if (sing.rollingN === 0) {
+  console.error(`the transport never rolled in the window (${sing.n} samples) — nothing to compare against`);
+  console.error(problems.length ? 'page errors:\n  ' + problems.join('\n  ') : 'page errors: none');
+  process.exit(1);
+}
+
+/* three independent checks, so a failure names the half that broke.
+   The first two read `sing` over the samples where she is *supposed* to be
+   singing (`rolling`, see `run`), and they take the **median**, not the minimum.
+   The minimum is the number that lied here: a side that ends inside the window
+   produces one honest dip (she does not sing during a rewind — `sheSings` in
+   main.js) and one honest recovery, so `min` measures how the window was placed
+   rather than whether she sings. A rewiring to `musicLive` still falls flat
+   under the median — in the `SING_PRELUDE` case there is no audio at all, so
+   every rolling sample would be 0. */
+const quiet = (idle.rolling ?? idle.sing).max < 0.15;
+const loud = sing.rolling.median > 0.85;
 const moves = sing.bob.range > idle.bob.range * 2.0;
 console.log(`ratio       bob range ${(sing.bob.range / (idle.bob.range || NaN)).toFixed(2)}x`
-  + `   (needs > 2.00x, and sing < 0.15 idle / > 0.85 singing)`);
+  + `   (needs > 2.00x, and sing < 0.15 idle / median > 0.85 while rolling)`);
 console.log(quiet && loud && moves
   ? 'PASS  she is still until asked, sings when asked, and moves more because of it'
   : `FAIL  ${[!quiet && 'she was already singing before the press',
       !loud && 'she never started singing', !moves && 'singing does not move her more'].filter(Boolean).join('; ')}`);
+if (sing.sing.min < 0.85) {
+  console.log(`note        the window bottomed out at ${sing.sing.min.toFixed(3)} — if \`rolling\` is short of`
+    + ` ${sing.n}, a side ended inside it (she is silent through a rewind by design; the rewind's own`
+    + ' exit is `tools/_rew.mjs`\'s job)');
+}
 console.log(problems.length ? 'page errors:\n  ' + problems.join('\n  ') : 'page errors: none');
 ws.close();

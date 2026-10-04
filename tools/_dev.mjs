@@ -8,6 +8,12 @@
  * Stays in the foreground: kill it when the session is over. The browser gets a
  * throwaway profile, so it never joins a Chrome the user already has running
  * (which is what makes `chrome --version` print "opening in existing session").
+ *
+ * ★ Every response carries `cache-control: no-store`. Without it the browser
+ * applies heuristic caching to `dist/app.js`, and the next probe navigates to a
+ * bundle that is one build old — which is indistinguishable from "the fix did
+ * not work": same silent symptom, no exception, and a stack that points at a
+ * line the source no longer has. A dev server has nothing to gain from caching.
  */
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
@@ -21,6 +27,7 @@ const ROOT = resolve(process.argv[2] || '.');
 const PORT = +(process.argv[3] || 8931);
 const CDP = +(process.argv[4] || 9445);
 const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const NO_STORE = { 'cache-control': 'no-store' };
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -45,15 +52,15 @@ const server = createServer(async (req, res) => {
   } catch {
     // no such path: a bare origin still has to answer, or a module import
     // evaluated from the devtools console has nowhere to run
-    if (url === '/') { res.writeHead(200, { 'content-type': MIME['.html'] }).end('<!doctype html><meta charset="utf-8"><title>dev</title>'); return; }
-    res.writeHead(404, { 'content-type': 'text/plain' }).end('not found');
+    if (url === '/') { res.writeHead(200, { 'content-type': MIME['.html'], ...NO_STORE }).end('<!doctype html><meta charset="utf-8"><title>dev</title>'); return; }
+    res.writeHead(404, { 'content-type': 'text/plain', ...NO_STORE }).end('not found');
     return;
   }
   try {
     const buf = await readFile(p);
-    res.writeHead(200, { 'content-type': MIME[extname(p).toLowerCase()] || 'application/octet-stream' }).end(buf);
+    res.writeHead(200, { 'content-type': MIME[extname(p).toLowerCase()] || 'application/octet-stream', ...NO_STORE }).end(buf);
   } catch {
-    res.writeHead(404, { 'content-type': 'text/plain' }).end('not found');
+    res.writeHead(404, { 'content-type': 'text/plain', ...NO_STORE }).end('not found');
   }
 });
 

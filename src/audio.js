@@ -55,12 +55,13 @@ export class TapeAudio {
       this.hissGain.gain.value = 0.34;
       hiss.connect(hp).connect(lp).connect(this.hissGain).connect(this.master);
 
-      // motor hum
+      // 房间低鸣（2026-10-02：磁带马达的 49.5Hz 锯齿波随磁带一起舍弃 ——
+      // 石头大厅的"底"是一声很低的腔体共鸣，正弦，几乎听出来算失败）
       const hum = ctx.createOscillator();
-      hum.type = 'sawtooth'; hum.frequency.value = 49.5;
+      hum.type = 'sine'; hum.frequency.value = 62.0;
       const hlp = ctx.createBiquadFilter();
-      hlp.type = 'lowpass'; hlp.frequency.value = 220; hlp.Q.value = 3;
-      this.humGain = ctx.createGain(); this.humGain.gain.value = 0.16;
+      hlp.type = 'lowpass'; hlp.frequency.value = 180; hlp.Q.value = 1;
+      this.humGain = ctx.createGain(); this.humGain.gain.value = 0.05;
       hum.connect(hlp).connect(this.humGain).connect(this.master);
 
       // capstan whir

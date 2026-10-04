@@ -29,9 +29,12 @@ const SIZES = sizesArg
   ? sizesArg.split(',').map((s) => { const [w, h] = s.split('x'); return [+w, +(h || Math.round(+w * 0.7))]; })
   : [[1440, 820], [1280, 800], [1240, 800], [1100, 760], [1080, 760], [1040, 720], [1000, 700], [960, 700]];
 
+// The tab is picked by URL, never by position: /json/list lists every page in
+// the browser, and another project's page being first is a normal accident.
+// Imports are hoisted, so the helper can be declared here, next to its use.
+import { pickPage } from './_cdp.mjs';
 const list = await (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).json();
-const page = list.find((t) => t.type === 'page');
-if (!page) throw new Error('no page target — start tools/_dev.mjs first');
+const page = pickPage(list, url);
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 

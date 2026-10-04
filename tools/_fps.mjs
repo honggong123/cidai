@@ -13,9 +13,12 @@
 const [url, cdpPort = '9445', w = '1440', h = '900', dpr = '1'] = process.argv.slice(2);
 if (!url) { console.error('usage: node tools/_fps.mjs <url> [cdpPort] [w] [h] [dpr]'); process.exit(2); }
 
+// The tab is picked by URL, never by position: /json/list lists every page in
+// the browser, and another project's page being first is a normal accident.
+// Imports are hoisted, so the helper can be declared here, next to its use.
+import { pickPage } from './_cdp.mjs';
 const list = await (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).json();
-const page = list.find((t) => t.type === 'page');
-if (!page) throw new Error('no page target — start tools/_dev.mjs first');
+const page = pickPage(list, url);
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 

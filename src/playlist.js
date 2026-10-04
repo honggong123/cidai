@@ -20,7 +20,7 @@
 
 import { renderSide } from './demo-audio.js';
 
-const ARTIST = '校准室';
+const ARTIST = '烛芯';      // 唱这些歌的「人」：一支只在城堡里演出的幽魂合唱团
 
 const A_TRACKS = [
   { no: 'A1', title: '静水', start: 0, len: 20 },
@@ -38,9 +38,9 @@ const B_TRACKS = [
 export const SIDES = [
   {
     id: 'A',
-    cn: 'A 面',
+    cn: '夜歌 · 一',
     /* what gets printed on the label for this side */
-    label: { title: '低温装配', artist: ARTIST, album: '纳西妲演示曲 · A 面' },
+    label: { title: '炉边谣', artist: ARTIST, album: '小幽灵演示曲 · 夜歌 · 一' },
     spec: {
       dur: 60, bpm: 92, arr: [0, 1, 2], tracks: A_TRACKS,
       chords: [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 62], [55, 59, 62, 66]],
@@ -49,8 +49,8 @@ export const SIDES = [
   },
   {
     id: 'B',
-    cn: 'B 面',
-    label: { title: '深水区', artist: ARTIST, album: '纳西妲演示曲 · B 面' },
+    cn: '夜歌 · 二',
+    label: { title: '沉雾', artist: ARTIST, album: '小幽灵演示曲 · 夜歌 · 二' },
     spec: {
       dur: 60, bpm: 76, arr: [1, 2, 0], tracks: B_TRACKS,
       chords: [[50, 53, 57, 60], [47, 50, 53, 57], [46, 50, 53, 57], [48, 52, 55, 62]],
