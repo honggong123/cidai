@@ -34304,7 +34304,7 @@ void main() {
     document.body.classList.add("ready");
     measure();
     render();
-    pinPanel();
+    pinSoon();
     applyPrefs();
     const qIntro = Q.get("intro");
     const wantsIntro = qIntro === "1" ? true : qIntro === "0" ? false : prefs.intro && ![...Q.keys()].length;
@@ -34407,7 +34407,12 @@ void main() {
     cols: $("#cols"),
     dossier: $("#dossier"),
     dbody: $("#dbody"),
-    fold: $("#btn-fold")
+    fold: $("#btn-fold"),
+    // the plate's own box, and the two pieces of furniture it has to live between
+    // — see pinPanel
+    sheet: $(".sheet"),
+    mast: $(".mast"),
+    transport: $(".transport")
   };
   D.colN.textContent = String(VANTAGES.length).padStart(2, "0");
   D.selN.textContent = MOVES[MOVES.length - 1].no;
@@ -34592,9 +34597,59 @@ void main() {
   var docT = 0;
   var reprintT = 0;
   function pinPanel() {
-    const h = D.dossier.getBoundingClientRect().height;
-    if (h > 0) D.dossier.style.setProperty("--panel-half", (h / 2).toFixed(1) + "px");
+    const d = D.dossier;
+    if (matchMedia("(max-width: 900px)").matches) {
+      d.style.removeProperty("--band");
+      d.style.removeProperty("--panel-top");
+      d.style.removeProperty("--panel-half");
+      syncSheetScroll();
+      return;
+    }
+    d.classList.remove("overflow");
+    d.style.setProperty("--band", "none");
+    const nat = d.getBoundingClientRect().height;
+    const slide = D.mast.getBoundingClientRect().top - D.mast.offsetTop;
+    const mastB = D.mast.getBoundingClientRect().bottom - slide;
+    const tt = D.transport.getBoundingClientRect().top - slide;
+    const band = Math.max(0, tt - mastB);
+    const h = Math.min(nat, band);
+    const top = Math.min(Math.max(innerHeight / 2 - h / 2, mastB), tt - h);
+    d.style.setProperty("--band", band.toFixed(1) + "px");
+    d.style.setProperty("--panel-top", top.toFixed(1) + "px");
+    if (h > 0) d.style.setProperty("--panel-half", (h / 2).toFixed(1) + "px");
+    syncSheetScroll();
   }
+  var SHEET_SLACK = 8;
+  function syncSheetScroll() {
+    D.dossier.classList.toggle("overflow", D.sheet.scrollHeight > D.sheet.clientHeight + SHEET_SLACK);
+  }
+  var pinTimer = 0;
+  function pinSoon() {
+    pinPanel();
+    clearTimeout(pinTimer);
+    pinTimer = setTimeout(pinPanel, 700);
+  }
+  var pinnedW = -1;
+  var pinnedMastH = -1;
+  var watchTimer = 0;
+  var plateWatch = new ResizeObserver(() => {
+    clearTimeout(watchTimer);
+    watchTimer = setTimeout(() => {
+      const w = Math.round(D.sheet.getBoundingClientRect().width);
+      const mh = Math.round(D.mast.getBoundingClientRect().height);
+      if (w !== pinnedW || Math.abs(mh - pinnedMastH) > 1) {
+        pinnedW = w;
+        pinnedMastH = mh;
+        pinSoon();
+        return;
+      }
+      syncSheetScroll();
+    }, 0);
+  });
+  plateWatch.observe(D.sheet);
+  plateWatch.observe(D.dbody);
+  plateWatch.observe(D.mast);
+  if (document.fonts?.ready) document.fonts.ready.then(pinSoon);
   function syncViewShift() {
     viewShiftTarget = exploded ? 0.1 : folded ? 0.05 : 0.155;
   }
@@ -35583,7 +35638,7 @@ void main() {
     if (grade) grade.uniforms.uTexel.value.set(1 / bw, 1 / bh);
     applyViewOffset();
     measure();
-    pinPanel();
+    pinSoon();
   }
   var viewShift = 0.155;
   var viewShiftTarget = 0.155;

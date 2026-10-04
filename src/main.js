@@ -1460,7 +1460,7 @@ async function boot() {
   document.body.classList.add('ready');
   measure();
   render();
-  pinPanel();          // measured with a record's sheet in it, not an empty one
+  pinSoon();           // measured with a record's sheet in it, not an empty one
   applyPrefs();        // the remembered switches, now that there is a scene to apply them to
   // ?intro=1 forces it and ?intro=0 refuses it — any other query at all, which is
   // how a link meant to be photographed lands, has never played it. Otherwise the
@@ -1647,6 +1647,9 @@ const D = {
   selI: $('#sel-i'), selN: $('#sel-n'),
   refList: $('#ref-list'), cols: $('#cols'),
   dossier: $('#dossier'), dbody: $('#dbody'), fold: $('#btn-fold'),
+  // the plate's own box, and the two pieces of furniture it has to live between
+  // — see pinPanel
+  sheet: $('.sheet'), mast: $('.mast'), transport: $('.transport'),
 };
 D.colN.textContent = String(VANTAGES.length).padStart(2, '0');
 D.selN.textContent = MOVES[MOVES.length - 1].no;
@@ -1937,13 +1940,201 @@ function swapIn(h0) {
 let docT = 0;
 let reprintT = 0;
 
-/** Where the panel hangs from: half of what it measures when it is framed at its
-    own length. Set once and on resize — never on a record change, or the panel
-    would walk up the screen one record at a time. */
+/** Where the panel hangs from, how long it may be, and whether the reader can
+    scroll it. Set on resize and when the plate's own column changes width —
+    never on a record change, or the panel would walk up the screen one record at
+    a time.
+
+    Three numbers, all measured:
+
+    * `--panel-half` — half the plate's length. `top` used to be
+      `50% - half`, i.e. centred on the frame.
+    * `--panel-top` — where it is allowed to start. ★ Centring on the frame is
+      fine until the window is short: measured at 1440x600 the plate's top lands
+      11px above the masthead's bottom and its bottom 20px below the transport's
+      top, and at 1100x460 that becomes 70px and 56px, with the action cells
+      printing on the counter's read-out (1612px² of glyph over glyph). Half of
+      the plate's length was only ever half of the question; the other half is
+      where the band between the masthead and the bar actually is.
+    * `--band` — how long the band is, and therefore the plate's ceiling.
+
+    The clamp below is written so that it returns exactly the old
+    `50% - h/2` at every size where the plate already fits, which is every size
+    above ~600px of viewport height: nothing moves there by a pixel. It only
+    engages in the band where the plate genuinely does not fit, and there it
+    keeps the record on screen instead of letting it print on the furniture. */
 function pinPanel() {
-  const h = D.dossier.getBoundingClientRect().height;
-  if (h > 0) D.dossier.style.setProperty('--panel-half', (h / 2).toFixed(1) + 'px');
+  const d = D.dossier;
+  /* Below 900px none of the three numbers applies, and saying so is the point.
+     Down there the plate is a bottom sheet — `top: auto; bottom: 20rem`, its
+     length capped by the 900 block's own `max-height` — so `--panel-top` and
+     `--band` are read by nothing. Left alone they kept whatever the last wide
+     window had measured, and the probe printed `top=226.7px` at 900x700 for a
+     plate that ignores it: a number that reads as a measurement and is not one.
+     Removed rather than stale. The query is the same one the stylesheet tests,
+     so the two cannot disagree about which side of 900 they are on. */
+  if (matchMedia('(max-width: 900px)').matches) {
+    d.style.removeProperty('--band');
+    d.style.removeProperty('--panel-top');
+    d.style.removeProperty('--panel-half');
+    syncSheetScroll();
+    return;
+  }
+  /* ★ Drop the overflow class before measuring anything, and this is not
+     housekeeping: `.dossier.overflow .sheet` carries `scrollbar-gutter: stable`,
+     so while the class is on the record is laid out in a column about fifteen
+     pixels narrower than the one it is about to have. Coming back up from a
+     narrow window — where the class was on — the first pin would measure that
+     narrower column and store a `--panel-half` for a plate whose record then
+     re-wraps when `syncSheetScroll` takes the class off at the end of this
+     function. Same failure as the resize one below: a number measured on a
+     layout the page never settles at. The 700ms re-pin in `pinSoon` covered for
+     it, so it only ever showed up as the two readings disagreeing.
+     `syncSheetScroll` at the end puts the class back if it still belongs. */
+  d.classList.remove('overflow');
+  /* Read the plate's *natural* length through the ceiling, or a plate that was
+     capped last time reports the cap and the pin never recovers. */
+  d.style.setProperty('--band', 'none');
+  const nat = d.getBoundingClientRect().height;
+  /* `body.ready` slides this whole layer up 14px over 1.2s and a rect taken
+     during that is 14px low. `offsetTop` is transform-free, so the gap between
+     the two is the slide, and taking it out makes the pin independent of when
+     it is measured. */
+  const slide = D.mast.getBoundingClientRect().top - D.mast.offsetTop;
+  const mastB = D.mast.getBoundingClientRect().bottom - slide;
+  const tt = D.transport.getBoundingClientRect().top - slide;
+  const band = Math.max(0, tt - mastB);
+  const h = Math.min(nat, band);
+  const top = Math.min(Math.max(innerHeight / 2 - h / 2, mastB), tt - h);
+  d.style.setProperty('--band', band.toFixed(1) + 'px');
+  d.style.setProperty('--panel-top', top.toFixed(1) + 'px');
+  if (h > 0) d.style.setProperty('--panel-half', (h / 2).toFixed(1) + 'px');
+  syncSheetScroll();
 }
+
+/** A scroll container nobody can touch is not a scroll container.
+
+    Below 900px the plate is a bottom sheet with `overflow: auto`; above it, the
+    band clamp in `pinPanel` caps it. In both cases a long record is *meant* to
+    be scrolled, and in both cases it never could be: `.ui` is
+    `pointer-events: none`, so the wheel went straight through the plate to the
+    canvas and zoomed the lens, and the scrollbar could not be grabbed at all.
+    Measured at 900x700 the plate is 116px tall carrying 289px of record — nine
+    of thirty-five lines on screen and no way to reach the rest. This is the same
+    failure the file already documents once, where a ceiling was added, measured
+    and taken back out for exactly this reason (see the note above the 900
+    block); the missing half of that fix is here.
+
+    The plate claims the pointer only while it is actually overflowing, so on
+    every record that fits, a drag on the paper still turns the model. */
+/* ★ Why a slack and not zero: the class is not free. Turning it on gives the
+   plate the wheel, which takes the wheel *away* from the lens — the retract this
+   page is built around. So it has to mean "there is a line down there you cannot
+   see", not "the content box is a pixel taller than the padding box". And it
+   almost never means the latter in a way that matters: the plate's own bottom
+   padding is 20px and a spec row is 19px, so anything under 8px of overflow is
+   padding. Measured at 1092x588 — the viewport this page is actually looked at
+   in — the capped plate overflows by exactly 3px, which with a zero slack took
+   the zoom away from the whole right-hand third of the frame to reveal nothing. */
+const SHEET_SLACK = 8;
+function syncSheetScroll() {
+  D.dossier.classList.toggle('overflow', D.sheet.scrollHeight > D.sheet.clientHeight + SHEET_SLACK);
+}
+
+/* Pin now, and pin again once the layout has landed.
+
+   A forced layout taken inside the resize handler disagrees with the same layout
+   half a second later. Measured at 1092x588 by sampling the two numbers this
+   function reads: the masthead's bottom is 134.6px in the handler and 117.4px at
+   +0ms, then 114.5px from +400ms on — it is still moving for a third of a second
+   after the resize, and the plate, pinned from the first reading, came out 17px
+   short of the room it actually had (a 351.8px ceiling on a 368.9px record, with
+   a scrollbar for the difference, on the one viewport this page is looked at in).
+
+   A timer and not `requestAnimationFrame`: frames here are seconds long under
+   software rendering, so two of them is anywhere between 30ms and 6s, which is
+   how the same build measured 351.8px in one run and 369px in the next. 700ms
+   clears the .58s margin-left retract that starts the whole thing, and does not
+   care what the frame rate is. */
+let pinTimer = 0;
+function pinSoon() {
+  pinPanel();
+  clearTimeout(pinTimer);
+  pinTimer = setTimeout(pinPanel, 700);
+}
+
+/* The pin is a function of the *column's* width, not of the window's. A resize
+   changes the plate's width in two steps — the dossier's own width, and then the
+   .58s `margin-left` retract transition on top of it — and measuring on the
+   window's resize event caught the intermediate one: at 1092x588 `--panel-half`
+   came out 208.7px for a plate that is 368.9px tall (half = 184.5), so the plate
+   sat 23px above where the code believed it was. Watching the plate itself is
+   the only way to pin it to the layout it actually has.
+
+   Width only, and that is the whole trick: a record change alters the plate's
+   *height*, which must move nothing — the same rule the window-resize pin always
+   had — while a width change means the record has reflowed into a different
+   column and the pin is stale.
+
+   Two things are watched. `.sheet` for the column (its own box only changes when
+   the column does), `.dbody` for the record — a taller record inside a capped
+   plate does not resize the plate, so watching the plate alone would never
+   notice that it now overflows. */
+/* ★ Why the masthead is watched too. The band the plate is clamped into starts at
+   the masthead's bottom, and that height is `.brand h1`'s — whose font-size is
+   `clamp(1.625rem, 3.05vw, 3.125rem)`, i.e. a function of the viewport width.
+   Anything that moves it (a width change, a face that lands late, the nav
+   wrapping) changes the only number this whole function is built on, and the
+   plate has to be re-pinned when it does. Watching it is cheaper than knowing
+   why it moved, and there is at least one "why" this code cannot see: under
+   `Emulation.setDeviceMetricsOverride` — which every probe uses — a *real*
+   property like `font-size` can be one viewport behind while a custom property
+   like `--pad` is already current, so `mast.b` reads 134.7px where the page's
+   own layout says 114.5px. See the note in tools/_ov.mjs.
+
+   A pixel of slack on the height: the brand block's three children settle by
+   about 0.7px each after the first reading (see the noise floor in _ov.mjs), so
+   an exact comparison would re-pin on rounding. */
+let pinnedW = -1;
+let pinnedMastH = -1;
+let watchTimer = 0;
+const plateWatch = new ResizeObserver(() => {
+  /* ★ Deferred by one task, and that is not politeness — it is a repair. This
+     callback writes `--band`, `--panel-top` and the `.overflow` class, and that
+     is layout; an observer that resizes its own target inside its own callback
+     is what Chrome reports as "ResizeObserver loop completed with undelivered
+     notifications". That is a page error, and `_dbl.js` and `_song.mjs` both
+     fail a run on page errors — every assertion in them was green and the run
+     still came back red. Nothing here needs to happen inside the observer's
+     frame, so it happens after it. */
+  clearTimeout(watchTimer);
+  watchTimer = setTimeout(() => {
+    const w = Math.round(D.sheet.getBoundingClientRect().width);
+    const mh = Math.round(D.mast.getBoundingClientRect().height);
+    if (w !== pinnedW || Math.abs(mh - pinnedMastH) > 1) {
+      pinnedW = w; pinnedMastH = mh; pinSoon(); return;
+    }
+    syncSheetScroll();
+  }, 0);
+});
+plateWatch.observe(D.sheet);
+plateWatch.observe(D.dbody);
+plateWatch.observe(D.mast);
+
+/* A last pin once the faces have landed. The band is measured from the
+   masthead's bottom, and the masthead's height is the brand block's — an H1, a
+   rule of small caps and the file number, all in the display face — so a swap
+   from fallback metrics moves the number this whole function is built on.
+
+   Honest about what it buys: on a warm cache `fonts.ready` is already resolved
+   when boot reaches here, so this changes nothing and the first pin is still up
+   to 1.4px tight — measured at 1440x820, the first reading puts the masthead's
+   bottom at 134.7px and every later one at 130.2..133.3 (each of the three
+   children loses about 0.7px). It errs the safe way: a tighter band caps the
+   plate sooner, never later. What this line is for is the cold cache, where the
+   swap genuinely lands after boot and the pin would otherwise be taken against
+   a font that is about to be replaced. */
+if (document.fonts?.ready) document.fonts.ready.then(pinSoon);
 
 /* Folded, the panel has vacated the middle of the frame, so the subject takes
    it; open, the subject keeps to the left half. This is the single writer for
@@ -3260,7 +3451,7 @@ function onResize() {
   if (grade) grade.uniforms.uTexel.value.set(1 / bw, 1 / bh);
   applyViewOffset();
   measure();
-  pinPanel();
+  pinSoon();
 }
 /* the subject sits left of centre and the dossier takes the right half, so the
    offset is positive: the render window slides left and the scene follows */

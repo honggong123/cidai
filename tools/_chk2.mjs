@@ -1,14 +1,17 @@
-﻿/* dev: the same three checks, but waiting on *frames* instead of seconds.
+/* dev: the same three checks, but waiting on *frames* instead of seconds.
    Under software rendering a frame can take seconds and cas.update() clamps dt to
    1/20 s, so a 1.5 s animation needs ~35 frames and the 5 s idle delay needs
-   ~100 鈥?wall-clock waits measure nothing here. Small viewport, so frames are
+   ~100 — wall-clock waits measure nothing here. Small viewport, so frames are
    cheap. */
 import { writeFileSync } from 'node:fs';
 
-const [url, out = 'tools/_chk'] = process.argv.slice(2);
-const port = 9445;
-const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
-const page = list.find((t) => t.type === 'page');
+const [url, out = 'tools/_chk', cdpPort = '9445'] = process.argv.slice(2);
+// The tab is picked by URL, never by position: /json/list lists every page in
+// the browser, and another project's page being first is a normal accident.
+// Imports are hoisted, so the helper can be declared here, next to its use.
+import { pickPage } from './_cdp.mjs';
+const list = await (await fetch(`http://127.0.0.1:${cdpPort}/json/list`)).json();
+const page = pickPage(list, url);
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
 let id = 0;

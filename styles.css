@@ -494,7 +494,15 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
 .dossier {
   position: absolute; left: auto; right: var(--pad);
   width: min(calc(43% - var(--pad)), var(--plate-max));
-  top: calc(50% - var(--panel-half, 13.125rem));
+  /* Where it hangs. `--panel-top` is the measured answer (see pinPanel in
+     main.js): the plate wants to be centred on the frame, but in a short window
+     that walks it over the masthead and over the bar, so the measurement clamps
+     it into the band between them. The fallback is the plain centring, which is
+     what every window that fits still gets — to the pixel. */
+  top: var(--panel-top, calc(50% - var(--panel-half, 13.125rem)));
+  /* …and how long it may be in that band. Unset, this is `none`: no ceiling,
+     exactly as before, on every window where the plate already fits. */
+  max-height: var(--band, none);
   /* How much of its own length the panel is not using. It rests 20% short, and
      the loop adds --give on top of that as the wheel brings the lens in (see
      syncPanelGive in main.js) — a length rather than a position, which is why
@@ -511,6 +519,10 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   position: relative;
   margin-left: var(--retract);
   padding: var(--sheet-pad-t) var(--sheet-pad-x) var(--sheet-pad-b);
+  /* The plate's ceiling, handed down from .dossier (see pinPanel). It has to be
+     repeated here and not only on the parent: the parent is the box that has to
+     stay inside the band, but the *child* is what overflows it. */
+  max-height: var(--band, none);
   /* THE PLATE'S INK, RE-POINTED. Everything printed below reads `--ink`,
      `--hair` and `--accent` like the rest of the page — thirty rules' worth —
      and rather than teach each of them a second name (and every rule added
@@ -554,6 +566,23 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
   transition:
     margin-left .58s var(--e-spring) 0s;
 }
+/* ★ A capped record has to be reachable, and until now it was not. `.ui` is
+   `pointer-events: none`, so the wheel went through the plate to the canvas and
+   zoomed the lens while the scrollbar could not be grabbed — a plate holding
+   289px of record in a 116px box showed nine lines of thirty-five with no way to
+   reach the other twenty-six. The class is written by syncSheetScroll (main.js)
+   and only while the record is genuinely longer than the plate — genuinely by
+   more than SHEET_SLACK, because giving the plate the pointer takes the wheel
+   away from the lens, and a plate overflowing by its own bottom padding must not
+   buy that at the price of the zoom. So a drag on the paper still turns the
+   model on every record that fits.
+
+   `scrollbar-gutter: stable` keeps the scrollbar from narrowing the record and
+   starting a second reflow: it is only reserved while the class is on, which is
+   only while the plate already overflows. */
+.dossier.overflow .sheet {
+  pointer-events: auto; overflow-y: auto; scrollbar-gutter: stable;
+}
 /* the sheet's registration tick: a 0.0625rem accent rule at the top-left corner,
    the way a drawing is cornered before it is filed */
 .sheet::before {
@@ -577,12 +606,15 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
    rule, one drawing per room. The web and her moved up to the file-number line
    (see .o-web / .o-ghost below): same ink, same inertness, a different anchor.
 
-   NOTHING HERE MAY TAKE PART IN LAYOUT. The plate has no height ceiling above
-   900px (see .doc-note), so an ornament that added a line would push the
-   transport up through the record at exactly the widths with the least room for
-   it. Every one of them is absolutely positioned against the plate's padding
-   box, inert to the pointer, and behind everything printed — `z-index: -1` is
-   safe because the plate is a stacking context (see `isolation` above). */
+   NOTHING HERE MAY TAKE PART IN LAYOUT. A line's worth of ornament is a line
+   the record no longer has: the plate's ceiling above 900px is the band between
+   the masthead and the bar (see pinPanel in main.js), and the ornaments sit at
+   exactly the widths where that band is tightest, so a drawing that pushed the
+   plate taller would be paid for by the last line of the record — or, on a
+   capped plate, by a scrollbar for one line. Every one of them is absolutely
+   positioned against the plate's padding box, inert to the pointer, and behind
+   everything printed — `z-index: -1` is safe because the plate is a stacking
+   context (see `isolation` above). */
 .orn {
   position: absolute; inset: 0; z-index: -1; pointer-events: none;
   transition: opacity .42s var(--e-out);
@@ -1624,7 +1656,7 @@ body.ready .dossier { opacity: 1; transform: none; }
   .now { bottom: 15.5rem; }
 }
 
-/* ---------- the plate's ceiling: tried, measured, removed ----------
+/* ---------- the plate's ceiling: tried, measured, removed, put back ------
    A ceiling was added here — the plate anchored to the band between the masthead
    and the deck, its body scrolling inside that band — on the strength of a sweep
    that reported the plate printing on the transport from 901px to 1190px, worst
@@ -1652,20 +1684,48 @@ body.ready .dossier { opacity: 1; transform: none; }
 
    tools/_ov.mjs is the measure that can tell those two apart: it intersects the
    elements that carry text on each side rather than their boxes. At 1080,
-   transport∩sheet reads 12829px² and the glyph collisions are zero. */
+   transport∩sheet reads 12829px² and the glyph collisions are zero.
+
+   ★ AND THEN IT CAME BACK, because the case against it was never the ceiling —
+   it was the silence. A capped record is only a loss if the cap is also a lid,
+   and the lid was `.ui { pointer-events: none }`: no wheel reached the plate, no
+   scrollbar could be grabbed. That half is now closed (`.dossier.overflow`, see
+   the sheet), and with it the cap is simply a plate that is shorter than its
+   record and says so. The pin lives in main.js and the numbers are measured
+   there; what matters here is the shape of it — `.dossier` takes `--panel-top`
+   and `--band` and `.sheet` repeats `--band`, because the parent is the box that
+   has to stay inside the band while the child is what overflows it. Both default
+   to unset, so every window where the plate already fits is untouched, to the
+   pixel: at 1440x820 the stored top is 212.4px, which is `50% - 197.6px`, the
+   same centring this rule had before any of it existed. */
 
 @media (max-width: 900px) {
   :root { --pad: 1.5rem; --sheet-pad-x: 1.25rem; --sheet-pad-t: 1.125rem; --sheet-pad-b: 1.25rem; }
   .frame { inset: 0.6875rem; }
   .mast { top: 1.625rem; flex-direction: column; gap: 0.875rem; }
   .mast-nav { padding-top: 0; flex-wrap: wrap; }
+  .dossier { left: var(--pad); right: var(--pad); top: auto; bottom: 20rem; transform: none; width: auto; max-width: none; }
+  body.ready .dossier { transform: none; }
   /* the record becomes a bottom sheet; the scene keeps the top of the frame.
      The three offsets are measured off the stacked console below: deck 2.625rem
      tall 14rem, the now-chip under the plate, and the plate capped so it cannot
-     reach back up into the masthead. */
-  .dossier { left: var(--pad); right: var(--pad); top: auto; bottom: 20rem; transform: none; width: auto; max-width: none; }
-  body.ready .dossier { transform: none; }
-  .dossier, .sheet { max-height: calc(100vh - 36.5rem); }
+     reach back up into the masthead.
+
+     ★ That cap used to read `calc(100vh - 36.5rem)` — 584px reserved under the
+     plate — and 584 is more furniture than most small windows have. Measured:
+     the plate's floor sits at `100vh - 20rem` and the masthead's bottom at
+     133.4px, so the band is `100vh - 453.4px` = `100vh - 28.34rem`; the other
+     130px were thrown away, which is why 900x700 showed a 116px plate carrying a
+     289px record — nine of thirty-five lines on screen. And below 584px of
+     viewport the old calc() went negative, was clamped to zero, and the plate
+     collapsed to nothing but its own padding: 40px at 900x584 and at 880x520,
+     with the now-chip printing straight through the crumb (1159px² of glyph over
+     glyph, measured).
+
+     The floor is what stops the collapse. Past roughly 520px of viewport height
+     the plate has to overlap the masthead — there is no room left to give it —
+     and a plate you can read beats an empty one. */
+  .dossier, .sheet { max-height: max(calc(100vh - 28.34rem), 5rem); }
   /* the bottom sheet is already the whole column: the retract has nothing to
      give way to down here, and folding would push it off the left edge */
   .sheet, .dossier.tight .sheet, .dossier.folded .sheet { margin-left: 0; }
