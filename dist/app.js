@@ -33636,7 +33636,7 @@ void main() {
     theta: 1.18,
     phi: 1.34,
     radius: 40,
-    target: new Vector3(0, 0.05, 0),
+    target: new Vector3(0, 1.3, 0),
     minR: 11,
     maxR: 40,
     minPhi: 0.16,
@@ -33652,7 +33652,7 @@ void main() {
     onManual: armHome
   });
   var VANTAGES = [
-    { k: "front", cn: "\u6B63\u89C6\u673A\u4F4D", en: "\u6B63\u7ACB\u9762", v: { theta: 0.06, phi: 1.3, radius: 31 } },
+    { k: "front", cn: "\u6B63\u89C6\u673A\u4F4D", en: "\u6B63\u7ACB\u9762", v: { theta: 0.06, phi: 1.3, radius: 23 } },
     { k: "iso", cn: "\u7B49\u8F74\u673A\u4F4D", en: "\u7B49\u89D2\u6295\u5F71", v: { theta: 0.62, phi: 1.03, radius: 33 } },
     { k: "top", cn: "\u4FEF\u89C6\u673A\u4F4D", en: "\u5E73\u9762", v: { theta: 0.34, phi: 0.3, radius: 34 } },
     { k: "detail", cn: "\u7EC6\u8282\u7279\u5199", en: "\u5FAE\u8DDD", v: { theta: 0.95, phi: 1.14, radius: 21 } }
@@ -34405,8 +34405,6 @@ void main() {
     selN: $("#sel-n"),
     refList: $("#ref-list"),
     cols: $("#cols"),
-    access: $("#btn-access"),
-    accessLabel: $("#access-label"),
     dossier: $("#dossier"),
     dbody: $("#dbody"),
     fold: $("#btn-fold")
@@ -34741,8 +34739,6 @@ void main() {
     D.fileEn.textContent = PROFILE.en;
     D.fileNote.textContent = PROFILE.note;
     setRoll(D.selI, M.no);
-    swapText(D.accessLabel, `\u8BA9\u5979${M.cn}`);
-    D.access.classList.toggle("done", live(M, ri));
     if (D.fileSpec.dataset.no !== PROFILE.no) {
       D.fileSpec.dataset.no = PROFILE.no;
       D.fileSpec.replaceChildren(...PROFILE.spec.map(([k, v], i) => {
@@ -35192,7 +35188,6 @@ void main() {
       document.body.classList.add("moved");
     }
   });
-  $("#btn-access").addEventListener("click", () => doMove());
   $("#btn-index").addEventListener("click", toggleIndex);
   $("#index-close").addEventListener("click", closeIndex);
   $("#btn-reinit").addEventListener("click", reinit);

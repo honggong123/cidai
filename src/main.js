@@ -423,7 +423,7 @@ function goHome() {
   if (orbit.tween) orbit.tween.dur = 1.6;
 }
 const orbit = new Orbit(canvas, camera, {
-  theta: 1.18, phi: 1.34, radius: 40, target: new THREE.Vector3(0, 0.05, 0),
+  theta: 1.18, phi: 1.34, radius: 40, target: new THREE.Vector3(0, 1.30, 0),
   minR: 11, maxR: 40, minPhi: 0.16, maxPhi: 1.52,   // 城堡墙在 44 —— 镜头最远 40，留在厅内
   auto: false,
   reduce,
@@ -444,13 +444,17 @@ const orbit = new Orbit(canvas, camera, {
    2026-10-02 用户要求把默认从 等轴(iso) 换成 正视(front)：iso 是 31° 俯角，
    看下去帽檐占满画幅；front 的 15.5° 才是一张肖像。 */
 const VANTAGES = [
-  { k: 'front', cn: '正视机位', en: '正立面', v: { theta: 0.06, phi: 1.30, radius: 31 } },
+  { k: 'front', cn: '正视机位', en: '正立面', v: { theta: 0.06, phi: 1.30, radius: 23 } },
   { k: 'iso', cn: '等轴机位', en: '等角投影', v: { theta: 0.62, phi: 1.03, radius: 33 } },
   { k: 'top', cn: '俯视机位', en: '平面', v: { theta: 0.34, phi: 0.30, radius: 34 } },
   { k: 'detail', cn: '细节特写', en: '微距', v: { theta: 0.95, phi: 1.14, radius: 21 } },
 ];
 /* 镜头拉得比旧的产品机位远：18 单位时主体自己占满画幅，右侧那列面板没有地方
-   站。数字只有 `VANTAGES[0]` 这一份 —— 上面那张表在 Orbit 旁边，就是为这个。 */
+   站。数字只有 `VANTAGES[0]` 这一份 —— 上面那张表在 Orbit 旁边，就是为这个。
+   2026-10-04 用户："还有很多背景留白" → 31 缩到 23，并把 `Orbit` 的 `target`
+   从 0.05 抬到 1.30。`target` 是上游留下的（那时主体是磁带，中心在 0 附近），
+   换成角色之后没跟着改，于是镜头一直在看她的**脚下** —— 她浮在画面上半、
+   下面空出一大片地板。抬到 1.30 之后她才落在画面中央。 */
 orbit.home = VANTAGES[0].v;
 
 const audio = new TapeAudio();
@@ -1642,7 +1646,6 @@ const D = {
   fileNote: $('#file-note'), fileSpec: $('#file-spec'), doc: $('.doc'),
   selI: $('#sel-i'), selN: $('#sel-n'),
   refList: $('#ref-list'), cols: $('#cols'),
-  access: $('#btn-access'), accessLabel: $('#access-label'),
   dossier: $('#dossier'), dbody: $('#dbody'), fold: $('#btn-fold'),
 };
 D.colN.textContent = String(VANTAGES.length).padStart(2, '0');
@@ -2190,10 +2193,9 @@ function render(bump = false) {
   D.fileEn.textContent = PROFILE.en;
   D.fileNote.textContent = PROFILE.note;
   setRoll(D.selI, M.no);
-  // the button names the thing it is about to do, so its label is a function of
-  // the selection rather than of any state
-  swapText(D.accessLabel, `让她${M.cn}`);
-  D.access.classList.toggle('done', live(M, ri));
+  /* ★ 那句「让她X」的按钮没了（2026-10-04）。它曾经是"当前选中"唯一的显式回显；
+     现在回显落在五个格子上：`.row.sel` 是面板显示的那一个、`.row.done` 是场景
+     正在显示的那一个、`.row.playing` 是此刻真的在动的那一个 —— 见下面的循环。 */
   // only rebuild the spec rows once — render runs on every arrow press and
   // theme switch, and a rebuild drops hover state
   if (D.fileSpec.dataset.no !== PROFILE.no) {
@@ -2741,10 +2743,8 @@ $('#theme').addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (b) { setTheme(b.dataset.theme); audio.tick(); document.body.classList.add('moved'); }
 });
-// wrapped, not passed by reference: doMove's first parameter is `instant`, and
-// a listener called with the click event would read that MouseEvent as `true` —
-// snapping the framing and cutting the camera instead of easing
-$('#btn-access').addEventListener('click', () => doMove());
+/* ★ 「让她X」那个按钮删掉了（2026-10-04）：五个动作现在是一行格子，一格一击。
+   `doMove` 剩下的入口是格子本身（见上面的 `pick`）、键盘 ENTER、双击和深链接。 */
 $('#btn-index').addEventListener('click', toggleIndex);
 $('#index-close').addEventListener('click', closeIndex);
 $('#btn-reinit').addEventListener('click', reinit);

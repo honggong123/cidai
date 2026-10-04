@@ -50,30 +50,27 @@
        One page, not six. The plate used to file her under a heading per part —
        灵发, 灵冠, 灵瞳 … — because the thing on the plinth was a machine that
        came apart. She does not come apart. What is left is what the six were
-       all standing in for: who she is, printed once, and a short list of things
-       you can ask her to do. -->
+       all standing in for: who she is, printed once, and the five things you
+       can ask her to do.
+
+       ★ 上下两块，不是左右两栏（2026-10-04）。左右分栏时左栏只有 136px
+       （`_ov.mjs` 在 1092×588 上实测），英文名和描述都被压成窄条。现在
+       `.doc` 与 `.ref` 上下排，各占满纸宽；五个动作也从竖列表改成一行
+       五格 —— 一格就是一次点击，不再有"先选中、再按底下那个按钮"两步。 -->
   <section class="dossier" id="dossier">
     <div class="sheet">
-      <!-- ── the ornaments ───────────────────────────────────────────
-           Three drawn marks in one ink, and one attribute between them
-           and the next room: the colour and the hem's drawing are
-           per-theme, the markup is not. Inert and absolutely positioned
-           — nothing here may add a line of height to a plate that has no
-           height ceiling above 900px (see .doc-note in styles.css). -->
+      <!-- ── the ornament ────────────────────────────────────────────
+           The hem, hung along the plate's top rule. There used to be three
+           marks here — a quarter web, her, and this — all in one ink and all
+           absolutely positioned against the plate. The web and her have moved
+           up into the file-number line (see .o-web / .o-ghost in styles.css):
+           the plate's bottom-right corner is where the five action cells now
+           sit, and a drawn web under a button is a button you cannot read.
+
+           Inert and absolutely positioned — nothing here may add a line of
+           height to a plate that has no height ceiling above 900px. -->
       <div class="orn" aria-hidden="true">
-        <!-- A quarter web, drawn with its corner at the plate's bottom-right
-             so the strokes are not mirrored into place. -->
-        <svg class="o-web" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width=".7" stroke-linecap="round">
-          <path d="M100 100V0M100 100 7.6 61.7M100 100 29.3 29.3M100 100 61.7 7.6M100 100H0"/>
-          <path d="M100 70A30 30 0 0 0 70 100M100 48A52 52 0 0 0 48 100M100 26A74 74 0 0 0 26 100M100 4A96 96 0 0 0 4 100"/>
-        </svg>
         <i class="o-hem"></i>
-        <!-- Her, in the web. The two eyes are the two different sizes they are
-             on the model — the right one larger — because at 2.5rem the
-             asymmetry is the only thing that says ghost rather than bell. -->
-        <svg class="o-ghost" viewBox="0 0 40 48" fill="currentColor">
-          <path fill-rule="evenodd" d="M20 2C13.4 2 9 7.1 9 13.4V44l4.3-3.6 3.7 3.6 3-3.6 3 3.6 3.7-3.6 4.3 3.6V13.4C31 7.1 26.6 2 20 2ZM13 16.6a2.2 2.2 0 1 0 4.4 0 2.2 2.2 0 1 0-4.4 0ZM21.5 16.6a2.9 2.9 0 1 0 5.8 0 2.9 2.9 0 1 0-5.8 0Z"/>
-        </svg>
       </div>
       <p class="crumb">
         <span class="crumb-pre">精灵图鉴<i>/</i>声之档案<i>/</i></span>
@@ -81,7 +78,20 @@
         <button class="fold ui-hit" id="btn-fold" aria-expanded="true" aria-controls="dbody">收起详情</button>
       </p>
       <div class="dbody" id="dbody">
-        <h2 class="fileno">编号<b id="file-id">00</b><span class="caret" aria-hidden="true"></span></h2>
+        <h2 class="fileno">编号<b id="file-id">00</b><span class="caret" aria-hidden="true"></span>
+          <!-- Her, in the web — moved up from the plate's bottom-right corner,
+               which the five action cells now own. The two eyes are the two
+               different sizes they are on the model (the right one larger),
+               because at this size the asymmetry is the only thing that says
+               ghost rather than bell. -->
+          <svg class="o-web" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width=".7" stroke-linecap="round" aria-hidden="true">
+            <path d="M100 100V0M100 100 7.6 61.7M100 100 29.3 29.3M100 100 61.7 7.6M100 100H0"/>
+            <path d="M100 70A30 30 0 0 0 70 100M100 48A52 52 0 0 0 48 100M100 26A74 74 0 0 0 26 100M100 4A96 96 0 0 0 4 100"/>
+          </svg>
+          <svg class="o-ghost" viewBox="0 0 40 48" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M20 2C13.4 2 9 7.1 9 13.4V44l4.3-3.6 3.7 3.6 3-3.6 3 3.6 3.7-3.6 4.3 3.6V13.4C31 7.1 26.6 2 20 2ZM13 16.6a2.2 2.2 0 1 0 4.4 0 2.2 2.2 0 1 0-4.4 0ZM21.5 16.6a2.9 2.9 0 1 0 5.8 0 2.9 2.9 0 1 0-5.8 0Z"/>
+          </svg>
+        </h2>
         <div class="foldwrap">
           <div class="dossier-grid">
             <div class="doc">
@@ -91,16 +101,11 @@
               <ul class="spec" id="file-spec"></ul>
             </div>
             <div class="ref">
-              <p class="ref-h">互动<i>/</i>动作</p>
+              <p class="ref-h"><span class="ref-h-t">互动<i>/</i>动作</span><span class="ref-tip">也可以直接点她</span></p>
               <ul class="ref-list" id="ref-list"></ul>
-              <p class="ref-tip">也可以直接点她，或把光标停在她身上——她会看过来。</p>
             </div>
           </div>
         </div>
-        <button class="access ui-hit" id="btn-access">
-          <span id="access-label">让她点头</span>
-          <svg viewBox="0 0 22 12" aria-hidden="true"><path d="M0 6h19M14.4 1.4 19.4 6l-5 4.6"/></svg>
-        </button>
       </div>
     </div>
   </section>

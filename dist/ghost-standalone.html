@@ -79,8 +79,8 @@
      走带台那一排（实测底边 572 / 走带台顶边 573）。 */
   --pad: clamp(1.75rem, 3.6vw, 3.5rem);
   --sheet-pad-x: 1.5rem;
-  --sheet-pad-t: 1.3125rem;
-  --sheet-pad-b: 1.3125rem;
+  --sheet-pad-t: 1.125rem;
+  --sheet-pad-b: 1.125rem;
   --blur: 0.625rem;
   --r: 0;
   /* the widest the record plate is ever allowed to get. Past this it stops
@@ -579,11 +579,10 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
 }
 
 /* ---------- the ornaments ------------------------------------------------
-   Three drawn marks in one ink. They are here to say which room a record is
-   being kept in: a web in the corner it is filed from, a hem of drips along its
-   top rule, and her, small, sitting in the web. Each is one element carrying a
-   per-theme `--deco` and a per-theme drawing, so entering a room costs one
-   attribute and no markup — the same trick the tokens use, one level up.
+   Drawn marks in one ink, here to say which room a record is being kept in.
+   What is left in this container is the hem — a line of drips along the top
+   rule, one drawing per room. The web and her moved up to the file-number line
+   (see .o-web / .o-ghost below): same ink, same inertness, a different anchor.
 
    NOTHING HERE MAY TAKE PART IN LAYOUT. The plate has no height ceiling above
    900px (see .doc-note), so an ornament that added a line would push the
@@ -597,12 +596,19 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
 }
 .orn > * { position: absolute; display: block; color: var(--deco); }
 
-/* The web, hung in the bottom-right corner — the one quarter of the plate no
-   record ever reaches, because the reference list is short and the action sits
-   on the left. Drawn for that corner rather than mirrored into it: a mirrored
-   hairline puts its soft edge on the wrong side, and at this weight the
-   difference is the whole drawing. */
-.o-web { right: 0; bottom: 0; width: 6rem; height: 6rem; opacity: .4; }
+/* ★ 蛛网与她搬到了「编号」那一行的右端（2026-10-04）。它们原来在纸的右下角，
+   注释写着"四分之一张纸上任何记录都到不了的地方" —— 五个动作格子搬过去之后那句
+   话就不成立了：画在按钮下面的网，是一个读不出来的按钮。编号行的右半边是纸上
+   最后一块空地，而编号下面那条横线正好从它中间穿过，一张网挂在那里比挂在角上
+   更合适。
+
+   它们不再在 `.orn` 里（`.orn` 只剩 hem），所以定位与配色得自己带一份。 */
+.o-web, .o-ghost {
+  position: absolute; display: block; color: var(--deco); pointer-events: none;
+  z-index: -1;
+  transition: opacity .42s var(--e-out);
+}
+.o-web { right: 0; top: -0.75rem; width: 3.5rem; height: 3.5rem; opacity: .32; }
 
 /* The hem. One element, three drawings, all hanging off the top rule — so the
    plate reads as sealed along its top edge in whichever room it is standing.
@@ -611,7 +617,7 @@ b, .counter, .col-id, .sel-num, input[type="range"] { font-variant-numeric: tabu
 
 /* Her, in the web. Small enough to be a mark rather than a second subject, and
    off the corner so the web's own arcs read in front of and behind it. */
-.o-ghost { right: 1.95rem; bottom: 1.45rem; width: 2.5rem; height: 3rem; opacity: .5; }
+.o-ghost { right: 1rem; top: -0.0625rem; width: 1.5rem; height: 1.8rem; opacity: .45; }
 
 html[data-theme="studio"] .o-hem {
   background-image: radial-gradient(circle at 50% 0, currentColor 0 0.24rem, transparent 0.245rem);
@@ -642,20 +648,19 @@ html[data-theme="noir"] .fileno { text-shadow: 0 0 1.5rem rgba(216, 169, 79, .34
 html[data-theme="abyss"] .fileno { text-shadow: 0 0 1.5rem rgba(69, 198, 216, .34); }
 
 /* A narrow window narrows the plate with it (see .dossier), so the ornaments
-   come down a size instead of crowding the reference list off the right rule.
-   Sizes and not percentages: a percentage of the plate would grow the web on a
-   wide screen, where the plate has stopped growing and the corner is no emptier
-   than it was. */
+   come down a size instead of crowding the number line. Sizes and not
+   percentages: a percentage of the plate would grow the web on a wide screen,
+   where the plate has stopped growing and the line is no emptier than it was. */
 @media (max-width: 1200px) {
-  .o-web { width: 4.4rem; height: 4.4rem; }
-  .o-ghost { right: 1.5rem; bottom: 1.15rem; width: 1.9rem; height: 2.3rem; }
+  .o-web { width: 3rem; height: 3rem; }
+  .o-ghost { right: 0.85rem; width: 1.3rem; height: 1.55rem; }
 }
 
-/* Folded, the plate keeps 40% of its length and the action button lands in the
-   corner the ornaments are drawn in. Tightened, it is the reference list that
-   moves under them. Either way the marks go rather than move: they are a note
-   about the room, and a note that has been shoved is worse than one omitted. */
-.dossier.folded .orn { opacity: 0; }
+/* Folded, the plate keeps 40% of its length and the number line is all that is
+   left above the action button. Tightened, the body is narrowed under them.
+   Either way the marks go rather than move: they are a note about the room, and
+   a note that has been shoved is worse than one omitted. */
+.dossier.folded .orn, .dossier.folded .o-web, .dossier.folded .o-ghost { opacity: 0; }
 .dossier.tight .o-web, .dossier.tight .o-ghost { opacity: 0; }
 
 /* The crumb never wraps. Retracting the plate squeezes this line, and a wrap is a
@@ -751,12 +756,6 @@ html[data-theme="abyss"] .fileno { text-shadow: 0 0 1.5rem rgba(69, 198, 216, .3
    panel falls back into when that fold is undone by hand — narrowed rather than
    shortened, with the spec table still on screen. */
 .dossier.tight .sheet { margin-left: max(34%, var(--retract)); }
-/* a narrower panel means less room for two columns, so the left one gives up
-   its width rather than squeezing the reference list out of shape. The floor
-   on the second track is what makes the first one actually yield. */
-.dossier.tight .dossier-grid {
-  grid-template-columns: minmax(0, 14.5rem) minmax(8.75rem, 1fr);
-}
 .dossier.folded .sheet {
   margin-left: 60%;   /* folded, the plate keeps 40% of its open length */
   transition: margin-left .64s var(--e-spring) .40s;
@@ -765,7 +764,7 @@ html[data-theme="abyss"] .fileno { text-shadow: 0 0 1.5rem rgba(69, 198, 216, .3
 .fileno {
   font-family: var(--disp);
   font-size: var(--fs-h); font-weight: 700; letter-spacing: -.014em;
-  margin-top: 0.8125rem; padding-bottom: 1.125rem;
+  margin-top: 0.625rem; padding-bottom: 0.875rem;
   display: flex; align-items: baseline; gap: .5em; white-space: nowrap;
   position: relative;
 }
@@ -794,79 +793,85 @@ html[data-theme="abyss"] .fileno { text-shadow: 0 0 1.5rem rgba(69, 198, 216, .3
   transform: translateY(.06em);
 }
 
-/* 16.5rem for the record unless that would eat into the room the reference rows
-   need — this panel is not always as long as it used to be, and the second track
-   is not the one that should pay for it. 184 = the column gap plus the 140 the
-   tight grid below settles on for those rows.
+/* ★ 上下两块，不是左右两栏（2026-10-04）。左右分栏时左栏在 1092×588 上只有
+   136px（`_ov.mjs` 实测 spec w=136.4），英文名与描述都被压成窄条；两栏又各
+   自计高，底边永远不齐。现在 `.doc` 与 `.ref` 上下排，各占满纸宽。
 
-   The first track's floor used to be 0, and that was wrong in a way that only
-   showed up as height. A spec row is label, leader, value; the value may not
-   break (see .spec li b) and the leader is already at its minimum, so the label
-   is the only part that can give — and at a 129px track it gave all the way down
-   to one character per line. Every row went to two lines, the table grew from 28
-   to 42px a row, and the whole sheet was 78px taller at exactly the widths where
-   the plate has the least room above the transport. Measured: sheet.h 494.6 at
-   1080, 572.8 at 1040, 608.9 at 960 — a cliff, not a reflow.
-
-   min-content is that floor stated once, in the browser's own terms: with the
-   label held on one line it is the widest value plus its leader, so a record with
-   longer readings raises its own floor and a shorter one lowers it, and the
-   reference rows still give way first (they are built to — see .row .rt) and
-   still keep their 11.5rem whenever there is room for it. */
+   这一改会让纸变高 —— 两栏是并行计高，上下是相加 —— 而 1092×588 上纸的预算
+   只有 371.9px，改之前它已经是 420.1px（超 48px，压住了走带台）。所以下面每一
+   处 margin / padding 都是从那一档里算出来的，不是随手给的。 */
 .dossier-grid {
   display: grid;
-  grid-template-columns: minmax(min-content, min(16.5rem, calc(100% - 11.5rem))) minmax(0, 1fr);
-  gap: 1.25rem 2rem; margin-top: 1.125rem;
-  /* the record's name and REFERENCE AREA are two headers on one line, so they
-     sit on one baseline rather than on one top edge — which is what they did
-     when the two columns were sized by their own type */
-  align-items: baseline;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem; margin-top: 0.625rem;
 }
-.doc-cn { font-size: var(--fs-cn); font-weight: 500; letter-spacing: .06em; text-wrap: balance; }
+/* 名字与英文名同一行。左栏 136px 时 `.doc-en` 的 0.2em 字距把它折成了
+   「LITTLE GHOST · 会唱 / 歌的精灵」；同行后它拿到整条纸宽，一行放得下。
+   note 与属性表各占满一行，所以它们跨两列。 */
+.doc {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 0.75rem;
+}
+.doc-cn { grid-column: 1; grid-row: 1; font-size: var(--fs-cn); font-weight: 500; letter-spacing: .06em; text-wrap: balance; }
 .doc-en {
+  grid-column: 2; grid-row: 1;
   font-size: var(--fs-label); letter-spacing: .2em; text-transform: uppercase;
-  color: var(--ink-faint); margin-top: 0.5rem;
+  color: var(--ink-faint);
 }
 .doc-note {
-  font-size: 0.75rem; line-height: 1.85; color: var(--ink-dim); margin-top: 1rem;
-  max-width: 32ch; font-weight: 300; text-wrap: pretty;
+  grid-column: 1 / -1; grid-row: 2;
+  font-size: 0.75rem; line-height: 1.85; color: var(--ink-dim); margin-top: 0.625rem;
+  font-weight: 300; text-wrap: pretty;
 }
 /* The note is the one part of a record that is prose rather than data, so it is
-   the part that gives way when the plate is too narrow to carry it. It goes
-   rather than truncating: at the width where the plate first needs the room the
-   note column is about 166px and the paragraph needs nine lines in it, so a
-   clamp would leave a two-line stub that says less than nothing.
+   the part that gives way when the plate is too narrow to carry it. It used to be
+   dropped outright below 380px, on the theory that a clamp would leave a two-line
+   stub that says less than nothing — true when the note lived in a 166px column.
+   Now the plate is one column and the note owns the full width, so the stub is
+   four lines, not two, and dropping it would cost the record its only prose. The
+   narrow case tightens the leading instead: 4 lines at 1.85 is 100.8px, at 1.7 it
+   is 81.6px, and that 19px is exactly what the 1092x588 budget needed.
 
    380px is measured, not guessed — the panel's own inline size is 465.7px at
    1600x900, 402.3 at 1240x800, 350.3 at 1100x760 and 313.2 at 1000x700. The
-   note fits in the first two and pushed the plate 74px and 178px past the top of
-   the transport bar in the last two, because above 900px the plate has no height
-   ceiling at all (the `max-height` further down only starts at `max-width: 900px`).
-   The query is on the *panel* and not the viewport for the same reason the
+   query is on the *panel* and not the viewport for the same reason the
    one-column switch is: on a wide window the panel is narrow and the window is
    not. */
 @container (max-width: 380px) {
-  .doc-note { display: none; }
+  .doc-note { font-size: 0.6875rem; line-height: 1.6; }
 }
-/* the spec rows are the actual content of a record — the reason it is filed.
-   The dotted leader between a key and its value is the oldest archive
-   convention there is, and it does a real job here: at this size the eye
-   otherwise falls off the row between the label and its number. */
-.spec { list-style: none; margin-top: 0.9375rem; border-top: 1px solid var(--hair-soft); }
+/* 属性表三行两列。六行单列要 157px（`_ov.mjs` 实测 spec.h=157），是纸里最高的
+   一块；三行两列只要 60px。
+
+   ★ 第一版做成两行三列，实测溢出：「帽面靛紫 ⋯ #372370」一行要 116px，而
+   1092×588 上三列每列只有 96px —— 溢出的行直接盖到下一列的标签上，读出来是
+   「帽面靛紫 #372370檐底猩红」。两列每列 152px，116px 装得下。
+
+   The dotted leader between a key and its value is the oldest archive convention
+   there is, and it does a real job here: at this size the eye otherwise falls off
+   the row between the label and its number. */
+.spec {
+  list-style: none; margin-top: 0.625rem;
+  border-top: 1px solid var(--hair-soft);
+  grid-column: 1 / -1; grid-row: 3;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1rem;
+}
 .spec li {
   display: flex; align-items: baseline;
-  padding: 0.34375rem 0; border-bottom: 1px solid var(--hair-soft);
+  padding: 0.125rem 0; border-bottom: 1px solid var(--hair-soft);
   transition: padding-left var(--t-med) var(--e-out), border-color var(--t-swift) var(--e-out);
 }
-/* the label is a word, not a column: it is what the grid floor above is measured
-   from, so it may not break. Left to wrap, it did — one character per line. */
+/* 标签是一个词，不是一列：它不许折行 —— 折过一次，是一行一个字。 */
 .spec li span { order: 1; white-space: nowrap; font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em; color: var(--ink-faint); transition: color var(--t-swift) var(--e-out); }
 /* the value never breaks: these are readings, and "12 µm" split across two
    lines is the one thing a spec table may not do. They are short enough that
    nowrap costs nothing. */
 .spec li b { order: 3; font-weight: 400; font-family: var(--mono); font-size: 0.6875rem; color: var(--ink-dim); letter-spacing: .04em; white-space: nowrap; transition: color var(--t-swift) var(--e-out); }
 .spec li::after {
-  content: ''; order: 2; flex: 1 1 auto; min-width: 1rem; margin: 0 0.5rem;
+  content: ''; order: 2; flex: 1 1 auto; min-width: 0.75rem; margin: 0 0.375rem;
   border-bottom: 1px dotted var(--hair); transform: translateY(-.28em);
 }
 .spec li:hover { padding-left: 0.375rem; }
@@ -879,116 +884,76 @@ html[data-theme="abyss"] .fileno { text-shadow: 0 0 1.5rem rgba(69, 198, 216, .3
 @keyframes cascadeIn { from { opacity: 0; transform: translateY(0.6rem); } }
 .spec li { animation: cascadeIn .5s var(--e-out) both; animation-delay: calc(var(--i, 0) * 34ms); }
 
-/* the primary action. It reads as a control first — a hairline box that fills,
-   sinks and locks — because "read this record" is the one thing this page
-   actually does, and it should not have to be found. */
-.access {
-  appearance: none; cursor: pointer; color: var(--ink);
-  display: inline-flex; align-items: center; gap: 0.8125rem; margin-top: 1rem;
-  font: inherit; font-size: 0.71875rem; font-weight: 500;
-  letter-spacing: var(--tr-label); text-transform: uppercase;
-  padding: 0.5625rem 0.9375rem; border: 1px solid var(--hair); background: transparent;
-  border-radius: var(--r); position: relative; overflow: hidden;
-  transition: color var(--t-swift) var(--e-out), border-color var(--t-swift) var(--e-out),
-              transform var(--t-press) var(--e-out);
-}
-.access::before {
-  content: ''; position: absolute; inset: 0; background: var(--accent-soft);
-  transform: scaleX(0); transform-origin: left;
-  transition: transform var(--t-med) var(--e-out);
-}
-.access > * { position: relative; }
-.access svg {
-  width: 1.5rem; height: 0.8125rem; fill: none; stroke: currentColor;
-  stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round;
-  transition: transform var(--t-med) var(--e-out);
-}
-.access:hover { color: var(--accent); border-color: var(--accent-line); }
-.access:hover::before { transform: scaleX(1); }
-.access:hover svg { transform: translateX(0.4375rem); }
-.access:active { transform: translateY(0.0625rem); }
-.access[disabled] { color: var(--ink-faint); cursor: default; border-color: var(--hair-soft); }
-.access[disabled] svg { opacity: .4; }
-.access[disabled]::before { transform: scaleX(0); }
-.access[disabled]:hover { transform: none; }
-.access[disabled]:hover svg { transform: none; }
+/* ★ 那个「让她X →」的主按钮删掉了（2026-10-04）。它和底下五个格子做的是同一
+   件事，只是分成了两步：先在列表里选中，再按它执行。格子改成一格一击之后，
+   它就成了纸上一块只有旧习惯才需要的地方 —— 而 1092×588 上纸的预算已经超了
+   48px，一块 52px 高的按钮是第一个该走的。
 
-/* the record already on screen. The rule stays drawn and the label takes the
-   accent, so "which one am I looking at" is answerable without pressing it. */
-.access.done { color: var(--accent); border-color: var(--accent-line); }
-.access.done::before { transform: scaleX(1); }
-.access.done svg { transform: translateX(0.25rem); }
+   选中态与运行态没有丢：它们在 `.row.sel` 与 `.row.playing` 上，见下面的互动区。
 
-/* the other files in this column — the reference area is the pick list */
-.ref { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+   ---------- 互动区：五个格子 ----------
+   It used to be a column of right-aligned reference rows — five of them stacked,
+   each a number, a name and a marker — beside the introduction rather than under
+   it. That was two gestures for one request, and the list was the same five moves
+   the deck's ticks already carry.
+
+   Now every cell *is* the request: one cell, one click, one clip.
+
+   ONE ROW OF FIVE. At 1092×588 the plate's body is 322px, so a cell is 61px and
+   "02 晃一晃" has to fit in it — 13px of number + 4px of gap + 38px of name + 12px
+   of padding is 67px, which does not. The number therefore sits *above* the name
+   rather than beside it: stacked, the widest cell is 38px of text, and the grid
+   stays one row instead of two. Two rows cost 34px the budget did not have. */
+.ref { display: block; text-align: left; }
 .ref-h {
   font-size: var(--fs-label); letter-spacing: var(--tr-micro); text-transform: uppercase;
-  color: var(--ink-faint); padding-bottom: 0.75rem; width: 100%;
-  position: relative; text-align: right;
+  color: var(--ink-faint); padding-bottom: 0.375rem; width: 100%;
+  position: relative; text-align: left;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
 }
-/* `stretch`, not `flex-end`: a non-stretch align on this column collapses each
-   row to its own content width, so the rows are drawn right-aligned one by one
-   and the markers land wherever each name happens to end. The rows fill the
-   track and align their own contents instead — the right edge still comes from
-   the column's last track, so the block still hangs off the plate's right rule. */
-.ref-list { list-style: none; margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.125rem; align-items: stretch; width: 100%; }
-/* A reference row is a three-column table, not a right-aligned sentence: the
-   markers line up in one rail, the names start on one axis, the numbers end on
-   one axis. Right-aligned, the markers floated — a short name pushed its dot
-   inward, and the column of dots turned into a scatter, which is the one thing
-   an index is not allowed to be. */
+/* 标题的四个字必须是一个整体。左对齐的 flex 容器会把每一个文本节点当成一项，
+   于是「互动」「/」「动作」被 `space-between` 拉成了三截 —— 实测第一版就是
+   这样，"互动" 在左、"动作" 在中间、"也可以直接点她" 在右。 */
+.ref-h-t { display: inline-flex; align-items: baseline; gap: 0.4em; }
+/* 五格一行。格子必须等高 —— 一个两字的动作名和一个三字的不能在底边上参差，
+   那会让这一行读起来像一张没对齐的表。 */
+.ref-list {
+  list-style: none; margin-top: 0.5rem; width: 100%;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.375rem; align-items: stretch;
+}
+/* 一个格子就是一个控件，不是一行文字：一圈发丝边，选中 / 正在做 / 指针停在上面
+   时换成强调色。编号在上、名字在下 —— 并排放不下，见上面那段注释。 */
 .row {
-  appearance: none; border: 0; background: none; cursor: pointer; color: var(--ink-dim);
-  font: inherit;
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center; column-gap: 0.75rem;
-  width: 100%; padding: 0.3125rem 0.5rem 0.3125rem 0; position: relative;
-  transition: color var(--t-swift) var(--e-out), padding var(--t-med) var(--e-out),
-              transform var(--t-press) var(--e-out);
+  appearance: none; cursor: pointer; color: var(--ink-dim);
+  font: inherit; width: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.1875rem; padding: 0.375rem 0.25rem;
+  border: 1px solid var(--hair); background: transparent;
+  transition: color var(--t-swift) var(--e-out), border-color var(--t-swift) var(--e-out),
+              background var(--t-swift) var(--e-out), transform var(--t-press) var(--e-out);
 }
-/* All three cells are pinned to row 1. The markup is number, name, marker — so
-   left to the auto-placement algorithm the number takes column 3 of row 1, the
-   name is behind the cursor and starts row 2, and the marker starts row 3: three
-   stacked rows per record instead of one table row. */
-.row .rn { grid-column: 3; grid-row: 1; text-align: right; font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em; color: var(--ink-faint); }
-/* the name is the one part of a reference row that can give: without this it
-   keeps its min-content width, and a short track makes it paint leftward over
-   the spec table instead of taking a second line */
-.row .rt {
-  grid-column: 2; grid-row: 1; text-align: left; min-width: 0;
-  font-size: var(--fs-body); letter-spacing: var(--tr-body);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.row .rd {
-  grid-column: 1; grid-row: 1; width: 0.3125rem; height: 0.3125rem; flex: none; border: 1px solid var(--ink-faint);
-  transition: background var(--t-swift) var(--e-out), border-color var(--t-swift) var(--e-out),
-              box-shadow var(--t-swift) var(--e-out);
-}
-.row:hover { color: var(--ink); padding-right: 0.875rem; }
-.row:hover .rn { color: var(--ink-dim); }
-.row:active { transform: translateX(0.0625rem); }
-.row.sel { color: var(--ink); padding-right: 0.875rem; }
-.row.sel .rd { border-color: var(--ink); border-radius: 50%; background: var(--ink); }
-.row.done .rd { background: var(--accent); border-color: var(--accent); }
-.row.sel.done .rd { background: var(--accent); box-shadow: 0 0 0 0.0625rem var(--sheet-tint), 0 0 0 0.125rem var(--accent); }
-.row.sel:focus-visible .rd { box-shadow: 0 0 0 0.0625rem var(--sheet-tint), 0 0 0 0.125rem var(--accent); }
-/* A clip is running *right now*. Three states share this one marker and they
-   mean three different things: `.sel` is the row the panel is showing, `.done`
-   is the row the scene is showing, and `.playing` is the row that is moving.
-   Only the last one is transient — the model clears it when the clip ends — so
-   it is allowed to be the loudest, and clicking her can light a row that is
-   neither selected nor done. */
-.row.playing .rt { color: var(--accent); }
-.row.playing .rd {
-  border-color: var(--accent); background: var(--accent);
-  box-shadow: 0 0 0 0.125rem var(--accent-line);
-}
-/* The second way in, said once, below the list rather than as a row of its own:
-   it is a hint and must not be mistaken for another action. */
+.row .rn { font-family: var(--mono); font-size: var(--fs-label); letter-spacing: .1em; line-height: 1; color: var(--ink-faint); }
+.row .rt { font-size: var(--fs-body); letter-spacing: var(--tr-body); line-height: 1.2; white-space: nowrap; }
+/* The 5px marker retires with the list. A cell says what it is with its border
+   and its ground, which reads at this size where a dot does not. */
+.row .rd { display: none; }
+.row:hover { color: var(--ink); border-color: var(--ink-faint); }
+.row:active { transform: translateY(0.0625rem); }
+/* Three states on one cell, and they mean three different things: `.sel` is the
+   one the panel is showing, `.done` is the one the scene is showing, and
+   `.playing` is the one that is moving right now. Only the last is transient —
+   the model clears it when the clip ends — so it is allowed to be the loudest,
+   and clicking her can light a cell that is neither selected nor done. */
+.row.sel { color: var(--ink); border-color: var(--accent-line); background: var(--accent-soft); }
+.row.sel .rn { color: var(--ink-dim); }
+.row.done { color: var(--accent); border-color: var(--accent-line); }
+.row.playing { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+/* 那句"也可以直接点她"从列表下面搬到了标题行的右端。它是一条提示，不是另一个
+   动作，所以它不该占一行 —— 而 1092×588 上每一行都是算过的。 */
 .ref-tip {
-  margin-top: 0.8125rem; width: 100%; text-align: right;
-  font-size: var(--fs-label); line-height: 1.72; letter-spacing: var(--tr-body);
-  color: var(--ink-faint); text-wrap: pretty;
+  font-size: var(--fs-label); letter-spacing: var(--tr-body); text-transform: none;
+  color: var(--ink-faint); white-space: nowrap;
 }
 
 /* ============================ now playing ============================== */
@@ -1713,12 +1678,7 @@ body.ready .dossier { opacity: 1; transform: none; }
   .sheet, .dossier.tight .sheet, .dossier.folded .sheet { margin-left: 0; }
   .sheet { overflow: auto; scrollbar-width: thin; }
   .doc-note, .vr { display: none; }
-  .dossier-grid { grid-template-columns: minmax(0, 1fr); gap: 1.125rem; }
-  .ref { align-items: flex-start; text-align: left; }
-  .ref-h { text-align: left; }
-  .ref-list { align-items: stretch; }
-  .row { padding-right: 0; padding-left: 0; }
-  .row:hover, .row.sel { padding-right: 0; padding-left: 0.5rem; }
+  .dossier-grid { gap: 0.75rem; }
   .now { bottom: 17.5rem; max-width: calc(100vw - var(--pad) * 2); }
   .deck { bottom: 2.625rem; grid-template-columns: minmax(0, 1fr); grid-template-areas: "sel" "right" "pager"; gap: 0.875rem; }
   .deck-right { justify-content: space-between; width: 100%; }
@@ -1741,24 +1701,19 @@ body.ready .dossier { opacity: 1; transform: none; }
 }
 
 /* ---------- the panel measured against itself ----------
-   Deep in the zoom the body is a third of its usual width and two columns
-   cannot be had in it: the left track is squeezed to nothing and the spec
-   values end up painted over the reference list. So the grid drops to one
-   column down there, and the reference area gives way first — it is the same
-   six records the deck's ticks and the archive index already carry, and at
-   that reading distance the tape is the thing on screen.
-
    The body is what the margin narrows, so the body is what has to be the query
    container; a viewport query cannot see this, because on a wide window the
    panel is narrow and the window is not. 282 = 330 less the plate's own two
-   margins, so the one-column switch happens at the same panel width it always
-   did. */
+   margins.
+
+   ★ 这个查询原来管两件事：把两栏折成一栏，以及让参考列表整个让位。现在纸本来
+   就是单栏，参考列表也换成了五个格子，只剩那句提示语还需要一个让位的地方。 */
 .dbody { container-type: inline-size; }
+/* 极窄时（视口约 1034px 以下）让位的是那句提示语，不是互动区 —— 五个格子本身
+   在 282px 上仍然放得下（每格 51.6px，最宽的「晃一晃」要 45.5px），而它们是
+   这一块的全部功能。 */
 @container (max-width: 282px) {
-  /* both selectors: `.tight` states its own columns, and a container query adds
-     no weight to the selectors inside it */
-  .dossier-grid, .dossier.tight .dossier-grid { grid-template-columns: minmax(0, 1fr); }
-  .ref { display: none; }
+  .ref-tip { display: none; }
 }
 
 /* ---------- more contrast, on request ---------- */
@@ -1797,7 +1752,7 @@ body.ready .dossier { opacity: 1; transform: none; }
   /* the ornaments are atmosphere, not information, and the page has just been
      asked to stop decorating: a web under a paragraph is exactly the kind of
      thing this preference exists to remove */
-  .orn { display: none; }
+  .orn, .o-web, .o-ghost { display: none; }
 }
 
 /* ============================ reduced motion ============================
@@ -1884,30 +1839,27 @@ body.ready .dossier { opacity: 1; transform: none; }
        One page, not six. The plate used to file her under a heading per part —
        灵发, 灵冠, 灵瞳 … — because the thing on the plinth was a machine that
        came apart. She does not come apart. What is left is what the six were
-       all standing in for: who she is, printed once, and a short list of things
-       you can ask her to do. -->
+       all standing in for: who she is, printed once, and the five things you
+       can ask her to do.
+
+       ★ 上下两块，不是左右两栏（2026-10-04）。左右分栏时左栏只有 136px
+       （`_ov.mjs` 在 1092×588 上实测），英文名和描述都被压成窄条。现在
+       `.doc` 与 `.ref` 上下排，各占满纸宽；五个动作也从竖列表改成一行
+       五格 —— 一格就是一次点击，不再有"先选中、再按底下那个按钮"两步。 -->
   <section class="dossier" id="dossier">
     <div class="sheet">
-      <!-- ── the ornaments ───────────────────────────────────────────
-           Three drawn marks in one ink, and one attribute between them
-           and the next room: the colour and the hem's drawing are
-           per-theme, the markup is not. Inert and absolutely positioned
-           — nothing here may add a line of height to a plate that has no
-           height ceiling above 900px (see .doc-note in styles.css). -->
+      <!-- ── the ornament ────────────────────────────────────────────
+           The hem, hung along the plate's top rule. There used to be three
+           marks here — a quarter web, her, and this — all in one ink and all
+           absolutely positioned against the plate. The web and her have moved
+           up into the file-number line (see .o-web / .o-ghost in styles.css):
+           the plate's bottom-right corner is where the five action cells now
+           sit, and a drawn web under a button is a button you cannot read.
+
+           Inert and absolutely positioned — nothing here may add a line of
+           height to a plate that has no height ceiling above 900px. -->
       <div class="orn" aria-hidden="true">
-        <!-- A quarter web, drawn with its corner at the plate's bottom-right
-             so the strokes are not mirrored into place. -->
-        <svg class="o-web" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width=".7" stroke-linecap="round">
-          <path d="M100 100V0M100 100 7.6 61.7M100 100 29.3 29.3M100 100 61.7 7.6M100 100H0"/>
-          <path d="M100 70A30 30 0 0 0 70 100M100 48A52 52 0 0 0 48 100M100 26A74 74 0 0 0 26 100M100 4A96 96 0 0 0 4 100"/>
-        </svg>
         <i class="o-hem"></i>
-        <!-- Her, in the web. The two eyes are the two different sizes they are
-             on the model — the right one larger — because at 2.5rem the
-             asymmetry is the only thing that says ghost rather than bell. -->
-        <svg class="o-ghost" viewBox="0 0 40 48" fill="currentColor">
-          <path fill-rule="evenodd" d="M20 2C13.4 2 9 7.1 9 13.4V44l4.3-3.6 3.7 3.6 3-3.6 3 3.6 3.7-3.6 4.3 3.6V13.4C31 7.1 26.6 2 20 2ZM13 16.6a2.2 2.2 0 1 0 4.4 0 2.2 2.2 0 1 0-4.4 0ZM21.5 16.6a2.9 2.9 0 1 0 5.8 0 2.9 2.9 0 1 0-5.8 0Z"/>
-        </svg>
       </div>
       <p class="crumb">
         <span class="crumb-pre">精灵图鉴<i>/</i>声之档案<i>/</i></span>
@@ -1915,7 +1867,20 @@ body.ready .dossier { opacity: 1; transform: none; }
         <button class="fold ui-hit" id="btn-fold" aria-expanded="true" aria-controls="dbody">收起详情</button>
       </p>
       <div class="dbody" id="dbody">
-        <h2 class="fileno">编号<b id="file-id">00</b><span class="caret" aria-hidden="true"></span></h2>
+        <h2 class="fileno">编号<b id="file-id">00</b><span class="caret" aria-hidden="true"></span>
+          <!-- Her, in the web — moved up from the plate's bottom-right corner,
+               which the five action cells now own. The two eyes are the two
+               different sizes they are on the model (the right one larger),
+               because at this size the asymmetry is the only thing that says
+               ghost rather than bell. -->
+          <svg class="o-web" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width=".7" stroke-linecap="round" aria-hidden="true">
+            <path d="M100 100V0M100 100 7.6 61.7M100 100 29.3 29.3M100 100 61.7 7.6M100 100H0"/>
+            <path d="M100 70A30 30 0 0 0 70 100M100 48A52 52 0 0 0 48 100M100 26A74 74 0 0 0 26 100M100 4A96 96 0 0 0 4 100"/>
+          </svg>
+          <svg class="o-ghost" viewBox="0 0 40 48" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M20 2C13.4 2 9 7.1 9 13.4V44l4.3-3.6 3.7 3.6 3-3.6 3 3.6 3.7-3.6 4.3 3.6V13.4C31 7.1 26.6 2 20 2ZM13 16.6a2.2 2.2 0 1 0 4.4 0 2.2 2.2 0 1 0-4.4 0ZM21.5 16.6a2.9 2.9 0 1 0 5.8 0 2.9 2.9 0 1 0-5.8 0Z"/>
+          </svg>
+        </h2>
         <div class="foldwrap">
           <div class="dossier-grid">
             <div class="doc">
@@ -1925,16 +1890,11 @@ body.ready .dossier { opacity: 1; transform: none; }
               <ul class="spec" id="file-spec"></ul>
             </div>
             <div class="ref">
-              <p class="ref-h">互动<i>/</i>动作</p>
+              <p class="ref-h"><span class="ref-h-t">互动<i>/</i>动作</span><span class="ref-tip">也可以直接点她</span></p>
               <ul class="ref-list" id="ref-list"></ul>
-              <p class="ref-tip">也可以直接点她，或把光标停在她身上——她会看过来。</p>
             </div>
           </div>
         </div>
-        <button class="access ui-hit" id="btn-access">
-          <span id="access-label">让她点头</span>
-          <svg viewBox="0 0 22 12" aria-hidden="true"><path d="M0 6h19M14.4 1.4 19.4 6l-5 4.6"/></svg>
-        </button>
       </div>
     </div>
   </section>
@@ -35700,7 +35660,7 @@ void main() {
     theta: 1.18,
     phi: 1.34,
     radius: 40,
-    target: new Vector3(0, 0.05, 0),
+    target: new Vector3(0, 1.3, 0),
     minR: 11,
     maxR: 40,
     minPhi: 0.16,
@@ -35716,7 +35676,7 @@ void main() {
     onManual: armHome
   });
   var VANTAGES = [
-    { k: "front", cn: "\u6B63\u89C6\u673A\u4F4D", en: "\u6B63\u7ACB\u9762", v: { theta: 0.06, phi: 1.3, radius: 31 } },
+    { k: "front", cn: "\u6B63\u89C6\u673A\u4F4D", en: "\u6B63\u7ACB\u9762", v: { theta: 0.06, phi: 1.3, radius: 23 } },
     { k: "iso", cn: "\u7B49\u8F74\u673A\u4F4D", en: "\u7B49\u89D2\u6295\u5F71", v: { theta: 0.62, phi: 1.03, radius: 33 } },
     { k: "top", cn: "\u4FEF\u89C6\u673A\u4F4D", en: "\u5E73\u9762", v: { theta: 0.34, phi: 0.3, radius: 34 } },
     { k: "detail", cn: "\u7EC6\u8282\u7279\u5199", en: "\u5FAE\u8DDD", v: { theta: 0.95, phi: 1.14, radius: 21 } }
@@ -36469,8 +36429,6 @@ void main() {
     selN: $("#sel-n"),
     refList: $("#ref-list"),
     cols: $("#cols"),
-    access: $("#btn-access"),
-    accessLabel: $("#access-label"),
     dossier: $("#dossier"),
     dbody: $("#dbody"),
     fold: $("#btn-fold")
@@ -36805,8 +36763,6 @@ void main() {
     D.fileEn.textContent = PROFILE.en;
     D.fileNote.textContent = PROFILE.note;
     setRoll(D.selI, M.no);
-    swapText(D.accessLabel, `\u8BA9\u5979${M.cn}`);
-    D.access.classList.toggle("done", live(M, ri));
     if (D.fileSpec.dataset.no !== PROFILE.no) {
       D.fileSpec.dataset.no = PROFILE.no;
       D.fileSpec.replaceChildren(...PROFILE.spec.map(([k, v], i) => {
@@ -37256,7 +37212,6 @@ void main() {
       document.body.classList.add("moved");
     }
   });
-  $("#btn-access").addEventListener("click", () => doMove());
   $("#btn-index").addEventListener("click", toggleIndex);
   $("#index-close").addEventListener("click", closeIndex);
   $("#btn-reinit").addEventListener("click", reinit);

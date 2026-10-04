@@ -61,7 +61,6 @@
       refHead: txt('.ref-h'),
       moves: [...document.querySelectorAll('#ref-list .row')].map((r) => r.textContent.trim()),
       tip: txt('.ref-tip'),
-      access: txt('#access-label'),
       selNum: `${txt('#sel-i')}/${txt('#sel-n')}`,
       deckMicro: txt('.sel .micro'),
       ticks: document.querySelectorAll('#cols .tick').length,
