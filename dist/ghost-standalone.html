@@ -1720,19 +1720,29 @@ body.ready .dossier { opacity: 1; transform: none; }
 
      ★ That cap used to read `calc(100vh - 36.5rem)` — 584px reserved under the
      plate — and 584 is more furniture than most small windows have. Measured:
-     the plate's floor sits at `100vh - 20rem` and the masthead's bottom at
-     133.4px, so the band is `100vh - 453.4px` = `100vh - 28.34rem`; the other
-     130px were thrown away, which is why 900x700 showed a 116px plate carrying a
-     289px record — nine of thirty-five lines on screen. And below 584px of
-     viewport the old calc() went negative, was clamped to zero, and the plate
-     collapsed to nothing but its own padding: 40px at 900x584 and at 880x520,
-     with the now-chip printing straight through the crumb (1159px² of glyph over
-     glyph, measured).
+     the plate's floor sits at `100vh - 20rem`, so the band is
+     `100vh - 20rem - (masthead bottom)`; the other 130px were thrown away, which
+     is why 900x700 showed a 116px plate carrying a 289px record — nine of
+     thirty-five lines on screen. And below 584px of viewport the old calc() went
+     negative, was clamped to zero, and the plate collapsed to nothing but its own
+     padding: 40px at 900x584 and at 880x520, with the now-chip printing straight
+     through the crumb (1159px² of glyph over glyph, measured).
+
+     ★★ The masthead's bottom is the one term in that band that is not a constant
+     of this block, and hardcoding it was the same mistake the pin above 900 had
+     already been cured of: it is 133.4px at 900px wide and **148.4px at 380px**,
+     because the nav wraps. With `28.34rem` written in, the plate at 380x640
+     started 15px above the masthead and printed its crumb over the logotype,
+     while at 620x560 it lost 18px it could have used. So the band now comes down
+     from `pinPanel` (main.js) as `--band`, measured, and this line only supplies
+     the pre-boot fallback and the floor.
 
      The floor is what stops the collapse. Past roughly 520px of viewport height
      the plate has to overlap the masthead — there is no room left to give it —
-     and a plate you can read beats an empty one. */
-  .dossier, .sheet { max-height: max(calc(100vh - 28.34rem), 5rem); }
+     and a plate you can read beats an empty one. `--band` may therefore arrive
+     negative (760x420: the plate's floor is *above* the masthead's bottom), and
+     `max()` is what turns that back into a readable 5rem. */
+  .dossier, .sheet { max-height: max(var(--band, calc(100vh - 28.34rem)), 5rem); }
   /* the bottom sheet is already the whole column: the retract has nothing to
      give way to down here, and folding would push it off the left edge */
   .sheet, .dossier.tight .sheet, .dossier.folded .sheet { margin-left: 0; }
@@ -36683,7 +36693,13 @@ void main() {
   function pinPanel() {
     const d = D.dossier;
     if (matchMedia("(max-width: 900px)").matches) {
-      d.style.removeProperty("--band");
+      const bottomOffset = parseFloat(getComputedStyle(d).bottom);
+      const floorY = innerHeight - (Number.isFinite(bottomOffset) ? bottomOffset : 0);
+      const slide2 = D.mast.getBoundingClientRect().top - D.mast.offsetTop;
+      const mastB2 = D.mast.getBoundingClientRect().bottom - slide2;
+      d.style.setProperty("--band", "none");
+      const nat2 = d.getBoundingClientRect().height;
+      d.style.setProperty("--band", Math.min(nat2, floorY - mastB2).toFixed(1) + "px");
       d.style.removeProperty("--panel-top");
       d.style.removeProperty("--panel-half");
       syncSheetScroll();

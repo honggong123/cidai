@@ -1962,19 +1962,59 @@ let reprintT = 0;
     `50% - h/2` at every size where the plate already fits, which is every size
     above ~600px of viewport height: nothing moves there by a pixel. It only
     engages in the band where the plate genuinely does not fit, and there it
-    keeps the record on screen instead of letting it print on the furniture. */
+    keeps the record on screen instead of letting it print on the furniture.
+
+    Below 900px the same two ends are measured, but only one number comes out of
+    it: the plate is anchored to its own floor down there, so `--band` is the
+    whole story. See the branch. */
 function pinPanel() {
   const d = D.dossier;
-  /* Below 900px none of the three numbers applies, and saying so is the point.
-     Down there the plate is a bottom sheet — `top: auto; bottom: 20rem`, its
-     length capped by the 900 block's own `max-height` — so `--panel-top` and
-     `--band` are read by nothing. Left alone they kept whatever the last wide
-     window had measured, and the probe printed `top=226.7px` at 900x700 for a
-     plate that ignores it: a number that reads as a measurement and is not one.
-     Removed rather than stale. The query is the same one the stylesheet tests,
-     so the two cannot disagree about which side of 900 they are on. */
+  /* Below 900px the plate is a bottom sheet — `top: auto; bottom: 20rem` — so
+     its *floor* is a constant of the layout and its length is the only free
+     variable. The 900 block caps that length, and until now it capped it with
+     `calc(100vh - 28.34rem)`: 320px of floor plus **133.4px of masthead**, a
+     masthead measured once, at one width.
+
+     The masthead's height is a function of the width — its nav wraps — so that
+     constant is right at exactly the widths it was measured at. Measured across
+     the band: at 380px the masthead is 148.4px, so the cap let the plate start
+     15px *above* it and print its crumb over the logotype (`sheet crumb × mast
+     H1`); at 620px it is 115.4px, so the same cap threw away 18px in a window
+     with nothing to spare. At 900px it is 133.4px and the constant is exact,
+     which is the only reason it survived: the one viewport anybody had checked
+     was the one it was derived from.
+
+     So the band is measured here too — the same lesson as the pin above 900, and
+     now the same mechanism. Only `--band` is written: `bottom: 20rem` already
+     fixes the floor, so the cap is the whole story. It may come out negative
+     (760x420, where the floor is above the masthead's bottom); the 5rem floor in
+     the stylesheet is what catches that, and it has to stay in the stylesheet so
+     it also holds before this runs.
+
+     `--panel-top` and `--panel-half` are still *removed* down here, because
+     nothing reads them and a stale one reads as a measurement: the probe printed
+     `top=226.7px` at 900x700 for a plate that ignores it. The query is the same
+     one the stylesheet tests, so the two cannot disagree about which side of 900
+     they are on. */
   if (matchMedia('(max-width: 900px)').matches) {
-    d.style.removeProperty('--band');
+    /* The floor comes out of the declaration, not out of a rect. `bottom: 20rem`
+       *is* the floor, and reading it as a length is immune to the one thing that
+       would otherwise corrupt it: `body.ready` slides the masthead and the deck
+       up 14px over 1.2s, so a rect taken mid-slide is 14px off — but the plate
+       does not slide down here (`.dossier { transform: none }` in the 900 block),
+       so subtracting the masthead's slide from the plate's own rect moved the
+       floor by 14px and produced a band 14px short (232.6px where the page has
+       247). The masthead's own bottom *does* need the correction, because it
+       does slide; `offsetTop` is transform-free and the gap between the two is
+       the slide. */
+    const bottomOffset = parseFloat(getComputedStyle(d).bottom);
+    const floorY = innerHeight - (Number.isFinite(bottomOffset) ? bottomOffset : 0);
+    const slide = D.mast.getBoundingClientRect().top - D.mast.offsetTop;
+    const mastB = D.mast.getBoundingClientRect().bottom - slide;
+    /* Through the ceiling, or a plate capped last time reports the cap. */
+    d.style.setProperty('--band', 'none');
+    const nat = d.getBoundingClientRect().height;
+    d.style.setProperty('--band', Math.min(nat, floorY - mastB).toFixed(1) + 'px');
     d.style.removeProperty('--panel-top');
     d.style.removeProperty('--panel-half');
     syncSheetScroll();

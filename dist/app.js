@@ -34599,7 +34599,13 @@ void main() {
   function pinPanel() {
     const d = D.dossier;
     if (matchMedia("(max-width: 900px)").matches) {
-      d.style.removeProperty("--band");
+      const bottomOffset = parseFloat(getComputedStyle(d).bottom);
+      const floorY = innerHeight - (Number.isFinite(bottomOffset) ? bottomOffset : 0);
+      const slide2 = D.mast.getBoundingClientRect().top - D.mast.offsetTop;
+      const mastB2 = D.mast.getBoundingClientRect().bottom - slide2;
+      d.style.setProperty("--band", "none");
+      const nat2 = d.getBoundingClientRect().height;
+      d.style.setProperty("--band", Math.min(nat2, floorY - mastB2).toFixed(1) + "px");
       d.style.removeProperty("--panel-top");
       d.style.removeProperty("--panel-half");
       syncSheetScroll();
