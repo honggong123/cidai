@@ -14,11 +14,16 @@
   const bad = [];
   const ok = (cond, msg) => { (cond ? log : bad).push(`${cond ? 'ok  ' : 'FAIL'} ${msg}`); };
 
-  for (let i = 0; i < 120; i++) {
+  /* ★ loader 消失不等于页面落定：`pinSoon` 在第一次钉之后 700ms 还会再钉一次，
+     开机上滑跑 1.2s —— 而那次重钉是一整轮真实的布局。把第一对合成点击落在那里面
+     正是这支探针以前会失败的原因（见下面 `pair` 的注释）。轮询也收紧到 250ms，
+     免得相位随机。 */
+  for (let i = 0; i < 480; i++) {
     const l = document.getElementById('loader');
     if (l && getComputedStyle(l).opacity === '0') break;
-    await sleep(1000);
+    await sleep(250);
   }
+  await sleep(1400);
 
   Element.prototype.setPointerCapture = () => {};
   Element.prototype.releasePointerCapture = () => {};
@@ -38,6 +43,33 @@
      所以点在哪里都该生效 —— 这里点空地，顺便证明"不必正好点中她"。 */
   const X = 40, Y = 40;
 
+  /* ★★ 一对点击，连同**它实际交付的间隔**。
+
+     页面把双击读成 `performance.now() - lastTap < 320` —— 页面**自己的**钟，在
+     处理函数里读。这支探针必须把两次点击送进那个窗口，而 `await sleep(90)` 不足
+     以保证它：软件渲染下一页可以有一秒长，90ms 的计时器于是排在那帧之后才跑，
+     页面就**合法地**看到 1000ms 的间隔。这是"把两个事件分派在两个不同的任务里"
+     的产物 —— 真实的双击是两个排队事件、被背靠背处理，读者永远不会受它影响 ——
+     但它让这支探针大约每三跑失败一次，而且总在第一对上。
+
+     所以探针改为**为自己的间隔作保**：量出自己交付的间隔，被帧吃掉就重试。只有
+     当间隔确实落在窗口内、选中项却仍然没动，那才是关于页面的一句话。重试前先等
+     过窗口，免得上一次的第二击和这一次的第一击配成一对。 */
+  const pair = async () => {
+    for (let k = 0; k < 20; k++) {
+      const before = sel();
+      const t0 = performance.now();
+      tap(X, Y);
+      await sleep(90);
+      const gap = performance.now() - t0;
+      tap(X, Y);
+      await sleep(900);
+      if (gap < 300) return { gap, moved: sel() !== before, tries: k + 1 };
+      await sleep(400);
+    }
+    return { gap: Infinity, moved: false, tries: 20 };
+  };
+
   const start = sel();
   log.push(`start     selected = ${start + 1}/5`);
   const names = rows().map((b) => (b.querySelector('.rt') || {}).textContent);
@@ -49,26 +81,27 @@
 
   /* --- 双击：往下走一个 --------------------------------------------------- */
   const walk = [];
+  let retries = 0;
   for (let i = 0; i < 6; i++) {
-    tap(X, Y);
-    await sleep(90);
-    tap(X, Y);
-    await sleep(900);
+    const r = await pair();
+    retries += r.tries - 1;
     const s = sel();
     const lit = (document.querySelector('#ref-list .row.playing') || {}).textContent || null;
     walk.push(s + 1);
+    const gapTxt = Number.isFinite(r.gap) ? `${r.gap.toFixed(0)}ms` : 'never inside the window';
+    ok(r.moved, `double-click ${i + 1} moves the selection (gap ${gapTxt}, ${r.tries} attempt${r.tries > 1 ? 's' : ''})`);
     log.push(`dbl ${i + 1}     selected = ${s + 1}/5 (${names[s]})   playing = ${lit}`);
   }
   const expect = [];
   for (let i = 1; i <= 6; i++) expect.push(((start + i) % 5) + 1);
-  ok(JSON.stringify(walk) === JSON.stringify(expect), `six double-clicks walk top-to-bottom and wrap: ${walk.join(' → ')} (expected ${expect.join(' → ')})`);
+  ok(JSON.stringify(walk) === JSON.stringify(expect),
+    `six double-clicks walk top-to-bottom and wrap: ${walk.join(' → ')} (expected ${expect.join(' → ')})`
+    + (retries ? ` — ${retries} retr${retries > 1 ? 'ies' : 'y'} for a frame that ate the gap` : ''));
 
   /* --- 双击必须**做**出来，不只是选中 ------------------------------------ */
-  tap(X, Y);
-  await sleep(90);
-  tap(X, Y);
+  const last = await pair();
   const a = window.__spirit ? window.__spirit.action : null;
-  ok(a !== null, `the double-click also performs it (action = ${a})`);
+  ok(a !== null, `the double-click also performs it (action = ${a}${last.tries > 1 ? `, ${last.tries} attempts` : ''})`);
 
   return [...log, ...bad].join('\n');
 })()

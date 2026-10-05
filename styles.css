@@ -1783,6 +1783,31 @@ body.ready .dossier { opacity: 1; transform: none; }
      was; in the capped band the chip is hidden instead (see the max-height
      query at the end). */
   .now { bottom: 17.5rem; max-width: calc(100vw - var(--pad) * 2); }
+  /* ★ …and when the plate, as this floor would render it, comes down over the
+     nav, it stops hanging off its floor and hangs off the masthead instead.
+     `pinPanel` makes that call and says so with `.hung`; two things have to move
+     out of the way for it.
+
+     The floor, first. `max-height: max(var(--band), 5rem)` is right for every
+     plate that is *shorter* than its room, which is every plate until the room
+     goes under 5rem — and there the floor stops being a minimum and starts being
+     the mistake, because the plate is bottom-anchored: a floor it cannot fit
+     under does not make it shorter, it makes it *taller*, upward, and up is the
+     only direction the nav is in. It went right through it: at 900x500, 820x470,
+     700x450, 620x450 and 480x430 the plate covered all seven nav buttons, and
+     because an overflowing plate claims the pointer (`.dossier.overflow .sheet`)
+     every one of them was dead — `elementFromPoint` at their own centres came
+     back `div.dbody` / `h2.fileno`. The pin has already written the honest length
+     into `--band` by the time this applies; here it only has to be believed.
+
+     The chip, second. `body.chip-away` is set by the same branch. The gap it
+     used to sit in is the plate's whole length now, and it is the one block down
+     here that is neither the record nor a control. (In the phone-landscape band
+     the pin does *not* hang — the plate there is clear of the nav — so the
+     `max-height: 400px` query at the end of this block is still what hides the
+     chip there. The two rules cover two different bands and never both.) */
+  .dossier.hung, .dossier.hung .sheet { max-height: var(--band); }
+  body.chip-away .now { display: none; }
   .deck { bottom: 2.625rem; grid-template-columns: minmax(0, 1fr); grid-template-areas: "sel" "right" "pager"; gap: 0.875rem; }
   .deck-right { justify-content: space-between; width: 100%; }
   .transport { flex: 1 1 auto; }

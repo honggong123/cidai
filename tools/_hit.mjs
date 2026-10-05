@@ -48,10 +48,18 @@ const [url = 'http://127.0.0.1:8932/', cdpPort = '9445', sizesArg = ''] = proces
 const ALL = [
   [1440, 820], [1280, 800], [1080, 760], [900, 700], [820, 640],
   [700, 600], [620, 560], [480, 520], [380, 640], [760, 420],
-  /* ★ The phone-landscape band, and the one where the plate has to be pinned to
-     the top of the frame rather than hung under the masthead (see --plate-floor
-     in styles.css). It is the band where the plate is closest to the nav, so it
-     is the band where a hit test has the most to say. 568x320 is the smallest
+  /* ★ The 422..531px band at ≤900 wide, and it is here because it was missing:
+     this list used to jump from 760x420 straight to 1440x820 on one side and stop
+     at 520px of height on the other, and the band in between is the one where the
+     plate's floor cap and its 5rem floor cross. Every one of these five had all
+     seven nav buttons behind the plate (see `.hung` in styles.css); none of them
+     had ever been sampled. They stay in as the witnesses. 900x530 is the upper
+     edge, where the plate's top lands *inside* the nav rather than over it. */
+  [900, 500], [820, 470], [700, 450], [620, 450], [480, 430], [900, 530],
+  /* ★ The phone-landscape band, where the plate has to be pinned to the top of
+     the frame rather than hung under the masthead (see --plate-floor in
+     styles.css). It is the band where the plate is closest to the nav, so it is
+     the band where a hit test has the most to say. 568x320 is the smallest
      landscape phone still in use (iPhone SE 1st gen). */
   [844, 390], [780, 360], [667, 375], [568, 320],
 ];
@@ -182,6 +190,13 @@ const probe = () => {
       mast: box('.mast'), brand: box('.brand'), nav: box('.mast-nav'),
       dossier: box('.dossier'), sheet: box('.sheet'),
       overflow: !!dos?.classList.contains('overflow'),
+      /* The two states the ≤900 pin can be in. `hung` means the plate is pinned
+         under the masthead instead of to its own floor (see pinPanel), and
+         `chip-away` means the now-chip has been taken out for it. Both are
+         invisible in a rect, so without them a `blocked` line cannot be told
+         apart from one in the other mode. */
+      hung: !!dos?.classList.contains('hung'),
+      chip: document.body.classList.contains('chip-away'),
       band: dos ? getComputedStyle(dos).getPropertyValue('--band').trim() : null,
       /* Whether the page agrees with the emulator about which side of 900 this
          is, and what it thinks the viewport is: the pin's whole decision is
@@ -250,7 +265,7 @@ for (const [w, h] of SIZES) {
   const head = `${String(w).padStart(4)}x${String(h).padEnd(4)} controls=${String(v.n).padStart(2)} offscreen=${String(v.skipped).padStart(2)}  blocked=${v.blocked.length}`;
   console.log(head);
   const g = v.geom;
-  console.log(`      mast ${g.mast}  nav ${g.nav}  sheet ${g.sheet}  overflow=${g.overflow} band=${g.band}  mq900=${g.mq900} inner=${g.iw}x${g.ih}`);
+  console.log(`      mast ${g.mast}  nav ${g.nav}  sheet ${g.sheet}  overflow=${g.overflow} hung=${g.hung} chip-away=${g.chip} band=${g.band}  mq900=${g.mq900} inner=${g.iw}x${g.ih}`);
   for (const b of v.blocked) console.log(`      ${b.what}  @${b.where} ${b.at}  ->  ${b.got}`);
 }
 

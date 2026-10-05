@@ -34408,11 +34408,16 @@ void main() {
     dossier: $("#dossier"),
     dbody: $("#dbody"),
     fold: $("#btn-fold"),
-    // the plate's own box, and the two pieces of furniture it has to live between
-    // — see pinPanel
+    // the plate's own box, and the four pieces of furniture it has to live
+    // between — see pinPanel. `deck` is the whole console, not just the transport:
+    // the label row above it is part of the same block, and a plate that stops at
+    // the transport still prints over the label. `nav` is what the hung branch is
+    // actually protecting: the masthead below its nav is empty paper.
     sheet: $(".sheet"),
     mast: $(".mast"),
-    transport: $(".transport")
+    nav: $(".mast-nav"),
+    transport: $(".transport"),
+    deck: $(".deck")
   };
   D.colN.textContent = String(VANTAGES.length).padStart(2, "0");
   D.selN.textContent = MOVES[MOVES.length - 1].no;
@@ -34599,18 +34604,36 @@ void main() {
   function pinPanel() {
     const d = D.dossier;
     if (matchMedia("(max-width: 900px)").matches) {
+      d.style.removeProperty("bottom");
+      d.classList.remove("hung");
       const bottomOffset = parseFloat(getComputedStyle(d).bottom);
       const floorY = innerHeight - (Number.isFinite(bottomOffset) ? bottomOffset : 0);
       const slide2 = D.mast.getBoundingClientRect().top - D.mast.offsetTop;
       const mastB2 = D.mast.getBoundingClientRect().bottom - slide2;
+      const navT = D.nav.getBoundingClientRect().top - slide2;
+      const navB = D.nav.getBoundingClientRect().bottom - slide2;
       d.style.setProperty("--band", "none");
       const nat2 = d.getBoundingClientRect().height;
       d.style.setProperty("--band", Math.min(nat2, floorY - mastB2).toFixed(1) + "px");
+      const rect = d.getBoundingClientRect();
+      if (rect.top < navB - 0.5 && rect.bottom > navT + 0.5) {
+        const room = Math.max(0, D.deck.getBoundingClientRect().top - slide2 - mastB2);
+        const h2 = Math.min(nat2, room);
+        d.classList.add("hung");
+        d.style.setProperty("--band", h2.toFixed(1) + "px");
+        d.style.bottom = (innerHeight - mastB2 - h2).toFixed(1) + "px";
+        document.body.classList.add("chip-away");
+      } else {
+        document.body.classList.remove("chip-away");
+      }
       d.style.removeProperty("--panel-top");
       d.style.removeProperty("--panel-half");
       syncSheetScroll();
       return;
     }
+    d.classList.remove("hung");
+    d.style.removeProperty("bottom");
+    document.body.classList.remove("chip-away");
     d.classList.remove("overflow");
     d.style.setProperty("--band", "none");
     const nat = d.getBoundingClientRect().height;

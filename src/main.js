@@ -1647,9 +1647,12 @@ const D = {
   selI: $('#sel-i'), selN: $('#sel-n'),
   refList: $('#ref-list'), cols: $('#cols'),
   dossier: $('#dossier'), dbody: $('#dbody'), fold: $('#btn-fold'),
-  // the plate's own box, and the two pieces of furniture it has to live between
-  // — see pinPanel
-  sheet: $('.sheet'), mast: $('.mast'), transport: $('.transport'),
+  // the plate's own box, and the four pieces of furniture it has to live
+  // between — see pinPanel. `deck` is the whole console, not just the transport:
+  // the label row above it is part of the same block, and a plate that stops at
+  // the transport still prints over the label. `nav` is what the hung branch is
+  // actually protecting: the masthead below its nav is empty paper.
+  sheet: $('.sheet'), mast: $('.mast'), nav: $('.mast-nav'), transport: $('.transport'), deck: $('.deck'),
 };
 D.colN.textContent = String(VANTAGES.length).padStart(2, '0');
 D.selN.textContent = MOVES[MOVES.length - 1].no;
@@ -1997,6 +2000,14 @@ function pinPanel() {
      one the stylesheet tests, so the two cannot disagree about which side of 900
      they are on. */
   if (matchMedia('(max-width: 900px)').matches) {
+    /* Drop the floor this function may have written last time, *before* reading
+       it. In the hung case below the floor is a number this function chose, and
+       `band` has to be asked of the stylesheet's floor (20rem) or the second
+       pass would measure its own output and the branch would never come back.
+       `.hung` is dropped for the same reason and at the same moment — see the
+       ★★ note on the branch below, which is what happens when it is not. */
+    d.style.removeProperty('bottom');
+    d.classList.remove('hung');
     /* The floor comes out of the declaration, not out of a rect. `bottom: 20rem`
        *is* the floor, and reading it as a length is immune to the one thing that
        would otherwise corrupt it: `body.ready` slides the masthead and the deck
@@ -2011,15 +2022,87 @@ function pinPanel() {
     const floorY = innerHeight - (Number.isFinite(bottomOffset) ? bottomOffset : 0);
     const slide = D.mast.getBoundingClientRect().top - D.mast.offsetTop;
     const mastB = D.mast.getBoundingClientRect().bottom - slide;
+    const navT = D.nav.getBoundingClientRect().top - slide;
+    const navB = D.nav.getBoundingClientRect().bottom - slide;
     /* Through the ceiling, or a plate capped last time reports the cap. */
     d.style.setProperty('--band', 'none');
     const nat = d.getBoundingClientRect().height;
     d.style.setProperty('--band', Math.min(nat, floorY - mastB).toFixed(1) + 'px');
+    /* ★ …and if the plate, as the stylesheet is about to render it, comes down
+       over the nav, it stops hanging off its floor and hangs off the masthead.
+
+       Why it has to. The plate is anchored to its floor and grows *upward*, so
+       the `max(var(--band), 5rem)` floor above stops being a minimum and becomes
+       the mistake the moment the band goes under 5rem: a floor the plate cannot
+       fit under does not make it shorter, it makes it *taller*, upward, and up is
+       the only direction the nav is in. Measured with the floor in place, at
+       900x500 / 820x470 / 700x450 / 620x450 / 480x430 — every width at or below
+       900 between about 422 and 531px of viewport height, a band no sweep had
+       ever sampled — the plate lay across the nav and all seven buttons were
+       dead: it claims the pointer while it overflows (`.dossier.overflow .sheet`),
+       so `elementFromPoint` at their own centres returned `div.dbody` /
+       `h2.fileno`.
+
+       What the test is, and what it is not. Not "is the plate above the
+       masthead's bottom": that is true of a plate that only reaches the brand,
+       and in the phone-landscape band the plate is 0..80 against a nav at
+       102..131 — a plate clear of every control, and hanging it there would trade
+       a readable 80px record for a 40px one for nothing. It is the two spans
+       overlapping — the plate's box against the nav's, as intervals — which is
+       the failure stated exactly. Note it has to be the nav's *box* and not the
+       nav's top edge: the plate can land with its top edge inside the nav (at
+       900x530 it comes down to 130 against a nav at 104..133, three pixels of
+       button), and an edge test would call that clear.
+
+       Every plate that is not overlapping comes out at exactly `top == mastB`,
+       because the band is capped by `floorY - mastB`, so the boundary is exact:
+       the two conditions "overlaps the nav" and "the band is under the 5rem
+       floor" are the same line, and the plate only moves when the stylesheet
+       would have got it wrong.
+
+       Where it hangs. `top` on the masthead's bottom, length = the room down to
+       the console's top, both measured — so by construction it cannot cover the
+       nav above it or the console below it. `.hung` is what takes the 5rem floor
+       back out of the stylesheet (`max-height: var(--band)`), and the inline
+       `bottom` is re-derived on every pass because the room moves with the width
+       (the console re-stacks) as well as with the height.
+
+       The now-chip goes with it (`body.chip-away`): the gap it sat in is the
+       plate's whole length now, and it is the one block down here that is neither
+       the record nor a control.
+
+       ★★ `.hung` is removed *before* the measurement, and that is not tidiness —
+       it is the trap `--band: none` two lines up exists for, and this branch
+       walked straight into it. With the class left on, `--band` is applied as a
+       hard `max-height` with no floor under it, so the second pass measured the
+       plate already hung — its top exactly on `mastB`, i.e. covering nothing —
+       and un-hung it; the third pass hung it again. The page oscillated, and a
+       probe caught whichever phase it landed on: 700x450 came back `hung=true`
+       and 900x500 `hung=false` in the same run, from the same code. Every input
+       to this decision has to be the state the page would be in *without* it.
+
+       ★ And the outcome, not a recomputed `band < 5rem`: the stylesheet's floor
+       is a second place to keep in step with the number here, and this is the
+       branch that exists because a copied number went stale. */
+    const rect = d.getBoundingClientRect();
+    if (rect.top < navB - 0.5 && rect.bottom > navT + 0.5) {
+      const room = Math.max(0, D.deck.getBoundingClientRect().top - slide - mastB);
+      const h = Math.min(nat, room);
+      d.classList.add('hung');
+      d.style.setProperty('--band', h.toFixed(1) + 'px');
+      d.style.bottom = (innerHeight - mastB - h).toFixed(1) + 'px';
+      document.body.classList.add('chip-away');
+    } else {
+      document.body.classList.remove('chip-away');
+    }
     d.style.removeProperty('--panel-top');
     d.style.removeProperty('--panel-half');
     syncSheetScroll();
     return;
   }
+  d.classList.remove('hung');
+  d.style.removeProperty('bottom');
+  document.body.classList.remove('chip-away');
   /* ★ Drop the overflow class before measuring anything, and this is not
      housekeeping: `.dossier.overflow .sheet` carries `scrollbar-gutter: stable`,
      so while the class is on the record is laid out in a column about fifteen
