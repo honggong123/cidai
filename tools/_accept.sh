@@ -25,7 +25,10 @@ run() { local name=$1; shift; echo "== $name"; "$@" > "$OUT/$name.txt" 2>&1; ech
 run build       $N build.mjs
 run standalone  $N tools/standalone.mjs
 run ov-default  $N tools/_ov.mjs "$DEV" "$CDP"
+# ≤900 是两条带子，分开跑：高窄带（纸挂在页头之下）与手机横屏带（纸被钳到框顶，
+# 见 styles.css 的 --plate-floor）。混在一条命令里跑会越过前台超时。
 run ov-band     $N tools/_ov.mjs "$DEV" "$CDP" "900x700,820x640,700x600,620x560,480x520,380x640,760x420"
+run ov-short    $N tools/_ov.mjs "$DEV" "$CDP" "844x390,780x360,667x375,568x320"
 run hit         $N tools/_hit.mjs "$DEV" "$CDP"
 run smoke-dev   $N tools/_eval.mjs "${DEV}index.html?intro=0&t=studio" @tools/_smoke.js "$CDP"
 run smoke-stand $N tools/_eval.mjs "${DEV}dist/ghost-standalone.html?intro=0&t=studio" @tools/_smoke.js "$CDP"

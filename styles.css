@@ -1700,11 +1700,38 @@ body.ready .dossier { opacity: 1; transform: none; }
    same centring this rule had before any of it existed. */
 
 @media (max-width: 900px) {
-  :root { --pad: 1.5rem; --sheet-pad-x: 1.25rem; --sheet-pad-t: 1.125rem; --sheet-pad-b: 1.25rem; }
+  :root {
+    --pad: 1.5rem; --sheet-pad-x: 1.25rem; --sheet-pad-t: 1.125rem; --sheet-pad-b: 1.25rem;
+    /* ★ How far the plate's own bottom edge sits above the bottom of the window,
+       which is the depth of everything below it: the console (2.625rem up and
+       196.6px deep at 667 wide) plus the now-chip plus their gaps — 20rem,
+       measured, and it is what keeps the plate clear of both.
+
+       It is a fixed cost only while the window can pay it. Under 25rem of
+       viewport the plate is taller than the room left above its floor, and it
+       leaves through the *top* of the window instead: at 844x390 it began 10px
+       above the viewport, at 780x360 40px above it, at 667x375 25px above it,
+       at 568x320 80px above it — the whole plate off screen. That is worse than
+       any overlap: a plate you cannot see is not a plate. So the floor is capped
+       at whatever still leaves the plate its own minimum height (the 5rem in the
+       max-height below), and 20rem + 5rem = 25rem is therefore also the line at
+       which the rest of the page has to give something up — see the max-height
+       query at the end, which is the same fact told from the other end.
+
+       `dvh` and not `vh`, because `vh` is the *largest* viewport on a phone:
+       with the URL bar showing it overstates the room by exactly the bar, and
+       the plate leaves through the top again. `pinPanel` measures this same
+       floor against `innerHeight`, which is what `dvh` tracks. The vh value is
+       the fallback for engines that have neither. */
+    --plate-floor: min(20rem, calc(100vh - 5rem));
+  }
+  @supports (height: 100dvh) {
+    :root { --plate-floor: min(20rem, calc(100dvh - 5rem)); }
+  }
   .frame { inset: 0.6875rem; }
   .mast { top: 1.625rem; flex-direction: column; gap: 0.875rem; }
   .mast-nav { padding-top: 0; flex-wrap: wrap; }
-  .dossier { left: var(--pad); right: var(--pad); top: auto; bottom: 20rem; transform: none; width: auto; max-width: none; }
+  .dossier { left: var(--pad); right: var(--pad); top: auto; bottom: var(--plate-floor); transform: none; width: auto; max-width: none; }
   body.ready .dossier { transform: none; }
   /* the record becomes a bottom sheet; the scene keeps the top of the frame.
      The three offsets are measured off the stacked console below: deck 2.625rem
@@ -1734,7 +1761,13 @@ body.ready .dossier { opacity: 1; transform: none; }
      the plate has to overlap the masthead — there is no room left to give it —
      and a plate you can read beats an empty one. `--band` may therefore arrive
      negative (760x420: the plate's floor is *above* the masthead's bottom), and
-     `max()` is what turns that back into a readable 5rem. */
+     `max()` is what turns that back into a readable 5rem.
+
+     ★ And below 400px of viewport the *floor itself* is the thing that has to
+     give, because 20rem of furniture under a 5rem plate is more than the window
+     has: the plate left through the top instead of the bottom (see
+     `--plate-floor` in the :root above). That is why the floor is a variable
+     now and not a number here. */
   .dossier, .sheet { max-height: max(var(--band, calc(100vh - 28.34rem)), 5rem); }
   /* the bottom sheet is already the whole column: the retract has nothing to
      give way to down here, and folding would push it off the left edge */
@@ -1742,6 +1775,13 @@ body.ready .dossier { opacity: 1; transform: none; }
   .sheet { overflow: auto; scrollbar-width: thin; }
   .doc-note, .vr { display: none; }
   .dossier-grid { gap: 0.75rem; }
+  /* 17.5rem, not `--plate-floor - 2.5rem`: the chip is pinned to the plate only
+     while the plate is pinned to *its* floor, and once the floor is capped the
+     plate has left for the top of the window and the two are no longer
+     neighbours. Following the floor down there dragged the chip onto the nav
+     (at 844x390 it printed 待机 over 霜厅, 228px² of glyph). It stays where it
+     was; in the capped band the chip is hidden instead (see the max-height
+     query at the end). */
   .now { bottom: 17.5rem; max-width: calc(100vw - var(--pad) * 2); }
   .deck { bottom: 2.625rem; grid-template-columns: minmax(0, 1fr); grid-template-areas: "sel" "right" "pager"; gap: 0.875rem; }
   .deck-right { justify-content: space-between; width: 100%; }
@@ -1751,6 +1791,39 @@ body.ready .dossier { opacity: 1; transform: none; }
   .kg[data-p="3"] { display: none; }
   .hud { justify-content: center; }
   .hud-l, .hud-r { display: none; }
+}
+
+/* ---------- under 25rem of viewport: the window is over-subscribed ---------
+   Two things happen on this one line and they are the same fact. The plate's
+   floor stops being 20rem here (20rem + its own 5rem = 25rem, see
+   --plate-floor), so the plate is pinned to the top of the frame; and the console
+   is 196.6px of three stacked rows down here — the "动作 / 选择" label, the
+   transport, the pager — with a now-chip that used to sit under the plate and
+   now has nowhere to go.
+
+   ★ The chip. It is 35px, and the room it has is the gap between the plate's
+   bottom edge and the console's top, minus the masthead's nav, which sits in
+   that gap at a height the width decides. At 844x390 that leaves 22px above the
+   nav and 83px below it; at 568x320, 6px and 30px. Neither is 35px. Going back to
+   where it was is not an option either — the plate now ends where the chip
+   begins (at 780x360 the chip's whole 45..80 sits inside a plate at 0..80). And
+   it is the only one of the four blocks that is neither the record nor a
+   control: which record is showing is on the plate's crumb, and the counter
+   beside the transport already says what is playing. So it is the one that goes.
+   (It was printing over the nav in this band before the floor moved, too: at
+   760x420, 105..140 against a nav at 102.4..131.4.)
+
+   ★ The console's label row. The console is what holds the bottom, and at
+   568x320 it was 4px into the plate. "动作 / 选择" is the one row that is not a
+   control, and the selection is printed on the plate twice over (the crumb, and
+   the selected cell in .ref), so it shares a row with the transport:
+   54 + 14 + 65 = 133px against the 196.6 it was, and the 63.6px goes to the
+   plate.
+
+   Above this line both are left exactly as they were, to the pixel. */
+@media (max-width: 900px) and (max-height: 400px) {
+  .deck { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "sel right" "pager pager"; }
+  .now { display: none; }
 }
 @media (max-width: 620px) {
   .brand-mid, .doc-note { display: none; }

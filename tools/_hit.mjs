@@ -48,6 +48,12 @@ const [url = 'http://127.0.0.1:8932/', cdpPort = '9445', sizesArg = ''] = proces
 const ALL = [
   [1440, 820], [1280, 800], [1080, 760], [900, 700], [820, 640],
   [700, 600], [620, 560], [480, 520], [380, 640], [760, 420],
+  /* ★ The phone-landscape band, and the one where the plate has to be pinned to
+     the top of the frame rather than hung under the masthead (see --plate-floor
+     in styles.css). It is the band where the plate is closest to the nav, so it
+     is the band where a hit test has the most to say. 568x320 is the smallest
+     landscape phone still in use (iPhone SE 1st gen). */
+  [844, 390], [780, 360], [667, 375], [568, 320],
 ];
 const SIZES = sizesArg
   ? sizesArg.split(',').map((s) => { const [w, h] = s.split('x'); return [+w, +(h || Math.round(+w * 0.7))]; })
